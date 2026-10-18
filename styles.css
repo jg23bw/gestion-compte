@@ -63,3 +63,121 @@
 .recurring-months-grid input,.recurring-enabled-label input{width:15px;height:15px;accent-color:#4779ed}
 .recurring-enabled-label{display:flex!important;flex-direction:row!important;align-items:center;gap:9px!important}
 @media(max-width:580px){.recurring-actions{flex-direction:column;align-items:stretch}.recurring-actions button{width:100%}.recurring-months-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* ── Modern signature refresh · Atelier Finance ───────────────────────── */
+:root{
+  color-scheme:light;
+  --navy:#111b2e;--muted:#748096;--line:#e8edf4;
+  --blue:#536dff;--green:#149b78;--purple:#8667ee;
+  --ink:#172238;--paper:#f4f6fb;--accent:#c9f36b;
+}
+body{background:radial-gradient(ellipse at 82% 0%,#e7edff 0,transparent 34%),#f4f6fb;color:var(--ink)}
+.sidebar{background:linear-gradient(165deg,#111b2e 0%,#17243a 72%,#1b2940 100%);width:258px;padding:29px 18px 20px;box-shadow:12px 0 40px #1722380a}
+.brand{padding-bottom:43px}
+.brand-mark{background:linear-gradient(135deg,#667dff,#4e5de1);border-radius:13px;box-shadow:0 8px 20px #536dff55;position:relative}
+.brand-mark:after{content:"";position:absolute;inset:-4px;border:1px solid #91a2ff40;border-radius:16px}
+.brand strong{font-size:18px;letter-spacing:-.8px}
+.nav-label{color:#71809a;letter-spacing:1.8px}
+.nav-item{border-radius:11px;padding:13px 14px;transition:background .18s,color .18s,transform .18s}
+.nav-item:hover{transform:translateX(2px);background:#ffffff0c}
+.nav-item.active{background:linear-gradient(100deg,#536dff32,#536dff0c);box-shadow:inset 3px 0 #c9f36b;color:#fff}
+.nav-item.active .nav-icon{color:var(--accent)}
+.privacy-card{background:linear-gradient(145deg,#202f49,#19263a);border-color:#ffffff12;border-radius:15px;padding:16px}
+.privacy-icon{color:var(--accent)}
+.cloud-open{border-color:#ffffff20;background:#ffffff0a;color:#e7edfa}
+.user-chip{border-color:#ffffff13}
+.main-content{margin-left:258px;padding:0 42px;max-width:1900px}
+.topbar{height:76px;border-color:#dfe5ef;background:#f7f8fcaa;backdrop-filter:blur(16px);position:sticky;top:0;z-index:4}
+.breadcrumb{font-size:12px}
+.local-status{padding:8px 11px;border:1px solid #e4e9f2;background:#fff;border-radius:999px}
+.icon-button{height:37px;width:37px;border-radius:11px;transition:transform .18s,border-color .18s}
+.icon-button:hover{transform:translateY(-2px);border-color:#bac7ff;color:var(--blue)}
+.view{padding-top:36px}
+.page-heading{margin-bottom:28px;align-items:flex-end}
+.page-heading h1{font-size:32px;letter-spacing:-1.25px;line-height:1.12}
+.eyebrow{letter-spacing:1.8px;font-size:9px;color:#7886a0}
+.subtitle{font-size:13px;line-height:1.6;color:#7f8ba0;max-width:720px}
+.primary-button,.secondary-button{border-radius:11px;padding:12px 16px;font-size:12px;transition:transform .18s,box-shadow .18s,background .18s}
+.primary-button{background:linear-gradient(135deg,#5c74ff,#485de0);border-color:#4f65e8;box-shadow:0 7px 17px #536dff2b}
+.primary-button:hover{background:linear-gradient(135deg,#4f67f1,#3d50ce);transform:translateY(-1px);box-shadow:0 10px 22px #536dff3d}
+.secondary-button{border-color:#e0e6f0;background:#fff;color:#46536b}
+.secondary-button:hover{background:#f7f8ff;border-color:#cbd5ff}
+.summary-grid{gap:17px;margin-bottom:22px}
+.summary-card{border:1px solid #e7ebf4;border-radius:18px;padding:22px 23px;min-height:160px;box-shadow:0 7px 22px #19294a06;transition:transform .22s,box-shadow .22s,border-color .22s}
+.summary-card:hover{transform:translateY(-3px);box-shadow:0 15px 35px #19294a0c;border-color:#d9e0f2}
+.total-card{background:linear-gradient(130deg,#fff 0%,#f7f8ff 65%,#eef1ff 100%)}
+.total-card:after{content:"";position:absolute;width:150px;height:150px;border:1px solid #536dff12;border-radius:50%;right:-60px;top:-60px;box-shadow:0 0 0 18px #536dff05,0 0 0 38px #536dff04;pointer-events:none}
+.card-icon{border-radius:11px}
+.metric{font-size:29px;letter-spacing:-1.1px;margin:17px 0 13px}
+.trend-pill{border-radius:999px;padding:5px 9px}
+.content-grid{gap:20px}
+.panel{border-color:#e7ebf4;border-radius:17px;box-shadow:0 7px 25px #1c2b4605}
+.panel-heading{padding:22px 22px 15px}
+.panel-heading h2{font-size:15px;letter-spacing:-.45px}
+.account-row{padding:14px 0;transition:padding .18s}
+.account-row:hover{padding-left:4px}
+.bank-logo{border-radius:12px;border-color:#e9edf5;background:#fff;box-shadow:0 3px 8px #18274408}
+.bank-logo img{width:78%;height:78%}
+.account-card{border-radius:16px;padding:19px;box-shadow:0 5px 20px #1c2b4605;transition:transform .2s,box-shadow .2s,border-color .2s}
+.account-card:hover{transform:translateY(-4px);box-shadow:0 15px 32px #1c2b4610;border-color:#d6def6}
+.account-card-balance{font-size:25px;letter-spacing:-.8px}
+.account-card-foot{margin-top:18px}
+.recent-row{padding:15px 0}
+.movement-icon{border-radius:11px}
+.tip-panel{background:linear-gradient(105deg,#eef2ff,#f4f7ff 70%,#f4f8e9);border-color:#e2e8ff;border-radius:16px;padding:18px 20px}
+.tip-icon{background:#fff;border:1px solid #e4e9ff;color:#5b6fe8}
+.table-panel{border-radius:16px}
+thead{background:#f7f8fc}
+th{padding:15px 17px;font-size:9px;letter-spacing:.8px}
+td{padding:15px 17px;font-size:11px}
+tbody tr{transition:background .15s}
+tbody tr:hover td{background:#fafbff}
+.table-account .bank-logo{box-shadow:none}
+.search-box,.transaction-toolbar select{border-radius:11px;border-color:#e1e7f1;height:42px}
+.search-box:focus-within{border-color:#9baaff;box-shadow:0 0 0 3px #536dff12}
+.toolbar{gap:13px;margin-bottom:21px}
+.modal{border-radius:20px;box-shadow:0 30px 100px #0c17304d}
+.modal form{padding:28px}
+.modal-heading{margin-bottom:26px}
+.modal input,.modal select{border-radius:10px}
+.modal input:focus,.modal select:focus{border-color:#8798ff;box-shadow:0 0 0 3px #536dff18}
+.form-help{border:1px solid #edf0f6;background:#f8f9fc}
+.toast{border-radius:13px;padding:14px 18px;box-shadow:0 12px 35px #111b2e2e}
+.app-footer{padding:27px 0 22px}
+.recurring-controls{border-radius:14px;background:linear-gradient(105deg,#fff,#f8f9ff);padding:15px 18px}
+.recurring-table tbody tr td{vertical-align:middle}
+.recurring-account-cell{display:flex;align-items:center;gap:10px;min-width:175px;font-weight:600;color:#354159}
+.recurring-account-cell .bank-logo{width:34px;height:34px;flex:0 0 34px;border-radius:11px}
+.recurring-account-cell>span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.recurring-table input[type="text"],.recurring-table input[type="number"]{border-radius:9px;border-color:#e3e8f2;transition:border-color .15s,box-shadow .15s}
+.recurring-table input:focus{outline:none;border-color:#a4b1ff;box-shadow:0 0 0 3px #536dff12}
+.recurring-table input[type="checkbox"]{accent-color:#596fff}
+.recurring-actions button{border-radius:9px}
+.danger-button{border-color:#f0d7d5!important}
+.recurring-dialog{border-radius:20px}
+.recurring-months-field{border-radius:12px}
+.recurring-enabled-label{background:#f6f8ff;border:1px solid #e7ebff;border-radius:10px;padding:11px 12px}
+@media(max-width:1200px){
+ .main-content{padding:0 25px}
+ .sidebar{width:220px}
+ .main-content{margin-left:220px}
+ .summary-card{padding:18px}
+ .metric{font-size:24px}
+}
+@media(max-width:900px){
+ .sidebar{width:72px;padding:22px 9px 14px}
+ .main-content{margin-left:72px;padding:0 22px}
+ .topbar{position:static}
+}
+@media(max-width:580px){
+ .main-content{padding:0 13px}
+ .page-heading h1{font-size:27px}
+ .view{padding-top:24px}
+ .summary-card{border-radius:15px}
+ .heading-actions{width:100%;display:grid;grid-template-columns:1fr}
+ .heading-actions button{width:100%;white-space:normal}
+ .recurring-account-cell{min-width:155px}
+ .recurring-table th,.recurring-table td{padding:12px 10px}
+ .app-footer{padding-bottom:26px}
+}
