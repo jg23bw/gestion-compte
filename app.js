@@ -136,6 +136,7 @@ async function loadCloudState(user){
     cloud.authReady=true;
     $('auth-gate').hidden=true;
     $('app-shell').hidden=false;
+    if($('cloud-dialog').open)$('cloud-dialog').close();
     cloudStatus('Synchronisé en ligne',true);
     showToast(remoteHasData?'Données chargées depuis votre compte.':(hasLegacy&&importLocal?'Données importées dans votre compte.':'Votre espace en ligne est prêt.'));
   }catch(error){
@@ -198,6 +199,7 @@ async function initCloud(){
       $('cloud-open').textContent='Compte connecté';
       $('cloud-logout').hidden=false;
       if(previousUserId!==cloud.user.id||event==='SIGNED_IN'){
+        if(previousUserId&&previousUserId!==cloud.user.id)lockApp('Changement de compte : chargement de vos données privées…');
         cloud.loadedUserId=null;
         const currentUser=cloud.user;
         setTimeout(()=>{if(cloud.user?.id===currentUser.id)loadCloudState(currentUser);},0);
