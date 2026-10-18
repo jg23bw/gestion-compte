@@ -37,7 +37,7 @@ Ces hypothèses sont volontairement simples et **ne remplacent pas un calcul com
 
 ## Limites de cette première version
 - Les montants inconnus sont laissés vides et doivent être renseignés dans « Récurrences » avant de pouvoir générer ces opérations.
-- Les mois des intérêts Lombard sont préconfigurés en janvier/avril/juillet/octobre et restent à confirmer.
+- Les mois des intérêts Lombard sont préconfigurés en janvier/avril/juillet/octobre et restent à confirmer. Pour les échéances annuelles où seul le mois était fourni, le jour est initialisé au 1er et peut être modifié dans l'écran « Récurrences ».
 - Pas de connexion automatique aux banques.
 - Pas d'authentification, de base de données distante ni de synchronisation multi-appareils.
 - Les données locales peuvent être perdues si le stockage du navigateur est effacé ; utilisez l'export JSON.
