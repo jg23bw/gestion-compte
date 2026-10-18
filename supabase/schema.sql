@@ -125,3 +125,12 @@ for each row execute function public.record_gestion_history('transaction');
 drop trigger if exists recurring_templates_audit on public.recurring_templates;
 create trigger recurring_templates_audit after insert or update or delete on public.recurring_templates
 for each row execute function public.record_gestion_history('recurring_template');
+
+
+-- Required for authenticated browser clients using the Supabase Data API.
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on public.accounts to authenticated;
+grant select, insert, update, delete on public.transactions to authenticated;
+grant select, insert, update, delete on public.recurring_templates to authenticated;
+grant select on public.audit_history to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
