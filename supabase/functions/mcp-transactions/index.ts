@@ -72,7 +72,7 @@ async function addTransaction(args: Json, credential: { user_id: string; default
   if (!accountId) {
     const accounts = await listAccounts(credential);
     if (accounts.length === 1) accountId = accounts[0].id;
-    else throw new Error("Compte non précisé. Appelez list_accounts puis choisissez un compte, ou configurez MCP_DEFAULT_ACCOUNT_ID.");
+    else throw new Error("Compte non précisé. Appelez list_accounts puis choisissez un compte, ou créez un jeton avec un compte par défaut.");
   }
   const accounts = await supabaseRequest(`accounts?user_id=eq.${uid}&id=eq.${encodeURIComponent(accountId)}&select=id,name`);
   if (!accounts.length) throw new Error("Compte introuvable dans les comptes de l'utilisateur autorisé.");
@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
     if (method === "tools/list") {
       return json(response(id, { tools: [
         tool("list_accounts", "Liste les comptes de l'utilisateur autorisé. À utiliser pour choisir le compte cible si aucun compte par défaut n'est configuré.", {}),
-        tool("add_transaction", "Ajoute une transaction dans Gestion de comptes. Montant en euros : négatif pour une dépense (ex. pain 2 € => label='Pain', amount=-2), positif pour une entrée. La date est aujourd'hui si elle est omise. account_id est facultatif si MCP_DEFAULT_ACCOUNT_ID est configuré.", {
+        tool("add_transaction", "Ajoute une transaction dans Gestion de comptes. Montant en euros : négatif pour une dépense (ex. pain 2 € => label='Pain', amount=-2), positif pour une entrée. La date est aujourd'hui si elle est omise. account_id est facultatif si le jeton a un compte par défaut.", {
           label: { type: "string", minLength: 1, maxLength: 120 },
           amount: { type: "number", description: "Montant en euros, négatif pour une dépense, positif pour une entrée." },
           date: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$", description: "Date au format AAAA-MM-JJ, facultative." },
