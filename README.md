@@ -20,6 +20,9 @@ Application web personnelle pour suivre les soldes et les opérations de neuf co
 - Calcul automatique des soldes à partir d'un solde de départ et des opérations datées.
 - Export des données au format JSON ou des transactions en CSV.
 - Paramètres par compte et calcul indicatif de la trésorerie Tiime après provisions estimées.
+- Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
+- Génération des opérations d'un mois en un clic, avec détection des doublons et exclusion des montants non renseignés.
+- Montants et libellés des modèles modifiables dans l'écran « Récurrences ».
 
 ## Démarrer
 Aucune installation ni compilation n'est nécessaire. Ouvrez simplement [index.html](./index.html) dans un navigateur, ou activez GitHub Pages dans les paramètres du dépôt pour héberger l'application.
@@ -33,6 +36,8 @@ Le compte professionnel affiche le solde bancaire réel et une estimation après
 Ces hypothèses sont volontairement simples et **ne remplacent pas un calcul comptable ou fiscal**. Ajustez les taux à votre situation et à votre régime (notamment les règles de TVA et d'assiette des cotisations). Les taux initiaux sont des exemples configurables, pas des conseils fiscaux.
 
 ## Limites de cette première version
+- Les montants inconnus sont laissés vides et doivent être renseignés dans « Récurrences » avant de pouvoir générer ces opérations.
+- Les mois des intérêts Lombard sont préconfigurés en janvier/avril/juillet/octobre et restent à confirmer.
 - Pas de connexion automatique aux banques.
 - Pas d'authentification, de base de données distante ni de synchronisation multi-appareils.
 - Les données locales peuvent être perdues si le stockage du navigateur est effacé ; utilisez l'export JSON.
