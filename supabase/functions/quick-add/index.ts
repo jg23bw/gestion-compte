@@ -9,16 +9,18 @@ const corsHeaders = {
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
 
-function isAuthorized(req: Request) {
-  const expected = Deno.env.get("MCP_ACCESS_TOKEN") ?? "";
-  return expected.length >= 32 && req.headers.get("authorization") === `Bearer ${expected}`;
-}
-function configuredUserId() {
-  const id = Deno.env.get("MCP_USER_ID") ?? "";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
-    throw new Error("Le secret MCP_USER_ID doit être l'UUID de l'utilisateur Supabase.");
-  }
-  return id;
+async function authenticate(req: Request) {
+  const supplied = req.headers.get("authorization") ?? "";
+  if (!supplied.startsWith("Bearer gdc_")) return null;
+  const token = supplied.slice("Bearer ".length);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const hash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+  const rows = await db(`mcp_tokens?token_hash=eq.${hash}&revoked_at=is.null&select=id,user_id,default_account_id&limit=1`);
+  if (!rows?.length) return null;
+  await db(`mcp_tokens?id=eq.${rows[0].id}`, {
+    method: "PATCH", body: JSON.stringify({ last_used_at: new Date().toISOString() }),
+  });
+  return rows[0] as { id: string; user_id: string; default_account_id: string | null };
 }
 async function db(path: string, init: RequestInit = {}) {
   const url = Deno.env.get("SUPABASE_URL");
@@ -64,15 +66,16 @@ function parseEntry(input: string) {
 }
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (!isAuthorized(req)) return json({ error: "Non autorisé." }, 401);
+  const credential = await authenticate(req).catch(() => null);
+  if (!credential) return json({ error: "Jeton invalide ou révoqué." }, 401);
   if (req.method !== "POST") return json({ error: "Utilisez POST." }, 405);
   try {
     const body = await req.json();
     const text = String(body?.text ?? "").trim();
     const action = String(body?.action ?? "preview");
     const parsed = parseEntry(text);
-    const uid = configuredUserId();
-    const accountId = String(body?.account_id ?? Deno.env.get("MCP_DEFAULT_ACCOUNT_ID") ?? "").trim();
+    const uid = credential.user_id;
+    const accountId = String(body?.account_id ?? credential.default_account_id ?? "").trim();
     if (!accountId) throw new Error("Configure MCP_DEFAULT_ACCOUNT_ID ou choisis un compte dans le raccourci.");
     const accounts = await db(`accounts?user_id=eq.${uid}&id=eq.${encodeURIComponent(accountId)}&select=id,name`);
     if (!accounts?.length) throw new Error("Compte par défaut introuvable. Vérifie MCP_DEFAULT_ACCOUNT_ID.");
