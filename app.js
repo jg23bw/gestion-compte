@@ -114,8 +114,9 @@ async function loadCloudState(user){
     const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length>0;
     const hasLegacy=!!legacy&&(legacy.accounts.length+legacy.transactions.length+(legacy.recurringTemplates||[]).length>0);
 
+    let importLocal=false;
     if(!remoteHasData){
-      const importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
+      importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
       state=importLocal?legacy:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
