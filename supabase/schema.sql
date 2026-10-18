@@ -27,11 +27,15 @@ create table if not exists public.transactions (
   source text not null default 'manual' check (source in ('manual','recurring')),
   recurring_template_id text,
   generated_month text,
+  recurring_key text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   foreign key (user_id, account_id) references public.accounts(user_id, id) on delete cascade,
   unique (user_id, recurring_template_id, generated_month, transaction_date, label)
 );
+
+create unique index if not exists transactions_user_recurring_key_uidx
+  on public.transactions(user_id, recurring_key) where recurring_key is not null;
 
 create table if not exists public.recurring_templates (
   id text not null,
