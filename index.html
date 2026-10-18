@@ -80,15 +80,33 @@
       </section>
 
       <section class="view" id="recurring-view">
-        <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Modifiez les montants et activez uniquement les opérations à générer. Les montants inconnus restent vides.</p></div><div class="heading-actions"><button class="primary-button" id="recurring-add-month">Générer les opérations du mois prochain</button></div></div>
+        <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Ajoutez, modifiez, suspendez ou supprimez vos opérations programmées. Les opérations déjà générées restent dans l’historique.</p></div><div class="heading-actions"><button class="secondary-button" id="recurring-add-template">Ajouter une récurrence</button><button class="primary-button" id="recurring-add-month">Générer les opérations du mois prochain</button></div></div>
         <div class="recurring-controls panel"><input id="recurring-month" type="hidden"><span id="recurring-summary">Les opérations seront ajoutées automatiquement pour le mois prochain. Les doublons seront ignorés.</span></div>
-        <section class="panel table-panel"><div class="table-scroll"><table class="recurring-table"><thead><tr><th>ACTIF</th><th>COMPTE</th><th>DATE / FRÉQUENCE</th><th>LIBELLÉ</th><th>MONTANT (€)</th></tr></thead><tbody id="recurring-rows"></tbody></table></div><div class="table-footer">Un montant vide signifie que l’opération sera ignorée jusqu’à ce que vous renseigniez son montant. Les dates annuelles et trimestrielles sont gérées automatiquement.</div></section>
+        <section class="panel table-panel"><div class="table-scroll"><table class="recurring-table"><thead><tr><th>ACTIF</th><th>COMPTE</th><th>DATE / FRÉQUENCE</th><th>LIBELLÉ</th><th>MONTANT (€)</th><th>ACTIONS</th></tr></thead><tbody id="recurring-rows"></tbody></table></div><div class="table-footer">Un montant vide signifie que l’opération sera ignorée jusqu’à ce que vous renseigniez son montant. Les dates annuelles et trimestrielles sont gérées automatiquement.</div></section>
       </section>
 
       <footer class="app-footer"><span>Gestion de comptes <span class="footer-dot">·</span> Version initiale</span><span>Données synchronisées avec votre compte privé</span></footer>
     </main>
   </div>
 
+  <dialog id="recurring-dialog" class="modal recurring-dialog">
+    <form id="recurring-form">
+      <div class="modal-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h2 id="recurring-modal-title">Nouvelle récurrence</h2></div><button type="button" class="close-button" data-close="recurring-dialog" aria-label="Fermer">×</button></div>
+      <input type="hidden" id="recurring-edit-id">
+      <label>Libellé<input id="recurring-edit-label" maxlength="120" required placeholder="Ex. Loyer, salaire, abonnement…"></label>
+      <label>Compte<select id="recurring-edit-account" required></select></label>
+      <div class="form-row"><label>Montant (€)<input id="recurring-edit-amount" type="number" step="0.01" placeholder="À renseigner si inconnu"></label><label>Fréquence<select id="recurring-edit-frequency" required><option value="monthly">Tous les mois</option><option value="quarterly">Trimestrielle</option><option value="annual">Annuelle</option><option value="once">Une seule fois</option></select></label></div>
+      <div id="recurring-day-field"><label>Jour du mois<input id="recurring-edit-day" type="number" min="1" max="31" step="1" value="1"></label></div>
+      <fieldset id="recurring-months-field" class="recurring-months-field"><legend>Mois concernés</legend><div class="recurring-months-grid">
+        <label><input type="checkbox" name="recurring-month-option" value="1"> Janvier</label><label><input type="checkbox" name="recurring-month-option" value="2"> Février</label><label><input type="checkbox" name="recurring-month-option" value="3"> Mars</label><label><input type="checkbox" name="recurring-month-option" value="4"> Avril</label><label><input type="checkbox" name="recurring-month-option" value="5"> Mai</label><label><input type="checkbox" name="recurring-month-option" value="6"> Juin</label><label><input type="checkbox" name="recurring-month-option" value="7"> Juillet</label><label><input type="checkbox" name="recurring-month-option" value="8"> Août</label><label><input type="checkbox" name="recurring-month-option" value="9"> Septembre</label><label><input type="checkbox" name="recurring-month-option" value="10"> Octobre</label><label><input type="checkbox" name="recurring-month-option" value="11"> Novembre</label><label><input type="checkbox" name="recurring-month-option" value="12"> Décembre</label>
+      </div></fieldset>
+      <div id="recurring-range-fields" class="form-row"><label>À partir du mois<input id="recurring-edit-start-month" type="month"></label><label>Jusqu’au mois<input id="recurring-edit-end-month" type="month"></label></div>
+      <div id="recurring-once-field"><label>Date de l’opération<input id="recurring-edit-once-date" type="date"></label></div>
+      <label class="recurring-enabled-label"><input id="recurring-edit-enabled" type="checkbox" checked> Récurrence active</label>
+      <p class="form-help">Changer ou supprimer ce modèle ne modifie pas les opérations déjà générées. Un montant vide empêche la génération tant qu’il n’est pas renseigné.</p>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close="recurring-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
+    </form>
+  </dialog>
   <dialog id="transaction-dialog" class="modal">
     <form id="transaction-form">
       <div class="modal-heading"><div><p class="eyebrow">HISTORIQUE DU COMPTE</p><h2 id="transaction-modal-title">Nouvelle transaction</h2></div><button type="button" class="close-button" data-close="transaction-dialog" aria-label="Fermer">×</button></div>
