@@ -36,7 +36,7 @@
       <section class="view active" id="dashboard-view">
         <div class="page-heading">
           <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div>
-          <div class="heading-actions"><button class="secondary-button" id="generate-current-month">Générer les opérations du mois</button><button class="primary-button" id="quick-add"><span>＋</span> Nouvelle transaction</button></div>
+          <div class="heading-actions"><button class="secondary-button" id="generate-current-month">Générer les opérations du mois prochain</button><button class="primary-button" id="quick-add"><span>＋</span> Nouvelle transaction</button></div>
         </div>
         <div class="summary-grid">
           <article class="summary-card total-card"><div class="card-top"><span>Solde total</span><span class="card-icon navy">€</span></div><div class="metric" id="total-balance">0,00 €</div><div class="card-foot"><span class="muted">Sur l'ensemble des comptes</span><span class="trend-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
@@ -70,8 +70,8 @@
       </section>
 
       <section class="view" id="recurring-view">
-        <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Modifiez les montants et activez uniquement les opérations à générer. Les montants inconnus restent vides.</p></div><div class="heading-actions"><button class="secondary-button" id="generate-month-btn">Générer ce mois</button><button class="primary-button" id="recurring-add-month">Générer les opérations du mois</button></div></div>
-        <div class="recurring-controls panel"><label for="recurring-month">Mois à générer</label><input id="recurring-month" type="month"><span id="recurring-summary">Les opérations déjà générées ne seront pas ajoutées une deuxième fois.</span></div>
+        <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Modifiez les montants et activez uniquement les opérations à générer. Les montants inconnus restent vides.</p></div><div class="heading-actions"><button class="primary-button" id="recurring-add-month">Générer les opérations du mois prochain</button></div></div>
+        <div class="recurring-controls panel"><input id="recurring-month" type="hidden"><span id="recurring-summary">Les opérations seront ajoutées automatiquement pour le mois prochain. Les doublons seront ignorés.</span></div>
         <section class="panel table-panel"><div class="table-scroll"><table class="recurring-table"><thead><tr><th>ACTIF</th><th>COMPTE</th><th>DATE / FRÉQUENCE</th><th>LIBELLÉ</th><th>MONTANT (€)</th></tr></thead><tbody id="recurring-rows"></tbody></table></div><div class="table-footer">Un montant vide signifie que l’opération sera ignorée jusqu’à ce que vous renseigniez son montant. Les dates annuelles et trimestrielles sont gérées automatiquement.</div></section>
       </section>
 
