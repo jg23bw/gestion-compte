@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=undo-fix-3" defer></script>
+  <script src="app.js?v=history-filter-sort-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -32,6 +32,7 @@
       <button class="nav-item active" data-view="dashboard"><span class="nav-icon">▦</span> Vue d'ensemble</button>
       <button class="nav-item" data-view="accounts"><span class="nav-icon">▤</span> Mes comptes <span class="nav-count" id="account-count">9</span></button>
       <button class="nav-item" data-view="transactions"><span class="nav-icon">↕</span> Opérations</button>
+      <button class="nav-item" data-view="history"><span class="nav-icon">▤</span> Historique mensuel</button>
       <button class="nav-item" data-view="recurring"><span class="nav-icon">⟳</span> Récurrences</button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Données synchronisées</strong><p>Connectez-vous pour sauvegarder vos comptes et opérations dans votre base privée en ligne.</p><button class="secondary-button cloud-open" id="cloud-open">Connexion cloud</button></div>
@@ -71,19 +72,27 @@
 
       <section class="view" id="accounts-view">
         <div class="page-heading"><div><p class="eyebrow">VOTRE PATRIMOINE LIQUIDE</p><h1>Mes comptes</h1><p class="subtitle">Configurez les soldes de départ et accédez à l’historique de chaque compte.</p></div></div>
-        <div class="toolbar"><div class="search-box"><span>⌕</span><input id="account-search" placeholder="Rechercher un compte…" aria-label="Rechercher un compte"></div><span class="toolbar-note" id="accounts-total-label">9 comptes</span></div>
+        <div class="toolbar"><div class="search-box"><span>⌕</span><input id="account-search" placeholder="Rechercher un compte…" aria-label="Rechercher un compte"></div><select id="account-kind-filter" aria-label="Filtrer par type de compte"><option value="all">Tous les types</option><option value="bank">Comptes bancaires</option><option value="savings">Livrets</option><option value="pro">Professionnel</option></select><select id="account-sort" aria-label="Trier les comptes"><option value="name-asc">Nom A → Z</option><option value="name-desc">Nom Z → A</option><option value="balance-desc">Solde décroissant</option><option value="balance-asc">Solde croissant</option><option value="kind">Type de compte</option></select><span class="toolbar-note" id="accounts-total-label">9 comptes</span></div>
         <div class="accounts-grid" id="all-accounts"></div>
       </section>
 
       <section class="view" id="transactions-view">
         <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Opérations</h1><p class="subtitle">Consultez et gérez les opérations de tous vos comptes.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
-        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select></div>
+        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="transaction-sort" aria-label="Trier les opérations"><option value="manual">Ordre manuel</option><option value="date-desc">Date décroissante</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option><option value="pointed">Pointées d’abord</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="transaction-head"></thead><tbody id="transaction-rows"></tbody></table></div><div class="table-footer" id="transaction-footer"></div></section>
+      </section>
+
+      <section class="view" id="history-view">
+        <div class="page-heading"><div><p class="eyebrow">CONSULTATION DES MOUVEMENTS</p><h1>Historique mensuel</h1><p class="subtitle">Consultez les opérations mois par mois, avec les totaux des entrées et des sorties.</p></div></div>
+        <div class="toolbar table-filters"><label class="history-month-control">Mois<input type="month" id="history-month" aria-label="Choisir le mois de l’historique"></label><div class="search-box"><span>⌕</span><input id="history-search" placeholder="Rechercher dans le mois…" aria-label="Rechercher dans l’historique mensuel"></div><select id="history-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="history-type-filter" aria-label="Filtrer par type"><option value="all">Entrées et sorties</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="history-sort" aria-label="Trier l’historique"><option value="date-asc">Date croissante</option><option value="date-desc">Date décroissante</option><option value="label">Libellé A → Z</option><option value="account">Compte</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
+        <div class="history-summary-grid"><article class="history-summary-card"><span>Entrées</span><strong id="history-incoming">0,00 €</strong></article><article class="history-summary-card"><span>Sorties</span><strong id="history-outgoing">0,00 €</strong></article><article class="history-summary-card"><span>Solde net du mois</span><strong id="history-net">0,00 €</strong></article></div>
+        <section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Date</th><th>Opération</th><th>Compte</th><th>Montant</th><th>Pointage</th></tr></thead><tbody id="history-rows"></tbody></table></div><div class="table-footer" id="history-footer">Choisissez un mois pour consulter son historique.</div></section>
       </section>
 
       <section class="view" id="recurring-view">
         <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Ajoutez, modifiez, suspendez ou supprimez vos opérations programmées. Les opérations déjà générées restent dans l’historique.</p></div><div class="heading-actions"><button class="secondary-button" id="recurring-add-template">Ajouter une récurrence</button><button class="primary-button" id="recurring-add-month">Générer les opérations du mois prochain</button></div></div>
         <div class="recurring-controls panel"><input id="recurring-month" type="hidden"><span id="recurring-summary">Les opérations seront ajoutées automatiquement pour le mois prochain. Les doublons seront ignorés.</span></div>
+        <div class="toolbar table-filters"><div class="search-box"><span>⌕</span><input id="recurring-search" placeholder="Rechercher une récurrence…" aria-label="Rechercher une récurrence"></div><select id="recurring-account-filter" aria-label="Filtrer les récurrences par compte"><option value="all">Tous les comptes</option></select><select id="recurring-status-filter" aria-label="Filtrer les récurrences par statut"><option value="all">Actives et suspendues</option><option value="enabled">Actives</option><option value="disabled">Suspendues</option></select><select id="recurring-sort" aria-label="Trier les récurrences"><option value="label">Libellé A → Z</option><option value="account">Compte</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option><option value="enabled">Actives d’abord</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table class="recurring-table"><thead><tr><th>ACTIF</th><th>COMPTE</th><th>DATE / FRÉQUENCE</th><th>LIBELLÉ</th><th>MONTANT (€)</th><th>ACTIONS</th></tr></thead><tbody id="recurring-rows"></tbody></table></div><div class="table-footer">Un montant vide signifie que l’opération sera ignorée jusqu’à ce que vous renseigniez son montant. Les dates annuelles et trimestrielles sont gérées automatiquement.</div></section>
       </section>
 
