@@ -171,7 +171,7 @@ function renderTransactions(){
   const sorted=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);
   const list=sorted.filter(t=>{
     const a=accountById(t.accountId);
-    return (accountFilter==='all'||t.accountId===accountFilter)&&(typeFilter==='all'||(typeFilter==='income'?t.amount>=0:t.amount<0))&&((t.label+' '+(a?.name||'')).toLocaleLowerCase('fr').includes(query));
+    return t.accountId===accountFilter&&(typeFilter==='all'||(typeFilter==='income'?t.amount>=0:t.amount<0))&&((t.label+' '+(a?.name||'')).toLocaleLowerCase('fr').includes(query));
   });
   $('transaction-head').innerHTML='<tr><th>DATE</th><th>TRANSACTION</th><th>COMPTE</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(accountFilter==='tiime'?'<th>MONTANT APRÈS PROVISIONS</th><th>SOLDE NET ESTIMÉ</th>':'')+'<th>ACTIONS</th></tr>';
   $('transaction-rows').innerHTML=list.length?list.map(t=>{
