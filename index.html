@@ -12,7 +12,15 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="app-shell">
+  <section id="auth-gate" class="auth-gate" aria-live="polite">
+    <div class="auth-gate-card">
+      <span class="brand-mark">G<span>+</span></span>
+      <h1>Votre espace de comptes est privé</h1>
+      <p>Connectez-vous pour charger vos comptes, opérations et récurrences depuis votre espace personnel sécurisé.</p>
+      <p class="auth-gate-note">Aucune donnée de compte n’est affichée avant la connexion.</p>
+    </div>
+  </section>
+  <div class="app-shell" id="app-shell" hidden>
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="Accueil Gestion de comptes">
         <span class="brand-mark">G<span>+</span></span>
@@ -104,6 +112,7 @@
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="account-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
+
   <dialog id="cloud-dialog" class="modal cloud-dialog">
     <form id="cloud-form">
       <div class="modal-heading"><div><p class="eyebrow">SAUVEGARDE EN LIGNE</p><h2>Connexion à votre espace</h2></div><button type="button" class="close-button" data-close="cloud-dialog" aria-label="Fermer">×</button></div>
