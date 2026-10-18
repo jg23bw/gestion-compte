@@ -4,3 +4,14 @@
 @media(max-width:1200px){.main-content{padding:0 25px}.sidebar{width:220px}.main-content{margin-left:220px}.accounts-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.summary-grid{gap:10px}.summary-card{padding:16px}.metric{font-size:22px}.content-grid{gap:12px}}
 @media(max-width:900px){.sidebar{width:68px;padding:22px 9px 14px}.brand{padding:0 5px 35px}.brand>span:last-child,.nav-label,.nav-item:not(.active),.nav-item.active{font-size:0}.brand-mark{flex:0 0 39px}.brand strong,.brand small,.nav-count,.sidebar-bottom{display:none}.nav-item{justify-content:center;padding:12px 0}.nav-icon{font-size:19px}.main-content{margin-left:68px;padding:0 22px}.content-grid{grid-template-columns:1fr}.summary-grid{grid-template-columns:1fr 1fr}.total-card{grid-column:span 2}.tip-panel{align-items:flex-start;flex-wrap:wrap}.tip-panel .text-button{margin-left:46px}}
 @media(max-width:580px){.main-content{padding:0 13px}.topbar{height:56px}.local-status{display:none}.view{padding-top:22px}.page-heading{align-items:flex-start;flex-direction:column;margin-bottom:20px}.page-heading h1{font-size:24px}.page-heading>.primary-button{align-self:stretch}.summary-grid{grid-template-columns:1fr;gap:10px}.total-card{grid-column:auto}.summary-card{min-height:130px}.content-grid{gap:12px}.panel-heading{padding:16px 14px 11px}.account-list,.recent-list{padding:0 14px 7px}.tip-panel{padding:14px}.tip-panel .text-button{margin-left:0}.app-footer{flex-direction:column}.accounts-grid{grid-template-columns:1fr}.toolbar{flex-wrap:wrap}.search-box{min-width:100%;flex:1}.toolbar-note{margin-left:0}.transaction-toolbar select{flex:1;max-width:none}.modal form{padding:20px}.form-row{gap:9px}.metric{font-size:25px}}
+
+/* Récurrences */
+.heading-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.recurring-controls{display:flex;align-items:center;gap:12px;padding:13px 16px;margin-bottom:16px}
+.recurring-controls label{font-size:11px;font-weight:700;color:#667187}
+.recurring-controls input{height:36px;border:1px solid #e2e7ef;border-radius:7px;padding:0 9px;font:11px 'DM Sans',sans-serif;color:#303b50;background:white}
+.recurring-controls span{font-size:10px;color:#8c96aa;margin-left:auto}
+.recurring-table input[type="text"],.recurring-table input[type="number"]{height:34px;border:1px solid #e4e9f1;border-radius:6px;padding:0 8px;font:11px 'DM Sans',sans-serif;color:#364157;min-width:130px;width:100%;background:#fff}
+.recurring-table input[type="number"]{min-width:105px;width:125px}
+.recurring-table input[type="checkbox"]{width:15px;height:15px;accent-color:#4779ed}
+@media(max-width:580px){.heading-actions{width:100%;justify-content:flex-start}.heading-actions button{flex:1;white-space:normal}.recurring-controls{align-items:flex-start;flex-direction:column}.recurring-controls span{margin-left:0}}
