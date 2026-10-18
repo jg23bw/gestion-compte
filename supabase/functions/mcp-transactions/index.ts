@@ -15,10 +15,18 @@ const rpcError = (id: unknown, code: number, message: string) => ({
   jsonrpc: "2.0", id: id ?? null, error: { code, message },
 });
 
-function isAuthorized(req: Request) {
-  const expected = Deno.env.get("MCP_ACCESS_TOKEN") ?? "";
+async function authenticate(req: Request) {
   const supplied = req.headers.get("authorization") ?? "";
-  return expected.length >= 32 && supplied === `Bearer ${expected}`;
+  if (!supplied.startsWith("Bearer gdc_")) return null;
+  const token = supplied.slice("Bearer ".length);
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const hash = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, "0")).join("");
+  const rows = await supabaseRequest(`mcp_tokens?token_hash=eq.${hash}&revoked_at=is.null&select=id,user_id,default_account_id&limit=1`);
+  if (!rows?.length) return null;
+  await supabaseRequest(`mcp_tokens?id=eq.${rows[0].id}`, {
+    method: "PATCH", body: JSON.stringify({ last_used_at: new Date().toISOString() }),
+  });
+  return rows[0] as { id: string; user_id: string; default_account_id: string | null };
 }
 function textResult(value: unknown) {
   return { content: [{ type: "text", text: JSON.stringify(value) }], structuredContent: value };
@@ -48,28 +56,21 @@ async function supabaseRequest(path: string, init: RequestInit = {}) {
   if (!res.ok) throw new Error("Supabase a refusé l'opération (" + res.status + "): " + body.slice(0, 400));
   return body ? JSON.parse(body) : null;
 }
-function userId() {
-  const id = Deno.env.get("MCP_USER_ID") ?? "";
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
-    throw new Error("Le secret MCP_USER_ID doit contenir l'UUID de l'utilisateur Supabase autorisé.");
-  }
-  return id;
-}
-async function listAccounts() {
-  const uid = userId();
+async function listAccounts(credential: { user_id: string }) {
+  const uid = credential.user_id;
   return await supabaseRequest(`accounts?user_id=eq.${uid}&select=id,name,kind&order=name.asc`);
 }
-async function addTransaction(args: Json) {
-  const uid = userId();
+async function addTransaction(args: Json, credential: { user_id: string; default_account_id: string | null }) {
+  const uid = credential.user_id;
   const label = String(args.label ?? "").trim();
   const amount = Number(args.amount);
   const date = String(args.date ?? new Date().toISOString().slice(0, 10));
-  let accountId = String(args.account_id ?? Deno.env.get("MCP_DEFAULT_ACCOUNT_ID") ?? "").trim();
+  let accountId = String(args.account_id ?? credential.default_account_id ?? "").trim();
   if (!label || label.length > 120) throw new Error("Le libellé doit contenir entre 1 et 120 caractères.");
   if (!Number.isFinite(amount) || amount === 0 || Math.abs(amount) > 100000000) throw new Error("Montant invalide. Utilisez un montant non nul en euros, négatif pour une dépense et positif pour une entrée.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date + "T12:00:00Z"))) throw new Error("Date invalide : utilisez AAAA-MM-JJ.");
   if (!accountId) {
-    const accounts = await listAccounts();
+    const accounts = await listAccounts(credential);
     if (accounts.length === 1) accountId = accounts[0].id;
     else throw new Error("Compte non précisé. Appelez list_accounts puis choisissez un compte, ou configurez MCP_DEFAULT_ACCOUNT_ID.");
   }
@@ -89,15 +90,16 @@ async function addTransaction(args: Json) {
   });
   return { transaction: rows[0], account: accounts[0], message: "Transaction ajoutée." };
 }
-async function recentTransactions(args: Json) {
-  const uid = userId();
+async function recentTransactions(args: Json, credential: { user_id: string }) {
+  const uid = credential.user_id;
   const limit = Math.max(1, Math.min(20, Number(args.limit ?? 10) || 10));
   return await supabaseRequest(`transactions?user_id=eq.${uid}&select=id,transaction_date,label,amount,account_id,is_paid&order=created_at.desc&limit=${limit}`);
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (!isAuthorized(req)) return json({ error: "Unauthorized" }, 401);
+  const credential = await authenticate(req).catch(() => null);
+  if (!credential) return json({ error: "Jeton MCP invalide ou révoqué." }, 401);
   if (req.method !== "POST") return json({ error: "MCP endpoint expects POST." }, 405);
 
   let body: any;
@@ -134,9 +136,9 @@ Deno.serve(async (req: Request) => {
       const name = String(body?.params?.name ?? "");
       const args = (body?.params?.arguments ?? {}) as Json;
       let result: unknown;
-      if (name === "list_accounts") result = await listAccounts();
-      else if (name === "add_transaction") result = await addTransaction(args);
-      else if (name === "list_recent_transactions") result = await recentTransactions(args);
+      if (name === "list_accounts") result = await listAccounts(credential);
+      else if (name === "add_transaction") result = await addTransaction(args, credential);
+      else if (name === "list_recent_transactions") result = await recentTransactions(args, credential);
       else return json(rpcError(id, -32602, "Unknown tool: " + name));
       return json(response(id, textResult(result)));
     }
