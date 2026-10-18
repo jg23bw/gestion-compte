@@ -88,10 +88,16 @@ Deno.serve(async req => {
     } else {
       parsed = parseEntry(text);
     }
-    const accountId = String(body?.account_id ?? credential.default_account_id ?? "").trim();
-    if (!accountId) throw new Error("Choisis un compte dans le raccourci ou configure un compte par défaut.");
-    const accounts = await db(`accounts?user_id=eq.${uid}&id=eq.${encodeURIComponent(accountId)}&select=id,name`);
-    if (!accounts?.length) throw new Error("Compte introuvable parmi les comptes de l'utilisateur autorisé.");
+    const accountRef = String(body?.account_id ?? body?.account_name ?? credential.default_account_id ?? "").trim();
+    if (!accountRef) throw new Error("Choisis un compte dans le raccourci ou configure un compte par défaut.");
+    const accounts = await db(`accounts?user_id=eq.${uid}&select=id,name`);
+    const normalizedRef = accountRef.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("fr-FR");
+    const account = accounts.find((item: { id: string; name: string }) =>
+      item.id === accountRef ||
+      item.name.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("fr-FR") === normalizedRef
+    );
+    if (!account) throw new Error("Compte introuvable parmi vos comptes. Vérifiez le nom saisi.");
+    const accountId = account.id;
     const date = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : parisToday();
     if (action === "preview") {
       return json({
