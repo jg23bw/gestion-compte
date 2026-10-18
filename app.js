@@ -46,7 +46,14 @@ function uniqueTransactions(rows){
 function sameCloudValues(a,b,keys){return keys.every(key=>String(a[key]??'')===String(b[key]??''));}
 async function syncCloudState(){
   if(!cloud.user||cloud.isApplyingCloud)return;
-  if(cloud.isSyncing){cloud.syncAgain=true;await new Promise(resolve=>setTimeout(resolve,100));return syncCloudState();}
+  if(cloud.isSyncing){
+    cloud.syncAgain=true;
+    await new Promise(resolve=>{
+      const waitForSync=()=>cloud.isSyncing?setTimeout(waitForSync,50):resolve();
+      waitForSync();
+    });
+    return syncCloudState();
+  }
   cloud.isSyncing=true;
   try{
     const client=cloudClient(),uid=cloud.user.id;
@@ -82,7 +89,7 @@ async function syncCloudState(){
     return false;
   }finally{
     cloud.isSyncing=false;
-    if(cloud.syncAgain){cloud.syncAgain=false;setTimeout(()=>syncCloudState(),100);}
+    cloud.syncAgain=false;
   }
 }
 async function loadCloudState(user){
