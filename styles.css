@@ -47,3 +47,19 @@
 
 /* Connexions MCP par utilisateur */
 .mcp-settings{margin-top:20px;padding-top:4px}.mcp-settings h3{margin:14px 0 6px;font-size:15px}.mcp-settings hr{border:0;border-top:1px solid #e7ebf1;margin:20px 0}.mcp-settings textarea{width:100%;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}.mcp-token-list{display:grid;gap:8px;margin-top:12px}.mcp-token-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e6eaf0;border-radius:10px;background:#fafbfc}.mcp-token-row strong{font-size:13px}.mcp-token-row small{font-size:11px;color:#737e8f}.mcp-token-row button{flex-shrink:0}.mcp-settings [hidden]{display:none!important}
+
+
+/* Gestion complète des modèles de récurrence */
+.recurring-actions{display:flex;gap:6px;align-items:center}
+.recurring-actions button{white-space:nowrap;padding:6px 9px;font-size:10px}
+.danger-button{color:#b42318!important;border-color:#f0c9c5!important}
+.danger-button:hover{background:#fff5f4!important;border-color:#e5a6a0!important}
+.recurring-empty{text-align:center;padding:28px;color:#8a94a7}
+.recurring-dialog{max-height:90vh;overflow-y:auto}
+.recurring-months-field{border:1px solid #e2e7ef;border-radius:8px;padding:12px;margin:0 0 16px}
+.recurring-months-field legend{font-size:11px;color:#667187;font-weight:700;padding:0 5px}
+.recurring-months-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.recurring-months-grid label{display:flex;flex-direction:row;align-items:center;gap:7px;margin:0;font-size:11px;font-weight:500}
+.recurring-months-grid input,.recurring-enabled-label input{width:15px;height:15px;accent-color:#4779ed}
+.recurring-enabled-label{display:flex!important;flex-direction:row!important;align-items:center;gap:9px!important}
+@media(max-width:580px){.recurring-actions{flex-direction:column;align-items:stretch}.recurring-actions button{width:100%}.recurring-months-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
