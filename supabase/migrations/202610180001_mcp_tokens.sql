@@ -7,9 +7,7 @@ create table if not exists public.mcp_tokens (
   default_account_id text,
   created_at timestamptz not null default now(),
   last_used_at timestamptz,
-  revoked_at timestamptz,
-  foreign key (user_id, default_account_id)
-    references public.accounts(user_id, id) on delete set null
+  revoked_at timestamptz
 );
 
 create index if not exists mcp_tokens_user_idx on public.mcp_tokens(user_id, created_at desc);
