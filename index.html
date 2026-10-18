@@ -20,6 +20,7 @@
       <button class="nav-item active" data-view="dashboard"><span class="nav-icon">▦</span> Vue d'ensemble</button>
       <button class="nav-item" data-view="accounts"><span class="nav-icon">▤</span> Mes comptes <span class="nav-count" id="account-count">9</span></button>
       <button class="nav-item" data-view="transactions"><span class="nav-icon">↕</span> Transactions</button>
+      <button class="nav-item" data-view="recurring"><span class="nav-icon">⟳</span> Récurrences</button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Vos données restent ici</strong><p>Les informations sont enregistrées dans ce navigateur, pas sur un serveur.</p></div>
         <div class="user-chip"><span class="avatar">J</span><span><strong>Mon espace</strong><small>Gestion personnelle</small></span><span class="more">···</span></div>
@@ -35,7 +36,7 @@
       <section class="view active" id="dashboard-view">
         <div class="page-heading">
           <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div>
-          <button class="primary-button" id="quick-add"><span>＋</span> Nouvelle transaction</button>
+          <div class="heading-actions"><button class="secondary-button" id="generate-current-month">Générer les opérations du mois</button><button class="primary-button" id="quick-add"><span>＋</span> Nouvelle transaction</button></div>
         </div>
         <div class="summary-grid">
           <article class="summary-card total-card"><div class="card-top"><span>Solde total</span><span class="card-icon navy">€</span></div><div class="metric" id="total-balance">0,00 €</div><div class="card-foot"><span class="muted">Sur l'ensemble des comptes</span><span class="trend-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
@@ -66,6 +67,12 @@
         <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Transactions</h1><p class="subtitle">Consultez et gérez les opérations de tous vos comptes.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
         <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="transaction-head"></thead><tbody id="transaction-rows"></tbody></table></div><div class="table-footer" id="transaction-footer"></div></section>
+      </section>
+
+      <section class="view" id="recurring-view">
+        <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Modifiez les montants et activez uniquement les opérations à générer. Les montants inconnus restent vides.</p></div><div class="heading-actions"><button class="secondary-button" id="generate-month-btn">Générer ce mois</button><button class="primary-button" id="recurring-add-month">Générer les opérations du mois</button></div></div>
+        <div class="recurring-controls panel"><label for="recurring-month">Mois à générer</label><input id="recurring-month" type="month"><span id="recurring-summary">Les opérations déjà générées ne seront pas ajoutées une deuxième fois.</span></div>
+        <section class="panel table-panel"><div class="table-scroll"><table class="recurring-table"><thead><tr><th>ACTIF</th><th>COMPTE</th><th>DATE / FRÉQUENCE</th><th>LIBELLÉ</th><th>MONTANT (€)</th></tr></thead><tbody id="recurring-rows"></tbody></table></div><div class="table-footer">Un montant vide signifie que l’opération sera ignorée jusqu’à ce que vous renseigniez son montant. Les dates annuelles et trimestrielles sont gérées automatiquement.</div></section>
       </section>
 
       <footer class="app-footer"><span>Gestion de comptes <span class="footer-dot">·</span> Version initiale</span><span>Fonctionne localement dans votre navigateur</span></footer>
