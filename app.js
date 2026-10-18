@@ -46,7 +46,7 @@ function uniqueTransactions(rows){
 function sameCloudValues(a,b,keys){return keys.every(key=>String(a[key]??'')===String(b[key]??''));}
 async function syncCloudState(){
   if(!cloud.user||cloud.isApplyingCloud)return;
-  if(cloud.isSyncing){cloud.syncAgain=true;return;}
+  if(cloud.isSyncing){cloud.syncAgain=true;await new Promise(resolve=>setTimeout(resolve,100));return syncCloudState();}
   cloud.isSyncing=true;
   try{
     const client=cloudClient(),uid=cloud.user.id;
