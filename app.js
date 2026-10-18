@@ -281,7 +281,6 @@ function downloadCsv(){
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('generate-current-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
-$('generate-month-btn').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
 $('recurring-month').value=nextMonthValue();
 $('recurring-rows').addEventListener('change',event=>{
