@@ -13,3 +13,6 @@ create table if not exists public.mcp_tokens (
 create index if not exists mcp_tokens_user_idx on public.mcp_tokens(user_id, created_at desc);
 alter table public.mcp_tokens enable row level security;
 revoke all on table public.mcp_tokens from anon, authenticated;
+
+-- Edge Functions use the server-only service_role key for token lookup and management.
+grant all on table public.mcp_tokens to service_role;
