@@ -97,7 +97,7 @@ const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getM
 let state = loadState();
 let toastTimer;
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set()};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
@@ -144,8 +144,11 @@ async function syncCloudState(){
     if(changedAccounts.length){const {error}=await client.from('accounts').upsert(changedAccounts,{onConflict:'user_id,id'});if(error)throw error;}
     if(changedTemplates.length){const {error}=await client.from('recurring_templates').upsert(changedTemplates,{onConflict:'user_id,id'});if(error)throw error;}
     if(changedTransactions.length){const {error}=await client.from('transactions').upsert(changedTransactions,{onConflict:'id'});if(error)throw error;}
-    const localIds=new Set(state.transactions.map(t=>t.id));
-    for(const row of (tr.data||[])){if(!localIds.has(row.id)){const {error}=await client.from('transactions').delete().eq('id',row.id);if(error)throw error;}}
+    for(const id of [...cloud.pendingDeletes]){
+      const {error}=await client.from('transactions').delete().eq('id',id);
+      if(error)throw error;
+      cloud.pendingDeletes.delete(id);
+    }
     cloudStatus('Synchronisé en ligne',true);
   }catch(error){
     console.error('Supabase sync failed',error);
@@ -495,7 +498,7 @@ document.addEventListener('click',event=>{
   const edit=event.target.closest('[data-edit-transaction]');
   if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
   const del=event.target.closest('[data-delete-transaction]');
-  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer la transaction « '+t.label+' » ?')){state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Transaction supprimée.');}return;}
+  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer la transaction « '+t.label+' » ?')){if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Transaction supprimée.');}return;}
   const editAccount=event.target.closest('[data-edit-account]');
   if(editAccount){event.stopPropagation();openAccountEditor(editAccount.dataset.editAccount);return;}
   const history=event.target.closest('[data-account-transactions]');
