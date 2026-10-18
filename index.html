@@ -31,7 +31,7 @@
       <div class="nav-label">ESPACE</div>
       <button class="nav-item active" data-view="dashboard"><span class="nav-icon">▦</span> Vue d'ensemble</button>
       <button class="nav-item" data-view="accounts"><span class="nav-icon">▤</span> Mes comptes <span class="nav-count" id="account-count">9</span></button>
-      <button class="nav-item" data-view="transactions"><span class="nav-icon">↕</span> Transactions</button>
+      <button class="nav-item" data-view="transactions"><span class="nav-icon">↕</span> Opérations</button>
       <button class="nav-item" data-view="recurring"><span class="nav-icon">⟳</span> Récurrences</button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Données synchronisées</strong><p>Connectez-vous pour sauvegarder vos comptes et opérations dans votre base privée en ligne.</p><button class="secondary-button cloud-open" id="cloud-open">Connexion cloud</button></div>
@@ -48,7 +48,7 @@
       <section class="view active" id="dashboard-view">
         <div class="page-heading">
           <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div>
-          <div class="heading-actions"><button class="secondary-button" id="generate-current-month">Générer les opérations du mois prochain</button><button class="primary-button" id="quick-add"><span>＋</span> Nouvelle transaction</button></div>
+          
         </div>
         <div class="summary-grid">
           <article class="summary-card total-card"><div class="card-top"><span>Solde total</span><span class="card-icon navy">€</span></div><div class="metric" id="total-balance">0,00 €</div><div class="card-foot"><span class="muted">Sur l'ensemble des comptes</span><span class="trend-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
@@ -70,13 +70,13 @@
       </section>
 
       <section class="view" id="accounts-view">
-        <div class="page-heading"><div><p class="eyebrow">VOTRE PATRIMOINE LIQUIDE</p><h1>Mes comptes</h1><p class="subtitle">Configurez les soldes de départ et accédez à l'historique de chaque compte.</p></div><button class="primary-button" id="accounts-add"><span>＋</span> Nouvelle transaction</button></div>
+        <div class="page-heading"><div><p class="eyebrow">VOTRE PATRIMOINE LIQUIDE</p><h1>Mes comptes</h1><p class="subtitle">Configurez les soldes de départ et accédez à l’historique de chaque compte.</p></div></div>
         <div class="toolbar"><div class="search-box"><span>⌕</span><input id="account-search" placeholder="Rechercher un compte…" aria-label="Rechercher un compte"></div><span class="toolbar-note" id="accounts-total-label">9 comptes</span></div>
         <div class="accounts-grid" id="all-accounts"></div>
       </section>
 
       <section class="view" id="transactions-view">
-        <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Transactions</h1><p class="subtitle">Consultez et gérez les opérations de tous vos comptes.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
+        <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Opérations</h1><p class="subtitle">Consultez et gérez les opérations de tous vos comptes.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
         <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="transaction-head"></thead><tbody id="transaction-rows"></tbody></table></div><div class="table-footer" id="transaction-footer"></div></section>
       </section>
@@ -111,11 +111,11 @@
   </dialog>
   <dialog id="transaction-dialog" class="modal">
     <form id="transaction-form">
-      <div class="modal-heading"><div><p class="eyebrow">HISTORIQUE DU COMPTE</p><h2 id="transaction-modal-title">Nouvelle transaction</h2></div><button type="button" class="close-button" data-close="transaction-dialog" aria-label="Fermer">×</button></div>
+      <div class="modal-heading"><div><p class="eyebrow">HISTORIQUE DU COMPTE</p><h2 id="transaction-modal-title">Nouvelle opération</h2></div><button type="button" class="close-button" data-close="transaction-dialog" aria-label="Fermer">×</button></div>
       <input type="hidden" id="transaction-id">
       <label>Compte<select id="transaction-account" required></select></label>
       <div class="form-row"><label>Date<input id="transaction-date" type="date" required></label><label>Montant (€)<input id="transaction-amount" type="number" step="0.01" required placeholder="0,00"></label></div>
-      <label>Libellé de la transaction<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
+      <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
       <p class="form-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="transaction-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
@@ -127,7 +127,7 @@
       <input type="hidden" id="edit-account-id">
       <label>Nom du compte<input id="edit-account-name" required maxlength="80"></label>
       <label>Solde de départ (€)<input id="edit-account-opening" type="number" step="0.01" required></label>
-      <p class="form-help">Le solde de départ correspond au montant présent avant la première transaction enregistrée.</p>
+      <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée.</p>
       <div id="tiime-settings" class="tiime-settings hidden"><h3>Provisions estimatives Tiime</h3><p>Pour une entrée positive, le montant est supposé TTC : la TVA est isolée, puis les cotisations sont estimées sur le montant HT. Ce calcul est indicatif, à ajuster selon votre situation.</p><div class="form-row"><label>TVA (%)<input id="edit-vat-rate" type="number" min="0" max="100" step="0.1"></label><label>Cotisations sur HT (%)<input id="edit-social-rate" type="number" min="0" max="100" step="0.1"></label></div><label>Solde net de départ estimé (€)<input id="edit-account-net-opening" type="number" step="0.01"></label></div>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="account-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
