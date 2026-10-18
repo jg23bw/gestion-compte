@@ -28,3 +28,12 @@
 .cloud-dialog #cloud-message{min-height:14px;overflow-wrap:anywhere}
 .cloud-dialog #cloud-logout[hidden]{display:none}
 @media(max-width:760px){.topbar-actions{gap:8px}.local-status{font-size:9px;white-space:normal;max-width:150px}}
+
+/* Authentification obligatoire : aucune donnée personnelle avant la connexion. */
+[hidden]{display:none!important}
+.auth-gate{min-height:100vh;display:grid;place-items:center;padding:24px;background:#f6f8fc}
+.auth-gate-card{width:min(460px,100%);padding:34px;background:#fff;border:1px solid #edf0f5;border-radius:18px;box-shadow:0 18px 60px #15213a0d;text-align:center}
+.auth-gate-card .brand-mark{margin:0 auto 22px}
+.auth-gate-card h1{font:800 25px Manrope,sans-serif;letter-spacing:-.7px;color:#182237;margin:0 0 12px}
+.auth-gate-card p{font-size:13px;line-height:1.7;color:#778298;margin:0}
+.auth-gate-card .auth-gate-note{margin-top:18px;padding:11px;border-radius:8px;background:#f1f5ff;color:#4869b2;font-size:11px}
