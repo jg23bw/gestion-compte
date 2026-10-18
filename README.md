@@ -51,8 +51,9 @@ Le schéma PostgreSQL de la base se trouve dans [supabase/schema.sql](./supabase
 
 1. Créez un projet sur [Supabase](https://supabase.com/) en choisissant le forfait Free.
 2. Dans le projet, ouvrez **SQL Editor**, collez le contenu de `supabase/schema.sql` et exécutez-le.
-3. Dans **Project Settings → API**, récupérez l'URL du projet et la clé publique (publishable/anon). **Ne jamais utiliser ni publier la clé `service_role`** dans l'application web.
-4. L'application doit ensuite être configurée avec l'URL et la clé publique pour activer l'authentification et la synchronisation. Ne renseignez aucune donnée financière tant que l'indicateur de connexion cloud n'est pas opérationnel.
-5. Conservez aussi des exports JSON périodiques : le forfait gratuit Supabase ne comprend pas de sauvegardes automatiques de la base.
+3. Dans **Authentication → URL Configuration**, configurez l'URL de votre site GitHub Pages comme URL de redirection. Vous pouvez laisser la confirmation par e-mail activée.
+4. Le fichier `supabase-config.js` contient l'URL du projet et la clé publique publishable. Cette clé est faite pour le navigateur ; la sécurité dépend de l'authentification et des politiques RLS. **Ne jamais utiliser ni publier une clé `sb_secret_` ou `service_role`.**
+5. Rechargez l'application : « Connexion cloud » permet de créer un compte ou de se connecter. La première connexion importe les données locales si la base est vide. Une copie de sécurité locale est conservée sous `gestion-comptes-cloud-migration-backup-v1` ; exportez aussi régulièrement un JSON depuis l'application.
+6. Vérifiez que le statut indique « Synchronisé en ligne » avant de saisir ou modifier des données financières. Si la connexion signale une erreur de table ou de permission, vérifiez que le SQL a été exécuté sans erreur dans le bon projet.
 
 **Important :** ajouter le schéma crée la structure de la base, mais ne crée pas à lui seul le projet Supabase et ne connecte pas encore l'interface à cette base. La migration des données déjà présentes dans le navigateur doit être réalisée explicitement, après connexion, sans écraser les données locales.
