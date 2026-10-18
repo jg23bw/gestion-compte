@@ -517,7 +517,20 @@ $('account-search').addEventListener('input',renderAccounts);
 $('transaction-search').addEventListener('input',renderTransactions);
 $('transaction-account-filter').addEventListener('change',renderTransactions);
 $('transaction-type-filter').addEventListener('change',renderTransactions);
-$('cloud-open').addEventListener('click',()=>{$('cloud-message').textContent=cloud.user?'Vous êtes connecté à votre espace privé.':'Connectez-vous ou créez votre compte pour activer la synchronisation.';$('cloud-logout').hidden=!cloud.user;$('cloud-dialog').showModal();});
+$('cloud-open').addEventListener('click',()=>{$('cloud-message').textContent=cloud.user?'Vous êtes connecté à votre espace privé.':'Connectez-vous ou créez votre compte pour activer la synchronisation.';$('cloud-logout').hidden=!cloud.user;showMcpSettings();$('cloud-dialog').showModal();});
+$('mcp-create-token').addEventListener('click',async()=>{
+  const button=$('mcp-create-token');button.disabled=true;$('mcp-token-message').textContent='Création du jeton…';$('mcp-token-once-label').hidden=true;$('mcp-copy-token').hidden=true;
+  try{
+    const result=await mcpTokenRequest({action:'create',name:$('mcp-token-name').value.trim()||'Mon assistant',default_account_id:$('mcp-default-account').value||null});
+    $('mcp-token-once').value=result.token;$('mcp-token-once-label').hidden=false;$('mcp-copy-token').hidden=false;$('mcp-token-message').textContent='Jeton créé. Copiez-le maintenant : il ne sera plus affiché après fermeture ou actualisation.';await loadMcpTokens();
+  }catch(error){$('mcp-token-message').textContent=error.message||'Création impossible.';}
+  finally{button.disabled=false;}
+});
+$('mcp-refresh-tokens').addEventListener('click',loadMcpTokens);
+$('mcp-copy-token').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText($('mcp-token-once').value);$('mcp-token-message').textContent='Jeton copié dans le presse-papiers. Conservez-le dans le gestionnaire de secrets de votre client MCP.';}
+  catch{$('mcp-token-once').focus();$('mcp-token-once').select();$('mcp-token-message').textContent='Copie automatique indisponible : sélectionnez le texte puis copiez-le manuellement.';}
+});
 $('cloud-form').addEventListener('submit',async event=>{
   event.preventDefault();cloudMessage('Connexion en cours…');
   try{
