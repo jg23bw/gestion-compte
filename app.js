@@ -81,7 +81,7 @@ async function syncCloudState(){
         const compatibleRows=changedTransactions.map(({recurring_key,is_paid,sort_order,...row})=>row);
         transactionResult=await client.from('transactions').upsert(compatibleRows,{onConflict:'id'});
         if(!transactionResult.error){
-          showToast('Transaction enregistrée, mais le pointage et l’ordre manuel ne seront pas conservés tant que la dernière migration SQL Supabase n’est pas appliquée.');
+          showToast('Opération enregistrée, mais le pointage et l’ordre manuel ne seront pas conservés tant que la dernière migration SQL Supabase n’est pas appliquée.');
         }
       }
       if(transactionResult.error)throw transactionResult.error;
@@ -297,7 +297,7 @@ function kindLabel(a){return a.kind==='pro'?'Professionnel':a.kind==='savings'?'
 function accountMarkup(a,compact=false){
   const balance=balanceAt(a.id);
   if(compact)return '<div class="account-row" data-account-open="'+a.id+'">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><div class="account-balance">'+euro(balance)+'<small>'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s)</small></div></div>';
-  const extra=a.kind==='pro'?'<div class="account-card-label">Net estimé après provisions : <strong>'+euro(tiimeNetBalance(a))+'</strong></div>':'<div class="account-card-label">'+state.transactions.filter(t=>t.accountId===a.id).length+' transaction(s) enregistrée(s)</div>';
+  const extra=a.kind==='pro'?'<div class="account-card-label">Net estimé après provisions : <strong>'+euro(tiimeNetBalance(a))+'</strong></div>':'<div class="account-card-label">'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s) enregistrée(s)</div>';
   return '<article class="account-card" data-account-open="'+a.id+'"><div class="account-card-top">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><button class="edit-account" data-edit-account="'+a.id+'" aria-label="Configurer '+escapeHtml(a.name)+'" title="Configurer le compte">···</button></div><div class="account-card-balance">'+euro(balance)+'</div>'+extra+'<div class="account-card-foot"><span>Solde actuel</span><button data-account-transactions="'+a.id+'">Historique →</button></div></article>';
 }
 function renderDashboard(){
@@ -337,7 +337,7 @@ function renderTransactions(){
     const calc=tiimeCalc(a,Number(t.amount));
     const net=tiimeNetBalance(a);
     const accountRows=accountTransactions(t.accountId);const accountPosition=accountRows.findIndex(item=>item.id===t.id);return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td class="order-actions"><button type="button" data-move-transaction="'+t.id+'" data-direction="-1" '+(accountPosition<=0?'disabled':'')+' aria-label="Monter cette opération" title="Monter">↑</button><button type="button" data-move-transaction="'+t.id+'" data-direction="1" '+(accountPosition===accountRows.length-1?'disabled':'')+' aria-label="Descendre cette opération" title="Descendre">↓</button></td><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td><div class="table-account">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td class="table-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(accountFilter==='tiime'?'<td>'+euro(calc.net)+'</td><td class="table-balance">'+euro(net)+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="'+(accountFilter==='tiime'?10:8)+'"><div class="empty-state">Aucune transaction trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>';
+  }).join(''):'<tr><td colspan="'+(accountFilter==='tiime'?10:8)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>';
   $('transaction-footer').textContent=list.length+' opération(s) affichée(s) · Solde à date calculé à partir du solde de départ et des mouvements enregistrés.';
 }
 
@@ -449,7 +449,7 @@ function navigate(view){
 }
 function openTransaction(accountId=null,transaction=null){
   $('transaction-form').reset();$('transaction-id').value=transaction?.id||'';
-  $('transaction-modal-title').textContent=transaction?'Modifier la transaction':'Nouvelle transaction';
+  $('transaction-modal-title').textContent=transaction?'Modifier l’opération':'Nouvelle opération';
   $('transaction-date').value=transaction?.date||today();$('transaction-amount').value=transaction?transaction.amount:'';
   $('transaction-label').value=transaction?.label||'';
   fillAccountSelects();$('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
@@ -543,7 +543,6 @@ function downloadCsv(){
 }
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
-$('generate-current-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
 $('recurring-add-template').addEventListener('click',()=>openRecurringEditor());
 $('recurring-edit-frequency').addEventListener('change',updateRecurringEditorFields);
@@ -581,7 +580,7 @@ $('recurring-form').addEventListener('submit',event=>{
   if(existing)state.recurringTemplates=state.recurringTemplates.map(t=>t.id===id?record:t);else state.recurringTemplates.push(record);
   $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.');
 });
-['quick-add','accounts-add','transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
+['transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
 $('account-search').addEventListener('input',renderAccounts);
 $('transaction-search').addEventListener('input',renderTransactions);
 $('transaction-account-filter').addEventListener('change',renderTransactions);
@@ -623,7 +622,7 @@ $('cloud-logout').addEventListener('click',async()=>{
   catch(error){cloudMessage(error.message||'Déconnexion impossible.');}
 });
 $('export-btn').addEventListener('click',()=>{
-  const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les transactions en CSV.');
+  const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
   choice?exportData():downloadCsv();
 });
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>$(button.dataset.close).close()));
@@ -634,7 +633,7 @@ $('transaction-form').addEventListener('submit',event=>{
   const previous=id?state.transactions.find(t=>t.id===id):null;
   const oldOrder=previous?.sortOrder;const record={...(previous||{}),id:id||crypto.randomUUID(),accountId,date,amount,label,isPaid:previous?.isPaid===true,sortOrder:previous&&previous.accountId===accountId&&Number.isFinite(Number(oldOrder))&&oldOrder!==null?Number(oldOrder):Math.max(0,...state.transactions.filter(t=>t.accountId===accountId&&t.id!==id).map(t=>Number(t.sortOrder)||0))+1,createdAt:previous?.createdAt||Date.now()};
   if(previous)state.transactions=state.transactions.map(t=>t.id===id?record:t);else state.transactions.push(record);
-  $('transaction-dialog').close();renderAll();showToast(previous?'Transaction modifiée.':'Transaction ajoutée.');
+  $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.');
 });
 $('account-form').addEventListener('submit',event=>{
   event.preventDefault();const a=accountById($('edit-account-id').value);if(!a)return;
@@ -657,7 +656,7 @@ document.addEventListener('click',event=>{
   const edit=event.target.closest('[data-edit-transaction]');
   if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
   const del=event.target.closest('[data-delete-transaction]');
-  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer la transaction « '+t.label+' » ?')){if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Transaction supprimée.');}return;}
+  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer l’opération « '+t.label+' » ?')){if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Opération supprimée.');}return;}
   const editRecurring=event.target.closest('[data-edit-recurring]');
   if(editRecurring){openRecurringEditor(editRecurring.dataset.editRecurring);return;}
   const deleteRecurring=event.target.closest('[data-delete-recurring]');
