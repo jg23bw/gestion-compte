@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.quick-add]
 verify_jwt = false
+
+[functions.mcp-tokens]
+verify_jwt = false
