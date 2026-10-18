@@ -43,3 +43,7 @@
 
 /* Contrôles de réorganisation manuelle des transactions */
 .order-actions{white-space:nowrap;min-width:62px}.order-actions button{width:27px;height:27px;margin-right:3px;border:1px solid #e1e6ee;border-radius:7px;background:#fff;color:#4b5563;cursor:pointer;font-weight:700}.order-actions button:disabled{opacity:.25;cursor:not-allowed}.transaction-paid .order-actions button{background:#f5f6f8;color:#8b93a0}
+
+
+/* Connexions MCP par utilisateur */
+.mcp-settings{margin-top:20px;padding-top:4px}.mcp-settings h3{margin:14px 0 6px;font-size:15px}.mcp-settings hr{border:0;border-top:1px solid #e7ebf1;margin:20px 0}.mcp-settings textarea{width:100%;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}.mcp-token-list{display:grid;gap:8px;margin-top:12px}.mcp-token-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid #e6eaf0;border-radius:10px;background:#fafbfc}.mcp-token-row strong{font-size:13px}.mcp-token-row small{font-size:11px;color:#737e8f}.mcp-token-row button{flex-shrink:0}.mcp-settings [hidden]{display:none!important}
