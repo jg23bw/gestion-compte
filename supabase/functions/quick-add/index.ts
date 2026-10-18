@@ -79,7 +79,7 @@ Deno.serve(async req => {
     if (!accountId) throw new Error("Configure MCP_DEFAULT_ACCOUNT_ID ou choisis un compte dans le raccourci.");
     const accounts = await db(`accounts?user_id=eq.${uid}&id=eq.${encodeURIComponent(accountId)}&select=id,name`);
     if (!accounts?.length) throw new Error("Compte par défaut introuvable. Vérifie MCP_DEFAULT_ACCOUNT_ID.");
-    const date = typeof body?.date === "string" && /^\d{4}-\\d{2}-\\d{2}$/.test(body.date) ? body.date : parisToday();
+    const date = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : parisToday();
     if (action === "preview") {
       return json({
         ok: true,
