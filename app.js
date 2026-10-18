@@ -233,7 +233,7 @@ function generateRecurringForMonth(month){
     if(state.transactions.some(x=>x.recurringKey===recurringKey))return;
     additions.push({id:crypto.randomUUID(),accountId:t.accountId,date,amount:Number(t.amount),label:t.label,createdAt:Date.now()+additions.length,recurringKey,recurringTemplateId:t.id});
   });
-  if(!additions.length){showToast('Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.');return;}
+  if(!additions.length){const message='Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants, les fréquences et les doublons.';if($('recurring-summary'))$('recurring-summary').textContent=message;showToast(message);return;}
   state.transactions.push(...additions);
   renderAll();
   const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'.';
