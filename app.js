@@ -18,10 +18,10 @@ const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
-let state = loadState();
+let state = {accounts:[],transactions:[],recurringTemplates:[]};
 let toastTimer;
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set()};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),authReady:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
@@ -74,19 +74,24 @@ async function syncCloudState(){
       cloud.pendingDeletes.delete(id);
     }
     cloudStatus('Synchronisé en ligne',true);
+    return true;
   }catch(error){
     console.error('Supabase sync failed',error);
     cloudStatus('Erreur de synchronisation',false);
     showToast('Sauvegarde en ligne impossible : '+(error.message||'vérifiez la configuration Supabase.'));
+    return false;
   }finally{
     cloud.isSyncing=false;
     if(cloud.syncAgain){cloud.syncAgain=false;setTimeout(()=>syncCloudState(),100);}
   }
 }
 async function loadCloudState(user){
+  if(!user||!cloud.user||cloud.user.id!==user.id)return;
   if(cloud.loadedUserId===user.id)return;
   cloud.loadedUserId=user.id;
   cloudStatus('Chargement des données…',true);
+  $('auth-gate').hidden=false;
+  $('app-shell').hidden=true;
   try{
     const client=cloudClient();
     const [ar,tr,rr]=await Promise.all([
@@ -95,73 +100,121 @@ async function loadCloudState(user){
       client.from('recurring_templates').select('*')
     ]);
     for(const result of [ar,tr,rr])if(result.error)throw result.error;
-    const local=JSON.parse(JSON.stringify(state));
-    localStorage.setItem('gestion-comptes-cloud-migration-backup-v1',JSON.stringify({savedAt:new Date().toISOString(),...local}));
+    if(!cloud.user||cloud.user.id!==user.id)return;
+
+    // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
+    let legacy=null;
+    try{
+      const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if(saved&&Array.isArray(saved.accounts)&&Array.isArray(saved.transactions))legacy=loadState();
+    }catch(error){console.warn('Anciennes données locales illisibles',error);}
     const remoteAccounts=(ar.data||[]).map(fromCloudAccount);
     const remoteTransactions=(tr.data||[]).map(fromCloudTransaction);
     const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
     const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length>0;
+    const hasLegacy=!!legacy&&(legacy.accounts.length+legacy.transactions.length+(legacy.recurringTemplates||[]).length>0);
+
     if(!remoteHasData){
-      const importLocal=window.confirm('Votre espace Supabase est vide.\n\nVoulez-vous importer les données actuellement présentes dans ce navigateur (comptes, opérations et récurrences) dans CE compte en ligne ?\n\nN’acceptez que si ces données vous appartiennent. Si ce navigateur a servi à un autre utilisateur, choisissez Annuler pour éviter de mélanger les données.');
-      cloud.isApplyingCloud=true;
-      if(!importLocal){
-        state={accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
-      }
-      renderAll();
-      cloud.isApplyingCloud=false;
-      await syncCloudState();
-      showToast(importLocal?'Données locales importées dans votre espace en ligne.':'Nouvel espace en ligne initialisé sans importer les données locales.');
+      const importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
+      state=importLocal?legacy:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
     }else{
-      // Une fois des données présentes dans le cloud, le cloud est la seule source de vérité.
-      // Ne jamais fusionner automatiquement le localStorage : il peut appartenir à un autre utilisateur.
-      cloud.isApplyingCloud=true;
+      // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
       state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates};
-      renderAll();
-      cloud.isApplyingCloud=false;
-      await syncCloudState();
-      showToast('Données chargées depuis votre espace en ligne.');
     }
+
+    cloud.isApplyingCloud=true;
+    renderAll();
+    cloud.isApplyingCloud=false;
+    const synced=await syncCloudState();
+    if(!synced)throw new Error('La synchronisation Supabase a échoué. Les anciennes données locales ont été conservées.');
+    if(!cloud.user||cloud.user.id!==user.id)return;
+
+    // Après confirmation de la sauvegarde cloud, supprimer le cache local historique.
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');
+    cloud.authReady=true;
+    $('auth-gate').hidden=true;
+    $('app-shell').hidden=false;
     cloudStatus('Synchronisé en ligne',true);
+    showToast(remoteHasData?'Données chargées depuis votre compte.':(hasLegacy&&importLocal?'Données importées dans votre compte.':'Votre espace en ligne est prêt.'));
   }catch(error){
     cloud.isApplyingCloud=false;
     cloud.loadedUserId=null;
+    cloud.authReady=false;
+    state={accounts:[],transactions:[],recurringTemplates:[]};
+    $('app-shell').hidden=true;
+    $('auth-gate').hidden=false;
     cloudStatus('Cloud indisponible',false);
-    cloudMessage('Impossible de lire la base : '+(error.message||'vérifiez que le schéma SQL a été exécuté dans Supabase.'));
+    cloudMessage('Impossible de charger/sauvegarder vos données : '+(error.message||'vérifiez le schéma SQL et les règles RLS dans Supabase.'));
     console.error('Supabase load failed',error);
   }
 }
 function saveState(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-  if(cloud.user&&!cloud.isApplyingCloud){
-    clearTimeout(cloud.syncTimer);
-    cloudStatus('Enregistrement en cours…',true);
-    cloud.syncTimer=setTimeout(()=>syncCloudState(),500);
+  // Pas de sauvegarde personnelle dans localStorage : Supabase est la source de vérité.
+  if(!cloud.user||cloud.isApplyingCloud||!cloud.authReady)return;
+  clearTimeout(cloud.syncTimer);
+  cloudStatus('Enregistrement en cours…',true);
+  cloud.syncTimer=setTimeout(()=>syncCloudState(),500);
+}
+
+function lockApp(message=''){
+  clearTimeout(cloud.syncTimer);
+  cloud.authReady=false;
+  cloud.isApplyingCloud=true;
+  state={accounts:[],transactions:[],recurringTemplates:[]};
+  cloud.isApplyingCloud=false;
+  $('app-shell').hidden=true;
+  $('auth-gate').hidden=false;
+  cloudStatus('Connexion requise',false);
+  if(message)cloudMessage(message);
+  const dialog=$('cloud-dialog');
+  if(dialog&&!dialog.open){
+    try{dialog.showModal();}catch(error){console.warn('Impossible d’ouvrir la fenêtre de connexion',error);}
   }
 }
+
 async function initCloud(){
   try{
     const client=cloudClient();
-    client.auth.onAuthStateChange((event,session)=>{
-      cloud.session=session;cloud.user=session?.user||null;
-      if(cloud.user){
-        $('cloud-open').textContent='Compte connecté';
-        $('cloud-logout').hidden=false;
-        cloudStatus('Connecté — synchronisation…',true);
-        if(event!=='TOKEN_REFRESHED')setTimeout(()=>loadCloudState(cloud.user),0);
-      }else{
-        cloud.loadedUserId=null;
-        $('cloud-open').textContent='Connexion cloud';
-        $('cloud-logout').hidden=true;
-        cloudStatus('Mode local — non synchronisé',false);
-      }
-    });
     const {data,error}=await client.auth.getSession();
     if(error)throw error;
-    cloud.session=data.session;cloud.user=data.session?.user||null;
-    if(cloud.user){$('cloud-open').textContent='Compte connecté';$('cloud-logout').hidden=false;await loadCloudState(cloud.user);}
+    cloud.session=data.session;
+    cloud.user=data.session?.user||null;
+
+    client.auth.onAuthStateChange((event,session)=>{
+      const previousUserId=cloud.user?.id||null;
+      cloud.session=session;
+      cloud.user=session?.user||null;
+      if(!cloud.user){
+        cloud.loadedUserId=null;
+        if(event==='SIGNED_OUT'){
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');
+        }
+        lockApp(event==='SIGNED_OUT'?'Vous êtes déconnecté. Reconnectez-vous pour consulter vos données.':'Connectez-vous pour accéder à vos comptes.');
+        return;
+      }
+      $('cloud-open').textContent='Compte connecté';
+      $('cloud-logout').hidden=false;
+      if(previousUserId!==cloud.user.id||event==='SIGNED_IN'){
+        cloud.loadedUserId=null;
+        const currentUser=cloud.user;
+        setTimeout(()=>{if(cloud.user?.id===currentUser.id)loadCloudState(currentUser);},0);
+      }
+    });
+
+    if(cloud.user){
+      $('cloud-open').textContent='Compte connecté';
+      $('cloud-logout').hidden=false;
+      await loadCloudState(cloud.user);
+    }else{
+      lockApp('Connectez-vous pour accéder à vos comptes, opérations et récurrences.');
+    }
   }catch(error){
+    cloud.user=null;
+    cloud.session=null;
+    lockApp('Connexion à Supabase impossible : '+(error.message||'vérifiez supabase-config.js et votre connexion internet.'));
     cloudStatus('Cloud non configuré',false);
-    cloudMessage(error.message||'Impossible d’initialiser Supabase.');
     console.error('Supabase init failed',error);
   }
 }
@@ -387,7 +440,7 @@ $('cloud-signup').addEventListener('click',async()=>{
   }catch(error){cloudMessage(error.message||'Création du compte impossible.');}
 });
 $('cloud-logout').addEventListener('click',async()=>{
-  try{const {error}=await cloudClient().auth.signOut();if(error)throw error;$('cloud-dialog').close();cloudMessage('Déconnexion effectuée. Les données locales restent disponibles.');}
+  try{const {error}=await cloudClient().auth.signOut();if(error)throw error;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');if($('cloud-dialog').open)$('cloud-dialog').close();lockApp('Déconnexion effectuée. Reconnectez-vous pour accéder à vos données.');}
   catch(error){cloudMessage(error.message||'Déconnexion impossible.');}
 });
 $('export-btn').addEventListener('click',()=>{
@@ -422,5 +475,4 @@ document.addEventListener('click',event=>{
   const account=event.target.closest('[data-account-open]');
   if(account){openAccountEditor(account.dataset.accountOpen);}
 });
-renderAll();
 initCloud();
