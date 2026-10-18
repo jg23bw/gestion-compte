@@ -21,7 +21,7 @@ const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getM
 let state = {accounts:[],transactions:[],recurringTemplates:[]};
 let toastTimer;
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),authReady:false};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),authReady:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
@@ -87,9 +87,14 @@ async function syncCloudState(){
       if(transactionResult.error)throw transactionResult.error;
     }
     for(const id of [...cloud.pendingDeletes]){
-      const {error}=await client.from('transactions').delete().eq('id',id);
+      const {error}=await client.from('transactions').delete().eq('id',id).eq('user_id',uid);
       if(error)throw error;
       cloud.pendingDeletes.delete(id);
+    }
+    for(const id of [...cloud.pendingTemplateDeletes]){
+      const {error}=await client.from('recurring_templates').delete().eq('id',id).eq('user_id',uid);
+      if(error)throw error;
+      cloud.pendingTemplateDeletes.delete(id);
     }
     cloudStatus('Synchronisé en ligne',true);
     return true;
@@ -354,13 +359,52 @@ function renderRecurring(){
   if(!$('recurring-rows'))return;
   if(!$('recurring-month').value)$('recurring-month').value=nextMonthValue();
   const templates=state.recurringTemplates||[];
-  $('recurring-rows').innerHTML=templates.map(t=>{
+  $('recurring-rows').innerHTML=templates.length?templates.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte inconnu'};
     const value=t.amount===null||t.amount===undefined?'':String(t.amount);
-    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+t.id+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td>'+escapeHtml(a.name)+'</td><td><div>'+escapeHtml(recurringFrequencyLabel(t))+'</div>'+(t.frequency==='once'?'':'<label class="recurring-day-label">Jour <input class="recurring-day" type="number" min="1" max="31" step="1" data-recurring-day="'+t.id+'" value="'+Number(t.day||1)+'" aria-label="Jour du mois"></label>')+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+t.id+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+t.id+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td></tr>';
-  }).join('');
+    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+escapeHtml(t.id)+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td>'+escapeHtml(a.name)+'</td><td><div>'+escapeHtml(recurringFrequencyLabel(t))+'</div>'+(t.frequency==='once'?'':'<label class="recurring-day-label">Jour <input class="recurring-day" type="number" min="1" max="31" step="1" data-recurring-day="'+escapeHtml(t.id)+'" value="'+Number(t.day||1)+'" aria-label="Jour du mois"></label>')+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+escapeHtml(t.id)+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+escapeHtml(t.id)+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td><td class="recurring-actions"><button type="button" class="secondary-button" data-edit-recurring="'+escapeHtml(t.id)+'">Modifier</button><button type="button" class="secondary-button danger-button" data-delete-recurring="'+escapeHtml(t.id)+'">Supprimer</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" class="recurring-empty">Aucune récurrence pour le moment. Cliquez sur « Ajouter une récurrence » pour commencer.</td></tr>';
   const blank=templates.filter(t=>t.enabled&&(t.amount===null||t.amount===undefined||t.amount==='')).length;
-  $('recurring-summary').textContent=templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront ignorées.';
+  $('recurring-summary').textContent=templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront conservées si un modèle est modifié ou supprimé.';
+}
+function updateRecurringEditorFields(){
+  const frequency=$('recurring-edit-frequency').value;
+  $('recurring-months-field').hidden=!(frequency==='quarterly'||frequency==='annual');
+  $('recurring-day-field').hidden=frequency==='once';
+  $('recurring-once-field').hidden=frequency!=='once';
+  $('recurring-range-fields').hidden=frequency!=='monthly';
+}
+function openRecurringEditor(id=null){
+  const template=id?(state.recurringTemplates||[]).find(t=>t.id===id):null;
+  if(id&&!template)return;
+  const accountSelect=$('recurring-edit-account');
+  accountSelect.replaceChildren();
+  state.accounts.forEach(account=>accountSelect.add(new Option(account.name,account.id)));
+  $('recurring-form').reset();
+  $('recurring-edit-id').value=template?.id||'';
+  $('recurring-edit-label').value=template?.label||'';
+  $('recurring-edit-amount').value=template?.amount===null||template?.amount===undefined?'':String(template.amount);
+  $('recurring-edit-account').value=template?.accountId||state.accounts[0]?.id||'';
+  $('recurring-edit-frequency').value=template?.frequency||'monthly';
+  $('recurring-edit-day').value=String(template?.day||1);
+  $('recurring-edit-start-month').value=template?.startMonth||'';
+  $('recurring-edit-end-month').value=template?.endMonth||'';
+  $('recurring-edit-once-date').value=template?.date||today();
+  $('recurring-edit-enabled').checked=template?template.enabled!==false:true;
+  const selectedMonths=template?.months?.length?template.months:(template?.frequency==='quarterly'?[1,4,7,10]:[Number((template?.date||today()).slice(5,7))||1]);
+  document.querySelectorAll('[name="recurring-month-option"]').forEach(input=>{input.checked=selectedMonths.includes(Number(input.value));});
+  $('recurring-modal-title').textContent=template?'Modifier une récurrence':'Nouvelle récurrence';
+  updateRecurringEditorFields();
+  $('recurring-dialog').showModal();
+}
+function deleteRecurringTemplate(id){
+  const template=(state.recurringTemplates||[]).find(t=>t.id===id);
+  if(!template)return;
+  if(!window.confirm('Supprimer la récurrence « '+template.label+' » ? Les opérations déjà générées resteront dans l’historique.'))return;
+  if(cloud.user)cloud.pendingTemplateDeletes.add(template.id);
+  state.recurringTemplates=state.recurringTemplates.filter(t=>t.id!==id);
+  renderAll();
+  showToast('Récurrence supprimée. Les opérations déjà créées sont conservées.');
 }
 function dueDateForTemplate(t,month){
   const [year,monthNumber]=month.split('-').map(Number);
@@ -501,6 +545,8 @@ document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('generate-current-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
+$('recurring-add-template').addEventListener('click',()=>openRecurringEditor());
+$('recurring-edit-frequency').addEventListener('change',updateRecurringEditorFields);
 $('recurring-month').value=nextMonthValue();
 $('recurring-rows').addEventListener('change',event=>{
   const enabled=event.target.closest('[data-recurring-enabled]');
@@ -511,6 +557,29 @@ $('recurring-rows').addEventListener('change',event=>{
   if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();}return;}
   const label=event.target.closest('[data-recurring-label]');
   if(label){const t=state.recurringTemplates.find(x=>x.id===label.dataset.recurringLabel);if(t){t.label=label.value.trim()||t.label;saveState();renderRecurring();}}
+});
+$('recurring-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  const id=$('recurring-edit-id').value;
+  const existing=id?(state.recurringTemplates||[]).find(t=>t.id===id):null;
+  const label=$('recurring-edit-label').value.trim();
+  const accountId=$('recurring-edit-account').value;
+  const frequency=$('recurring-edit-frequency').value;
+  const amountText=$('recurring-edit-amount').value.trim();
+  const amount=amountText===''?null:Number(amountText);
+  const day=Math.min(31,Math.max(1,Number($('recurring-edit-day').value)||1));
+  const date=$('recurring-edit-once-date').value;
+  const months=[...document.querySelectorAll('[name="recurring-month-option"]:checked')].map(input=>Number(input.value)).sort((a,b)=>a-b);
+  if(!label||!accountById(accountId)){showToast('Renseignez un libellé et un compte valide.');return;}
+  if(amountText!==''&&!Number.isFinite(amount)){showToast('Le montant doit être un nombre valide.');return;}
+  if((frequency==='quarterly'||frequency==='annual')&&!months.length){showToast('Sélectionnez au moins un mois.');return;}
+  if(frequency==='once'&&!date){showToast('Choisissez la date de l’opération ponctuelle.');return;}
+  const startMonth=frequency==='monthly'?($('recurring-edit-start-month').value||null):null;
+  const endMonth=frequency==='monthly'?($('recurring-edit-end-month').value||null):null;
+  if(startMonth&&endMonth&&endMonth<startMonth){showToast('Le mois de fin doit être postérieur ou égal au mois de début.');return;}
+  const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,label,amount,frequency,day:frequency==='once'?Number(date.slice(8,10)):day,months:frequency==='quarterly'||frequency==='annual'?months:[],startMonth,endMonth,date:frequency==='once'?date:undefined,enabled:$('recurring-edit-enabled').checked};
+  if(existing)state.recurringTemplates=state.recurringTemplates.map(t=>t.id===id?record:t);else state.recurringTemplates.push(record);
+  $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.');
 });
 ['quick-add','accounts-add','transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
 $('account-search').addEventListener('input',renderAccounts);
@@ -589,6 +658,10 @@ document.addEventListener('click',event=>{
   if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
   const del=event.target.closest('[data-delete-transaction]');
   if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer la transaction « '+t.label+' » ?')){if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Transaction supprimée.');}return;}
+  const editRecurring=event.target.closest('[data-edit-recurring]');
+  if(editRecurring){openRecurringEditor(editRecurring.dataset.editRecurring);return;}
+  const deleteRecurring=event.target.closest('[data-delete-recurring]');
+  if(deleteRecurring){deleteRecurringTemplate(deleteRecurring.dataset.deleteRecurring);return;}
   const editAccount=event.target.closest('[data-edit-account]');
   if(editAccount){event.stopPropagation();openAccountEditor(editAccount.dataset.editAccount);return;}
   const history=event.target.closest('[data-account-transactions]');
