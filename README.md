@@ -59,3 +59,8 @@ Le schéma PostgreSQL de la base se trouve dans [supabase/schema.sql](./supabase
 6. Vérifiez que le statut indique « Synchronisé en ligne » avant de saisir ou modifier des données financières. Si la connexion signale une erreur de table ou de permission, vérifiez que le SQL a été exécuté sans erreur dans le bon projet.
 
 **Important :** l'interface et la synchronisation sont intégrées au dépôt, mais le schéma SQL doit encore être exécuté dans votre projet Supabase. Tant que ce n'est pas fait, le statut cloud indiquera une erreur et les données resteront enregistrées localement. Avant la première connexion, un export JSON reste recommandé ; l'application conserve aussi une copie locale de sécurité.
+
+
+## Intégration MCP
+
+Le serveur MCP personnel et les instructions de déploiement sont décrits dans [docs/mcp-transactions.md](./docs/mcp-transactions.md). Il permet d'ajouter une dépense en langage naturel via un client MCP après configuration et déploiement de la fonction Supabase.
