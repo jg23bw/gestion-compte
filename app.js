@@ -22,6 +22,32 @@ const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T1
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = {accounts:[],transactions:[],recurringTemplates:[]};
 let toastTimer;
+let undoPoint=null;
+function cloneData(value){return JSON.parse(JSON.stringify(value));}
+function prepareUndo(){undoPoint={state:cloneData(state),pendingDeletes:[...cloud.pendingDeletes],pendingTemplateDeletes:[...cloud.pendingTemplateDeletes],generatedMonths:localStorage.getItem(GENERATED_MONTHS_KEY)};}
+function undoLastAction(){
+  if(!undoPoint)return;
+  const target=undoPoint;
+  const currentTransactions=state.transactions||[],currentTemplates=state.recurringTemplates||[];
+  const restoredTransactionIds=new Set((target.state.transactions||[]).map(t=>t.id));
+  const restoredTemplateIds=new Set((target.state.recurringTemplates||[]).map(t=>t.id));
+  if(cloud.user){
+    currentTransactions.forEach(t=>{if(!restoredTransactionIds.has(t.id))cloud.pendingDeletes.add(t.id);});
+    currentTemplates.forEach(t=>{if(!restoredTemplateIds.has(t.id))cloud.pendingTemplateDeletes.add(t.id);});
+  }
+  state=cloneData(target.state);
+  cloud.pendingDeletes=new Set(target.pendingDeletes);
+  cloud.pendingTemplateDeletes=new Set(target.pendingTemplateDeletes);
+  // Re-add deletions caused by the action being undone; missing cloud rows are restored by upsert.
+  if(cloud.user){
+    const currentTransactionIds=new Set(currentTransactions.map(t=>t.id));
+    (state.transactions||[]).forEach(t=>{if(!currentTransactionIds.has(t.id))cloud.pendingDeletes.delete(t.id);});
+    const currentTemplateIds=new Set(currentTemplates.map(t=>t.id));
+    (state.recurringTemplates||[]).forEach(t=>{if(!currentTemplateIds.has(t.id))cloud.pendingTemplateDeletes.delete(t.id);});
+  }
+  if(target.generatedMonths===null)localStorage.removeItem(GENERATED_MONTHS_KEY);else localStorage.setItem(GENERATED_MONTHS_KEY,target.generatedMonths);
+  undoPoint=null;renderAll();showToast('Action annulée.');
+}
 
 const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),authReady:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
@@ -265,7 +291,7 @@ function accountById(id){return state.accounts.find(a=>a.id===id);}
 function transactionOrder(a,b){const ao=Number.isFinite(Number(a.sortOrder))&&a.sortOrder!==null?Number(a.sortOrder):null,bo=Number.isFinite(Number(b.sortOrder))&&b.sortOrder!==null?Number(b.sortOrder):null;if(ao!==null&&bo!==null&&ao!==bo)return ao-bo;if(ao!==null&&bo===null)return -1;if(ao===null&&bo!==null)return 1;return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;}
 function accountTransactions(accountId){return state.transactions.filter(t=>t.accountId===accountId).sort(transactionOrder);}
 function normalizeTransactionOrder(){for(const account of state.accounts){const rows=state.transactions.filter(t=>t.accountId===account.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);rows.forEach((t,index)=>{if(!Number.isFinite(Number(t.sortOrder))||t.sortOrder===null)t.sortOrder=index+1;});}}
-function moveTransaction(id,direction){const current=state.transactions.find(t=>t.id===id);if(!current)return;const rows=accountTransactions(current.accountId);const index=rows.findIndex(t=>t.id===id),other=rows[index+direction];if(!other)return;const currentOrder=Number(current.sortOrder),otherOrder=Number(other.sortOrder);current.sortOrder=otherOrder;other.sortOrder=currentOrder;renderAll();showToast('Ordre des opérations mis à jour.');}
+function moveTransaction(id,direction){const current=state.transactions.find(t=>t.id===id);if(!current)return;const rows=accountTransactions(current.accountId);const index=rows.findIndex(t=>t.id===id),other=rows[index+direction];if(!other)return;prepareUndo();const currentOrder=Number(current.sortOrder),otherOrder=Number(other.sortOrder);current.sortOrder=otherOrder;other.sortOrder=currentOrder;renderAll();showToast('Ordre des opérations mis à jour.',true);}
 function balanceAt(accountId,untilDate=null){
   const a=accountById(accountId);if(!a)return 0;
   return Number(a.opening||0)+accountTransactions(accountId).filter(t=>!untilDate||t.date<=untilDate).reduce((sum,t)=>sum+Number(t.amount),0);
@@ -407,10 +433,11 @@ function deleteRecurringTemplate(id){
   const template=(state.recurringTemplates||[]).find(t=>t.id===id);
   if(!template)return;
   if(!window.confirm('Supprimer la récurrence « '+template.label+' » ? Les opérations déjà générées resteront dans l’historique.'))return;
+  prepareUndo();
   if(cloud.user)cloud.pendingTemplateDeletes.add(template.id);
   state.recurringTemplates=state.recurringTemplates.filter(t=>t.id!==id);
   renderAll();
-  showToast('Récurrence supprimée. Les opérations déjà créées sont conservées.');
+  showToast('Récurrence supprimée. Les opérations déjà créées sont conservées.',true);
 }
 function dueDateForTemplate(t,month){
   const [year,monthNumber]=month.split('-').map(Number);
@@ -464,6 +491,7 @@ function generateRecurringForMonth(month){
       :'Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.';
     if($('recurring-summary'))$('recurring-summary').textContent=message;showToast(message);renderRecurring();return;
   }
+  prepareUndo();
   state.transactions.push(...additions);
   const months=generatedMonths();if(!months.includes(month))months.push(month);
   try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}
@@ -471,11 +499,11 @@ function generateRecurringForMonth(month){
   renderAll();
   const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'. Cette génération est maintenant verrouillée.';
   if($('recurring-summary'))$('recurring-summary').textContent=message+' Les doublons ne pourront pas être générés une seconde fois.';
-  showToast(message);
+  showToast(message,true);
 }
 
 function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();saveState();}
-function showToast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
+function showToast(message,withUndo=false){const el=$('toast');el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.addEventListener('click',undoLastAction,{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},7000);}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
@@ -586,13 +614,13 @@ $('recurring-edit-frequency').addEventListener('change',updateRecurringEditorFie
 $('recurring-month').value=nextMonthValue();
 $('recurring-rows').addEventListener('change',event=>{
   const enabled=event.target.closest('[data-recurring-enabled]');
-  if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){t.enabled=enabled.checked;saveState();renderRecurring();}return;}
+  if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){prepareUndo();t.enabled=enabled.checked;saveState();renderRecurring();showToast('Récurrence mise à jour.',true);}return;}
   const amount=event.target.closest('[data-recurring-amount]');
-  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){t.amount=amount.value.trim()===''?null:Number(amount.value);saveState();renderRecurring();}return;}
+  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){prepareUndo();t.amount=amount.value.trim()===''?null:Number(amount.value);saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
   const day=event.target.closest('[data-recurring-day]');
-  if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();}return;}
+  if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){prepareUndo();t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();showToast('Jour de la récurrence mis à jour.',true);}return;}
   const label=event.target.closest('[data-recurring-label]');
-  if(label){const t=state.recurringTemplates.find(x=>x.id===label.dataset.recurringLabel);if(t){t.label=label.value.trim()||t.label;saveState();renderRecurring();}}
+  if(label){const t=state.recurringTemplates.find(x=>x.id===label.dataset.recurringLabel);if(t){prepareUndo();t.label=label.value.trim()||t.label;saveState();renderRecurring();showToast('Libellé de la récurrence mis à jour.',true);}}
 });
 $('recurring-form').addEventListener('submit',event=>{
   event.preventDefault();
@@ -614,8 +642,9 @@ $('recurring-form').addEventListener('submit',event=>{
   const endMonth=frequency==='monthly'?($('recurring-edit-end-month').value||null):null;
   if(startMonth&&endMonth&&endMonth<startMonth){showToast('Le mois de fin doit être postérieur ou égal au mois de début.');return;}
   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,label,amount,frequency,day:frequency==='once'?Number(date.slice(8,10)):day,months:frequency==='quarterly'||frequency==='annual'?months:[],startMonth,endMonth,date:frequency==='once'?date:undefined,enabled:$('recurring-edit-enabled').checked};
+  prepareUndo();
   if(existing)state.recurringTemplates=state.recurringTemplates.map(t=>t.id===id?record:t);else state.recurringTemplates.push(record);
-  $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.');
+  $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.',true);
 });
 ['transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
 $('account-search').addEventListener('input',renderAccounts);
@@ -670,22 +699,24 @@ $('transaction-form').addEventListener('submit',event=>{
   const previous=id?state.transactions.find(t=>t.id===id):null;
   const oldOrder=previous?.sortOrder;const record={...(previous||{}),id:id||crypto.randomUUID(),accountId,date,amount,label,isPaid:previous?.isPaid===true,sortOrder:previous&&previous.accountId===accountId&&Number.isFinite(Number(oldOrder))&&oldOrder!==null?Number(oldOrder):Math.max(0,...state.transactions.filter(t=>t.accountId===accountId&&t.id!==id).map(t=>Number(t.sortOrder)||0))+1,createdAt:previous?.createdAt||Date.now()};
   if(previous)state.transactions=state.transactions.map(t=>t.id===id?record:t);else state.transactions.push(record);
-  $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.');
+  $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.',true);
 });
 $('account-form').addEventListener('submit',event=>{
   event.preventDefault();const a=accountById($('edit-account-id').value);if(!a)return;
+  prepareUndo();
   a.name=$('edit-account-name').value.trim();a.opening=Number($('edit-account-opening').value)||0;
   if(a.kind==='pro'){a.vatRate=Math.min(100,Math.max(0,Number($('edit-vat-rate').value)||0));a.socialRate=Math.min(100,Math.max(0,Number($('edit-social-rate').value)||0));a.netOpening=Number($('edit-account-net-opening').value)||0;}
-  $('account-dialog').close();renderAll();showToast('Paramètres du compte enregistrés.');
+  $('account-dialog').close();renderAll();showToast('Paramètres du compte enregistrés.',true);
 });
 document.addEventListener('change',event=>{
   const paid=event.target.closest('[data-toggle-paid]');
   if(!paid)return;
   const transaction=state.transactions.find(t=>t.id===paid.dataset.togglePaid);
   if(!transaction)return;
+  prepareUndo();
   transaction.isPaid=paid.checked;
   renderAll();
-  showToast(transaction.isPaid?'Opération marquée comme débitée / pointée.':'Opération remise à pointer.');
+  showToast(transaction.isPaid?'Opération marquée comme débitée / pointée.':'Opération remise à pointer.',true);
 });
 document.addEventListener('click',event=>{
   const move=event.target.closest('[data-move-transaction]');
@@ -693,7 +724,7 @@ document.addEventListener('click',event=>{
   const edit=event.target.closest('[data-edit-transaction]');
   if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
   const del=event.target.closest('[data-delete-transaction]');
-  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer l’opération « '+t.label+' » ?')){if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Opération supprimée.');}return;}
+  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer l’opération « '+t.label+' » ?')){prepareUndo();if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Opération supprimée.',true);}return;}
   const editRecurring=event.target.closest('[data-edit-recurring]');
   if(editRecurring){openRecurringEditor(editRecurring.dataset.editRecurring);return;}
   const deleteRecurring=event.target.closest('[data-delete-recurring]');
