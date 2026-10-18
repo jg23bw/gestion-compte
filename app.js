@@ -74,7 +74,18 @@ async function syncCloudState(){
     const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','source','recurring_template_id','generated_month','recurring_key']));
     if(changedAccounts.length){const {error}=await client.from('accounts').upsert(changedAccounts,{onConflict:'user_id,id'});if(error)throw error;}
     if(changedTemplates.length){const {error}=await client.from('recurring_templates').upsert(changedTemplates,{onConflict:'user_id,id'});if(error)throw error;}
-    if(changedTransactions.length){const {error}=await client.from('transactions').upsert(changedTransactions,{onConflict:'id'});if(error)throw error;}
+    if(changedTransactions.length){
+      let transactionResult=await client.from('transactions').upsert(changedTransactions,{onConflict:'id'});
+      if(transactionResult.error&&/recurring.?key|schema cache|column.*not found/i.test(transactionResult.error.message||'')){
+        // Compatibility with databases where the latest recurring_key migration has not been applied yet.
+        const compatibleRows=changedTransactions.map(({recurring_key,...row})=>row);
+        transactionResult=await client.from('transactions').upsert(compatibleRows,{onConflict:'id'});
+        if(!transactionResult.error){
+          showToast('Transaction enregistrée. Pour réactiver la détection des doublons de récurrence, appliquez la dernière version de supabase/schema.sql dans Supabase.');
+        }
+      }
+      if(transactionResult.error)throw transactionResult.error;
+    }
     for(const id of [...cloud.pendingDeletes]){
       const {error}=await client.from('transactions').delete().eq('id',id);
       if(error)throw error;
