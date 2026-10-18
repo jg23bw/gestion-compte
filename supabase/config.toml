@@ -1,2 +1,5 @@
 [functions.mcp-transactions]
 verify_jwt = false
+
+[functions.quick-add]
+verify_jwt = false
