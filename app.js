@@ -224,7 +224,7 @@ function dueDateForTemplate(t,month){
   return year+'-'+String(monthNumber).padStart(2,'0')+'-'+String(day).padStart(2,'0');
 }
 function generateRecurringForMonth(month){
-  if(!/^\\d{4}-\\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
+  if(!/^\d{4}-\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
   const additions=[];
   (state.recurringTemplates||[]).forEach(t=>{
     if(!t.enabled||t.amount===null||t.amount===undefined||t.amount===''||!Number.isFinite(Number(t.amount)))return;
