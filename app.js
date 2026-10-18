@@ -392,7 +392,7 @@ function renderRecurring(){
   }).join(''):'<tr><td colspan="6" class="recurring-empty">Aucune récurrence pour le moment. Cliquez sur « Ajouter une récurrence » pour commencer.</td></tr>';
   const blank=templates.filter(t=>t.enabled&&(t.amount===null||t.amount===undefined||t.amount==='')).length;
   const month=nextMonthValue(),alreadyGenerated=monthAlreadyGenerated(month),button=$('recurring-add-month');
-  if(button){button.disabled=alreadyGenerated||generationInProgress.has(month);button.title=alreadyGenerated?'Les opérations de ce mois ont déjà été générées':'Générer une seule fois les opérations du mois prochain';}
+  if(button){button.disabled=generationInProgress.has(month);button.title=alreadyGenerated?'La génération est bloquée : les opérations de ce mois ont déjà été générées':'Générer les opérations du mois prochain';}
   $('recurring-summary').textContent=alreadyGenerated
     ?'Les opérations de '+monthName(month)+' ont déjà été générées. La génération est verrouillée pour éviter les doublons.'
     :templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront conservées si un modèle est modifié ou supprimé.';
@@ -465,7 +465,7 @@ function generateRecurringForMonth(month){
   if(!/^\d{4}-\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
   if(generationInProgress.has(month))return;
   if(monthAlreadyGenerated(month)){
-    const message='Les opérations de '+monthName(month)+' ont déjà été générées. Cette action ne peut être effectuée qu’une seule fois par mois.';
+    const message='Erreur : les opérations de '+monthName(month)+' ont déjà été générées. La génération est bloquée pour éviter les doublons.';
     if($('recurring-summary'))$('recurring-summary').textContent=message;
     showToast(message);renderRecurring();return;
   }
