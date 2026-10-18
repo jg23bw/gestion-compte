@@ -245,7 +245,7 @@ function loadState(){
   }catch(e){console.warn('Données locales illisibles',e);}
   return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:DEFAULT_RECURRING_TEMPLATES.map(t=>({...t}))};
 }
-function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+
 function accountById(id){return state.accounts.find(a=>a.id===id);}
 function accountTransactions(accountId){return state.transactions.filter(t=>t.accountId===accountId).sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt-b.createdAt);}
 function balanceAt(accountId,untilDate=null){
