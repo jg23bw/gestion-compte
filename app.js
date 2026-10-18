@@ -185,6 +185,12 @@ function renderTransactions(){
 }
 
 function monthValueNow(){return today().slice(0,7);}
+function nextMonthValue(){
+  const d=new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth()+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
 function monthName(month){return new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date(month+'-15T12:00:00'));}
 function recurringFrequencyLabel(t){
   if(t.frequency==='monthly')return 'Tous les mois · le '+t.day;
@@ -194,7 +200,7 @@ function recurringFrequencyLabel(t){
 }
 function renderRecurring(){
   if(!$('recurring-rows'))return;
-  if(!$('recurring-month').value)$('recurring-month').value=monthValueNow();
+  if(!$('recurring-month').value)$('recurring-month').value=nextMonthValue();
   const templates=state.recurringTemplates||[];
   $('recurring-rows').innerHTML=templates.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte inconnu'};
@@ -228,9 +234,11 @@ function generateRecurringForMonth(month){
     additions.push({id:crypto.randomUUID(),accountId:t.accountId,date,amount:Number(t.amount),label:t.label,createdAt:Date.now()+additions.length,recurringKey,recurringTemplateId:t.id});
   });
   if(!additions.length){showToast('Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.');return;}
-  const details=additions.length+' opération(s) seront ajoutées pour '+monthName(month)+'. Les montants vides et les doublons sont ignorés. Continuer ?';
-  if(!window.confirm(details))return;
-  state.transactions.push(...additions);renderAll();showToast(additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'.');
+  state.transactions.push(...additions);
+  renderAll();
+  const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'.';
+  if($('recurring-summary'))$('recurring-summary').textContent=message+' Les montants vides et les doublons ont été ignorés.';
+  showToast(message);
 }
 
 function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();saveState();}
@@ -272,10 +280,10 @@ function downloadCsv(){
 }
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
-$('generate-current-month').addEventListener('click',()=>generateRecurringForMonth(monthValueNow()));
-$('generate-month-btn').addEventListener('click',()=>generateRecurringForMonth($('recurring-month').value||monthValueNow()));
-$('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth($('recurring-month').value||monthValueNow()));
-$('recurring-month').value=monthValueNow();
+$('generate-current-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
+$('generate-month-btn').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
+$('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
+$('recurring-month').value=nextMonthValue();
 $('recurring-rows').addEventListener('change',event=>{
   const enabled=event.target.closest('[data-recurring-enabled]');
   if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){t.enabled=enabled.checked;saveState();renderRecurring();}return;}
