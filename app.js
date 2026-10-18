@@ -4,7 +4,7 @@ const DEFAULT_ACCOUNTS = [
   {id:'fortuneo',name:'Fortuneo',short:'F',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'fortuneo-plus',name:'Fortuneo livret Plus',short:'F+',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'cic-montpont',name:'CIC Montpont-Ménestrol',short:'CIC',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'cic-montevrayn',name:'CIC Montévrayn',short:'CIC',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'cic-montevrayn',name:'CIC Montévrain',short:'CIC',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'bourso',name:'Boursobank',short:'B',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'bourso-plus',name:'Livret Boursobank Boursoplus',short:'B+',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'bourso-first',name:'Livret Boursobank BoursoFirst',short:'BF',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
@@ -93,14 +93,14 @@ const DEFAULT_RECURRING_TEMPLATES = [
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
-const today = () => new Date().toLocaleDateString('en-CA');
+const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = loadState();
 let toastTimer;
 function loadState(){
   try{
     const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
     if(saved && Array.isArray(saved.accounts) && Array.isArray(saved.transactions)){
-      const accounts=saved.accounts.map(a=>({...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}) ,...a}));
+      const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';return merged;});
       const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):DEFAULT_RECURRING_TEMPLATES.map(t=>({...t}));
       DEFAULT_RECURRING_TEMPLATES.forEach(t=>{if(!recurringTemplates.some(x=>x.id===t.id))recurringTemplates.push({...t});});
       DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
@@ -199,7 +199,7 @@ function renderRecurring(){
   $('recurring-rows').innerHTML=templates.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte inconnu'};
     const value=t.amount===null||t.amount===undefined?'':String(t.amount);
-    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+t.id+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td>'+escapeHtml(a.name)+'</td><td>'+escapeHtml(recurringFrequencyLabel(t))+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+t.id+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+t.id+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td></tr>';
+    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+t.id+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td>'+escapeHtml(a.name)+'</td><td><div>'+escapeHtml(recurringFrequencyLabel(t))+'</div>'+(t.frequency==='once'?'':'<label class="recurring-day-label">Jour <input class="recurring-day" type="number" min="1" max="31" step="1" data-recurring-day="'+t.id+'" value="'+Number(t.day||1)+'" aria-label="Jour du mois"></label>')+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+t.id+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+t.id+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td></tr>';
   }).join('');
   const blank=templates.filter(t=>t.enabled&&(t.amount===null||t.amount===undefined||t.amount==='')).length;
   $('recurring-summary').textContent=templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront ignorées.';
@@ -281,6 +281,8 @@ $('recurring-rows').addEventListener('change',event=>{
   if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){t.enabled=enabled.checked;saveState();renderRecurring();}return;}
   const amount=event.target.closest('[data-recurring-amount]');
   if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){t.amount=amount.value.trim()===''?null:Number(amount.value);saveState();renderRecurring();}return;}
+  const day=event.target.closest('[data-recurring-day]');
+  if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();}return;}
   const label=event.target.closest('[data-recurring-label]');
   if(label){const t=state.recurringTemplates.find(x=>x.id===label.dataset.recurringLabel);if(t){t.label=label.value.trim()||t.label;saveState();renderRecurring();}}
 });
