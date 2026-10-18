@@ -107,7 +107,7 @@ async function syncCloudState(){
         const compatibleRows=changedTransactions.map(({recurring_key,is_paid,sort_order,...row})=>row);
         transactionResult=await client.from('transactions').upsert(compatibleRows,{onConflict:'id'});
         if(!transactionResult.error){
-          showToast('Opération enregistrée, mais le pointage et l’ordre manuel ne seront pas conservés tant que la dernière migration SQL Supabase n’est pas appliquée.');
+          showToast('Migration Supabase requise : exécutez supabase/migrations/202610180002_transaction_pointage_order.sql dans SQL Editor. Le pointage et l’ordre manuel ne seront pas conservés avant cela.');
         }
       }
       if(transactionResult.error)throw transactionResult.error;
