@@ -464,7 +464,8 @@ $('cloud-form').addEventListener('submit',async event=>{
 $('cloud-signup').addEventListener('click',async()=>{
   cloudMessage('Création du compte…');
   try{
-    const {data,error}=await cloudClient().auth.signUp({email:$('cloud-email').value.trim(),password:$('cloud-password').value});
+    const redirectUrl=new URL(window.location.href);redirectUrl.hash='';redirectUrl.search='';
+    const {data,error}=await cloudClient().auth.signUp({email:$('cloud-email').value.trim(),password:$('cloud-password').value,options:{emailRedirectTo:redirectUrl.toString()}});
     if(error)throw error;
     if(data.session){cloudMessage('Compte créé. Chargement des données…');$('cloud-dialog').close();}
     else cloudMessage('Compte créé. Consultez votre e-mail pour confirmer l’adresse, puis connectez-vous.');
