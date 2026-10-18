@@ -28,7 +28,9 @@ Application web personnelle pour suivre les soldes et les opérations de neuf co
 Aucune installation ni compilation n'est nécessaire. Ouvrez simplement [index.html](./index.html) dans un navigateur, ou activez GitHub Pages dans les paramètres du dépôt pour héberger l'application.
 
 ## Stockage et confidentialité
-Les comptes et transactions sont enregistrés dans le `localStorage` du navigateur utilisé. Il n'y a actuellement ni serveur ni synchronisation entre appareils. Les données ne sont pas automatiquement partagées entre navigateurs ; exportez régulièrement un fichier JSON de sauvegarde.
+L'application peut synchroniser les comptes, leurs paramètres, les transactions et les modèles de récurrence avec Supabase après connexion. Les tables sont protégées par les règles RLS et chaque ligne est associée à l'identifiant de l'utilisateur. Le navigateur conserve aussi une copie locale ; lors d'une première connexion à un espace Supabase vide, l'application demande explicitement si ces données locales doivent être importées. Quand un espace cloud contient déjà des données, celles-ci sont la source de vérité et ne sont pas fusionnées automatiquement avec le stockage local.
+
+**Ne placez pas de données personnelles dans le code source.** Les modèles de récurrence personnalisés doivent être créés et conservés dans la base de données ou dans le stockage local de l'utilisateur, jamais codés en dur dans le dépôt.
 
 ## Calcul Tiime : hypothèses à vérifier
 Le compte professionnel affiche le solde bancaire réel et une estimation après provisions. Pour une entrée positive supposée TTC, l'application calcule le HT en divisant par `1 + taux de TVA`, isole la TVA et estime les cotisations sur le HT. Les sorties sont déduites intégralement de l'estimation nette. Le solde net de départ est configurable séparément.
@@ -39,7 +41,7 @@ Ces hypothèses sont volontairement simples et **ne remplacent pas un calcul com
 - Les montants inconnus sont laissés vides et doivent être renseignés dans « Récurrences » avant de pouvoir générer ces opérations.
 - Les mois des intérêts Lombard sont préconfigurés en janvier/avril/juillet/octobre et restent à confirmer. Pour les échéances annuelles où seul le mois était fourni, le jour est initialisé au 1er et peut être modifié dans l'écran « Récurrences ».
 - Pas de connexion automatique aux banques.
-- Pas d'authentification, de base de données distante ni de synchronisation multi-appareils.
+- La synchronisation Supabase nécessite une configuration et une connexion à un compte.
 - Les données locales peuvent être perdues si le stockage du navigateur est effacé ; utilisez l'export JSON.
 - L'application ne préremplit aucun solde bancaire : renseignez les soldes de départ dans « Mes comptes ».
 
