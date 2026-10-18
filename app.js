@@ -11,84 +11,8 @@ const DEFAULT_ACCOUNTS = [
   {id:'tiime',name:'Compte professionnel Tiime',short:'T',kind:'pro',opening:0,vatRate:20,socialRate:45,netOpening:0}
 ];
 
-const DEFAULT_RECURRING_TEMPLATES = [
-  // La Banque Postale
-  {id:'lbp-fortuneo',accountId:'lbp',day:1,frequency:'monthly',label:'De Fortuneo',amount:550},
-  {id:'lbp-mncap',accountId:'lbp',day:10,frequency:'monthly',label:'MNCAP',amount:-15.99},
-  {id:'lbp-credit-carcassonne',accountId:'lbp',day:10,frequency:'monthly',label:'Crédit Carcassonne',amount:-503.71},
-  {id:'lbp-fees',accountId:'lbp',day:11,frequency:'quarterly',months:[1,4,7,10],label:'Frais de tenue de compte',amount:-5.70},
-  // Fortuneo
-  {id:'fortuneo-tiime',accountId:'fortuneo',day:1,frequency:'monthly',label:'De Tiime Facture X',amount:null},
-  {id:'fortuneo-livret',accountId:'fortuneo',day:1,frequency:'monthly',label:'IR Facture X (vers Livret +)',amount:null},
-  {id:'fortuneo-cic',accountId:'fortuneo',day:1,frequency:'monthly',label:'Vers CIC Montpont',amount:-2000},
-  {id:'fortuneo-lbp',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers LBP (Carcassonne)',amount:-550},
-  {id:'fortuneo-invest',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers Nasdaq / Robotics / Micron / cuivre / Schneider',amount:null},
-  {id:'fortuneo-gold',accountId:'fortuneo',day:5,frequency:'monthly',label:'Or',amount:null},
-  {id:'fortuneo-silver',accountId:'fortuneo',day:5,frequency:'monthly',label:'Silver',amount:null},
-  {id:'fortuneo-btc',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers BTC',amount:null},
-  {id:'fortuneo-alt',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers ALT',amount:null},
-  {id:'fortuneo-youtube',accountId:'fortuneo',day:5,frequency:'monthly',label:'YouTube Premium',amount:-6.24},
-  {id:'fortuneo-gmf',accountId:'fortuneo',day:1,frequency:'annual',months:[4],label:'GMF (Juridique)',amount:-98.15},
-  {id:'fortuneo-rent-carcassonne',accountId:'fortuneo',day:31,frequency:'quarterly',months:[3,6,9,12],label:'Loyers Carcassonne',amount:1449.99},
-  // CIC Montpont
-  {id:'montpont-fortuneo',accountId:'cic-montpont',day:1,frequency:'monthly',label:'De Fortuneo',amount:2000},
-  {id:'montpont-basicfit',accountId:'cic-montpont',day:3,frequency:'monthly',label:'Basic-Fit',amount:-22.99},
-  {id:'montpont-credit1',accountId:'cic-montpont',day:4,frequency:'monthly',label:'Crédit Clérac 1',amount:-1084.56},
-  {id:'montpont-credit2',accountId:'cic-montpont',day:5,frequency:'monthly',label:'Crédit Clérac 2',amount:-578.86},
-  {id:'montpont-b-and-you',accountId:'cic-montpont',day:6,frequency:'monthly',label:'B and You',amount:-9.99},
-  {id:'montpont-rent-pierre',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 1 - Pierre',amount:595},
-  {id:'montpont-rent-mael',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 2 - Maël',amount:470},
-  {id:'montpont-rent-patricia',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 3 - Patricia',amount:485},
-  {id:'montpont-rent-leo',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 4 - Léo',amount:550},
-  {id:'montpont-rent-patrick',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 5 - Patrick',amount:500},
-  {id:'montpont-rent-stephane',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 6 - Stéphane',amount:500},
-  {id:'montpont-imodirect',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Imodirect (frais de gestion 6 apparts)',amount:-203.22},
-  {id:'montpont-serris',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Loyer Serris',amount:-1208.54},
-  {id:'montpont-mgc',accountId:'cic-montpont',day:7,frequency:'monthly',label:'Mutuelle MGC',amount:-15.54},
-  {id:'montpont-fees',accountId:'cic-montpont',day:8,frequency:'monthly',label:'Frais de tenue de compte',amount:-13.35},
-  {id:'montpont-energy',accountId:'cic-montpont',day:7,frequency:'monthly',startMonth:'2025-09',endMonth:'2026-07',label:'Total Energies Serris (sept. 2025 à juil. 2026)',amount:-32},
-  {id:'montpont-water1',accountId:'cic-montpont',day:26,frequency:'annual',months:[6,12],label:'Abonnement Eau 239439 (en CB)',amount:-100},
-  {id:'montpont-water2',accountId:'cic-montpont',day:26,frequency:'annual',months:[6,12],label:'Abonnement Eau 032817',amount:-550},
-  {id:'montpont-water3',accountId:'cic-montpont',day:26,frequency:'annual',months:[6,12],label:'Abonnement Eau 032819',amount:-250},
-  {id:'montpont-sosh',accountId:'cic-montpont',day:25,frequency:'monthly',label:'Sosh internet',amount:-24.99},
-  {id:'montpont-tax-clerac',accountId:'cic-montpont',day:15,frequency:'annual',months:[10],label:'Taxe foncière Clérac',amount:-1685},
-  {id:'montpont-tax-carcassonne',accountId:'cic-montpont',day:15,frequency:'annual',months:[10],label:'Taxe foncière Carcassonne',amount:-428},
-  {id:'montpont-cfe-company',accountId:'cic-montpont',day:16,frequency:'annual',months:[12],label:'CFE Société',amount:-887},
-  {id:'montpont-cfe-carcassonne',accountId:'cic-montpont',day:16,frequency:'annual',months:[12],label:'CFE Carcassonne',amount:-169},
-  {id:'montpont-anderlaine-5',accountId:'cic-montpont',day:10,frequency:'annual',months:[12],label:'Anderlaine (5 biens)',amount:-898},
-  {id:'montpont-anderlaine-2',accountId:'cic-montpont',day:16,frequency:'annual',months:[12],label:'Anderlaine (2 biens, app. 5 et 6)',amount:-216},
-  {id:'montpont-luko-77700',accountId:'cic-montpont',day:1,frequency:'annual',months:[7],label:'Luko 77 700',amount:-138.01},
-  {id:'montpont-luko-app1',accountId:'cic-montpont',day:1,frequency:'annual',months:[12],label:'Luko 17 270 (app. 1)',amount:-82.27},
-  {id:'montpont-luko-app2',accountId:'cic-montpont',day:1,frequency:'annual',months:[8],label:'Luko 17 270 (app. 2)',amount:-66},
-  {id:'montpont-luko-app4',accountId:'cic-montpont',day:1,frequency:'annual',months:[9],label:'Luko 17 270 (app. 4)',amount:-59.41},
-  {id:'montpont-luko-app3',accountId:'cic-montpont',day:1,frequency:'annual',months:[12],label:'Luko 17 270 (app. 3)',amount:-62.21},
-  {id:'montpont-luko-app5',accountId:'cic-montpont',day:1,frequency:'annual',months:[9],label:'Luko 17 270 (app. 5)',amount:-53.69},
-  {id:'montpont-luko-app6',accountId:'cic-montpont',day:1,frequency:'annual',months:[9],label:'Luko 17 270 (app. 6)',amount:-64.12},
-  {id:'montpont-ir-nov',accountId:'cic-montpont',day:26,frequency:'once',date:'2026-11-26',label:'IR 2026 sur 2025 3-4',amount:-3709},
-  {id:'montpont-ir-dec',accountId:'cic-montpont',day:28,frequency:'once',date:'2026-12-28',label:'IR 2026 sur 2025 4-4',amount:-3710},
-  // CIC Montévrain
-  {id:'montevrain-tiime',accountId:'cic-montevrayn',day:1,frequency:'monthly',label:'De Tiime',amount:1020},
-  {id:'montevrain-mercedes',accountId:'cic-montevrayn',day:8,frequency:'monthly',label:'Crédit Mercedes',amount:-1017.07},
-  {id:'montevrain-fees',accountId:'cic-montevrayn',day:8,frequency:'monthly',label:'Frais de tenue de compte',amount:-2.25},
-  // BoursoBank and BoursoFirst
-  {id:'bourso-first-fee',accountId:'bourso',day:1,frequency:'monthly',label:'BoursoFirst',amount:-29},
-  {id:'bourso-to-first',accountId:'bourso',day:1,frequency:'monthly',label:'Vers BoursoFirst',amount:-10},
-  {id:'bourso-lombard',accountId:'bourso',day:1,frequency:'quarterly',months:[1,4,7,10],label:'Intérêts Lombard (trimestriels, mois à confirmer)',amount:-503.60},
-  {id:'first-from-bourso',accountId:'bourso-first',day:1,frequency:'monthly',label:'De BoursoBank',amount:10},
-  // Tiime — monthly invoice and provisions are editable templates
-  {id:'tiime-invoice',accountId:'tiime',day:1,frequency:'monthly',label:'Facture X',amount:10000},
-  {id:'tiime-vat',accountId:'tiime',day:1,frequency:'monthly',label:'TVA X',amount:-2200},
-  {id:'tiime-social',accountId:'tiime',day:1,frequency:'monthly',label:'Charges sociales X',amount:-2800},
-  {id:'tiime-fortuneo',accountId:'tiime',day:1,frequency:'monthly',label:'Vers Fortuneo',amount:-6000},
-  {id:'tiime-mercedes',accountId:'tiime',day:2,frequency:'monthly',label:'Crédit Mercedes',amount:-1020},
-  {id:'tiime-electra',accountId:'tiime',day:2,frequency:'monthly',label:'Electra+',amount:-40},
-  {id:'tiime-indigo',accountId:'tiime',day:3,frequency:'monthly',label:'Indigo',amount:-46.40},
-  {id:'tiime-expert',accountId:'tiime',day:3,frequency:'monthly',label:'Frais l-expert',amount:-94.80},
-  {id:'tiime-wemind',accountId:'tiime',day:7,frequency:'monthly',label:'Wemind',amount:-32},
-  {id:'tiime-mercedes-insurance',accountId:'tiime',day:9,frequency:'monthly',label:'Assurance Mercedes CIC',amount:-99.69},
-  {id:'tiime-margin',accountId:'tiime',day:30,frequency:'monthly',label:'Marge X (bilan + AEN…)',amount:-500},
-  {id:'tiime-fees',accountId:'tiime',day:13,frequency:'annual',months:[5],label:'Frais Tiime',amount:-259.06}
-].map(t=>({enabled:true,...t}));
+// Les modèles de récurrence sont des données personnelles : ils ne doivent pas être codés en dur dans le dépôt public.
+const DEFAULT_RECURRING_TEMPLATES = [];
 
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
@@ -178,28 +102,20 @@ async function loadCloudState(user){
     const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
     const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length>0;
     if(!remoteHasData){
+      const importLocal=window.confirm('Votre espace Supabase est vide.\n\nVoulez-vous importer les données actuellement présentes dans ce navigateur (comptes, opérations et récurrences) dans CE compte en ligne ?\n\nN’acceptez que si ces données vous appartiennent. Si ce navigateur a servi à un autre utilisateur, choisissez Annuler pour éviter de mélanger les données.');
       cloud.isApplyingCloud=true;
+      if(!importLocal){
+        state={accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
+      }
       renderAll();
       cloud.isApplyingCloud=false;
       await syncCloudState();
-      showToast('Première sauvegarde effectuée dans votre base en ligne.');
+      showToast(importLocal?'Données locales importées dans votre espace en ligne.':'Nouvel espace en ligne initialisé sans importer les données locales.');
     }else{
-      let transactions=remoteTransactions;
-      if(local.transactions.length && remoteTransactions.length===0){
-        transactions=uniqueTransactions([...remoteTransactions,...local.transactions]);
-      }else if(local.transactions.length && remoteTransactions.length>0){
-        const remoteIds=new Set(remoteTransactions.map(t=>t.id));
-        const localOnly=local.transactions.filter(t=>!remoteIds.has(t.id));
-        if(localOnly.length && window.confirm('Une copie locale contient '+localOnly.length+' opération(s) absente(s) du cloud. Voulez-vous les fusionner avec les données en ligne ? Cela peut réintroduire des opérations supprimées sur un autre appareil.\n\nOK : fusionner. Annuler : garder le cloud comme référence.')){
-          transactions=uniqueTransactions([...remoteTransactions,...localOnly]);
-        }
-      }
-      const accountMap=new Map(remoteAccounts.map(a=>[a.id,a]));
-      local.accounts.forEach(a=>{if(!accountMap.has(a.id))accountMap.set(a.id,a);});
-      const templateMap=new Map(remoteTemplates.map(t=>[t.id,t]));
-      local.recurringTemplates.forEach(t=>{if(!templateMap.has(t.id))templateMap.set(t.id,t);});
+      // Une fois des données présentes dans le cloud, le cloud est la seule source de vérité.
+      // Ne jamais fusionner automatiquement le localStorage : il peut appartenir à un autre utilisateur.
       cloud.isApplyingCloud=true;
-      state={accounts:[...accountMap.values()],transactions,recurringTemplates:[...templateMap.values()]};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates};
       renderAll();
       cloud.isApplyingCloud=false;
       await syncCloudState();
@@ -255,13 +171,12 @@ function loadState(){
     const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
     if(saved && Array.isArray(saved.accounts) && Array.isArray(saved.transactions)){
       const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';return merged;});
-      const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):DEFAULT_RECURRING_TEMPLATES.map(t=>({...t}));
-      DEFAULT_RECURRING_TEMPLATES.forEach(t=>{if(!recurringTemplates.some(x=>x.id===t.id))recurringTemplates.push({...t});});
+      const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):[];
       DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
       return {accounts,transactions:saved.transactions,recurringTemplates};
     }
   }catch(e){console.warn('Données locales illisibles',e);}
-  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:DEFAULT_RECURRING_TEMPLATES.map(t=>({...t}))};
+  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
 }
 
 function accountById(id){return state.accounts.find(a=>a.id===id);}
