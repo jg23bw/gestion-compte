@@ -71,7 +71,7 @@ Autres actions, toujours avec le JWT de session de l'utilisateur :
 - lister ses jetons : `{"action":"list"}`
 - révoquer un jeton : `{"action":"revoke","id":"<id-du-jeton>"}`
 
-Ces appels sont prévus pour être intégrés à l'interface de paramètres de Gestion de comptes. Tant que l'interface n'est pas ajoutée, il faut les appeler depuis un contexte authentifié de l'application; ne colle pas le JWT dans un chat ou dans un dépôt.
+L'interface est accessible depuis Gestion de comptes : ouvre **Connexion cloud** dans la barre latérale, puis la section **Connexions d’assistants IA (MCP)**. Tu peux créer un jeton, choisir le compte par défaut, le copier une seule fois, actualiser la liste ou le révoquer. Il n'est pas nécessaire de manipuler le JWT de session manuellement.
 
 ### 5. Connexion MCP
 
@@ -108,5 +108,5 @@ Pour un raccourci qui utilise un compte par défaut, crée un jeton avec `defaul
 - Les jetons personnels sont stockés sous forme d'empreinte et peuvent être révoqués.
 - Chaque requête vérifie le jeton et utilise le `user_id` associé en base, jamais une identité fournie par le client.
 - Les comptes demandés sont vérifiés pour appartenir à ce même utilisateur.
-- Il reste à ajouter l'écran de gestion des connexions dans l'application, tests multi-utilisateur et tests de sécurité.
+- L'écran de gestion des connexions est ajouté à l'application. Il reste à effectuer des tests réels sur Supabase, des tests multi-utilisateur et une revue de sécurité.
 - Pour une compatibilité universelle avec les clients MCP OAuth-only, il reste à implémenter le flux OAuth 2.1 complet (inscription client, autorisation, consentement, échange/renouvellement/révocation des jetons et métadonnées d'autorisation). Le Bearer token personnel est une étape intermédiaire, pas un remplacement d'OAuth.
