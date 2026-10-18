@@ -31,18 +31,16 @@ function undoLastAction(){
   const currentTransactions=state.transactions||[],currentTemplates=state.recurringTemplates||[];
   const restoredTransactionIds=new Set((target.state.transactions||[]).map(t=>t.id));
   const restoredTemplateIds=new Set((target.state.recurringTemplates||[]).map(t=>t.id));
-  if(cloud.user){
-    currentTransactions.forEach(t=>{if(!restoredTransactionIds.has(t.id))cloud.pendingDeletes.add(t.id);});
-    currentTemplates.forEach(t=>{if(!restoredTemplateIds.has(t.id))cloud.pendingTemplateDeletes.add(t.id);});
-  }
+  const currentTransactionIds=new Set(currentTransactions.map(t=>t.id));
+  const currentTemplateIds=new Set(currentTemplates.map(t=>t.id));
   state=cloneData(target.state);
   cloud.pendingDeletes=new Set(target.pendingDeletes);
   cloud.pendingTemplateDeletes=new Set(target.pendingTemplateDeletes);
-  // Re-add deletions caused by the action being undone; missing cloud rows are restored by upsert.
+  // Added items are queued for deletion; deleted items restored to state are upserted again.
   if(cloud.user){
-    const currentTransactionIds=new Set(currentTransactions.map(t=>t.id));
+    currentTransactions.forEach(t=>{if(!restoredTransactionIds.has(t.id))cloud.pendingDeletes.add(t.id);});
+    currentTemplates.forEach(t=>{if(!restoredTemplateIds.has(t.id))cloud.pendingTemplateDeletes.add(t.id);});
     (state.transactions||[]).forEach(t=>{if(!currentTransactionIds.has(t.id))cloud.pendingDeletes.delete(t.id);});
-    const currentTemplateIds=new Set(currentTemplates.map(t=>t.id));
     (state.recurringTemplates||[]).forEach(t=>{if(!currentTemplateIds.has(t.id))cloud.pendingTemplateDeletes.delete(t.id);});
   }
   if(target.generatedMonths===null)localStorage.removeItem(GENERATED_MONTHS_KEY);else localStorage.setItem(GENERATED_MONTHS_KEY,target.generatedMonths);
