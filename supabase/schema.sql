@@ -133,6 +133,9 @@ create trigger recurring_templates_audit after insert or update or delete on pub
 for each row execute function public.record_gestion_history('recurring_template');
 
 
+-- Defense in depth: no table privileges for unauthenticated browser clients.
+revoke all on table public.accounts, public.transactions, public.recurring_templates, public.audit_history from anon, authenticated;
+
 -- Required for authenticated browser clients using the Supabase Data API.
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on public.accounts to authenticated;
