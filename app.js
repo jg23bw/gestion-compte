@@ -10,6 +10,86 @@ const DEFAULT_ACCOUNTS = [
   {id:'bourso-first',name:'Livret Boursobank BoursoFirst',short:'BF',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'tiime',name:'Compte professionnel Tiime',short:'T',kind:'pro',opening:0,vatRate:20,socialRate:45,netOpening:0}
 ];
+
+const DEFAULT_RECURRING_TEMPLATES = [
+  // La Banque Postale
+  {id:'lbp-fortuneo',accountId:'lbp',day:1,frequency:'monthly',label:'De Fortuneo',amount:550},
+  {id:'lbp-mncap',accountId:'lbp',day:10,frequency:'monthly',label:'MNCAP',amount:-15.99},
+  {id:'lbp-credit-carcassonne',accountId:'lbp',day:10,frequency:'monthly',label:'Crédit Carcassonne',amount:-503.71},
+  {id:'lbp-fees',accountId:'lbp',day:11,frequency:'quarterly',months:[1,4,7,10],label:'Frais de tenue de compte',amount:-5.70},
+  // Fortuneo
+  {id:'fortuneo-tiime',accountId:'fortuneo',day:1,frequency:'monthly',label:'De Tiime Facture X',amount:null},
+  {id:'fortuneo-livret',accountId:'fortuneo',day:1,frequency:'monthly',label:'IR Facture X (vers Livret +)',amount:null},
+  {id:'fortuneo-cic',accountId:'fortuneo',day:1,frequency:'monthly',label:'Vers CIC Montpont',amount:-2000},
+  {id:'fortuneo-lbp',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers LBP (Carcassonne)',amount:-550},
+  {id:'fortuneo-invest',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers Nasdaq / Robotics / Micron / cuivre / Schneider',amount:null},
+  {id:'fortuneo-gold',accountId:'fortuneo',day:5,frequency:'monthly',label:'Or',amount:null},
+  {id:'fortuneo-silver',accountId:'fortuneo',day:5,frequency:'monthly',label:'Silver',amount:null},
+  {id:'fortuneo-btc',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers BTC',amount:null},
+  {id:'fortuneo-alt',accountId:'fortuneo',day:5,frequency:'monthly',label:'Vers ALT',amount:null},
+  {id:'fortuneo-youtube',accountId:'fortuneo',day:5,frequency:'monthly',label:'YouTube Premium',amount:-6.24},
+  {id:'fortuneo-gmf',accountId:'fortuneo',day:1,frequency:'annual',months:[4],label:'GMF (Juridique)',amount:-98.15},
+  {id:'fortuneo-rent-carcassonne',accountId:'fortuneo',day:31,frequency:'quarterly',months:[3,6,9,12],label:'Loyers Carcassonne',amount:1449.99},
+  // CIC Montpont
+  {id:'montpont-fortuneo',accountId:'cic-montpont',day:1,frequency:'monthly',label:'De Fortuneo',amount:2000},
+  {id:'montpont-basicfit',accountId:'cic-montpont',day:3,frequency:'monthly',label:'Basic-Fit',amount:-22.99},
+  {id:'montpont-credit1',accountId:'cic-montpont',day:4,frequency:'monthly',label:'Crédit Clérac 1',amount:-1084.56},
+  {id:'montpont-credit2',accountId:'cic-montpont',day:5,frequency:'monthly',label:'Crédit Clérac 2',amount:-578.86},
+  {id:'montpont-b-and-you',accountId:'cic-montpont',day:6,frequency:'monthly',label:'B and You',amount:-9.99},
+  {id:'montpont-rent-pierre',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 1 - Pierre',amount:595},
+  {id:'montpont-rent-mael',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 2 - Maël',amount:470},
+  {id:'montpont-rent-patricia',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 3 - Patricia',amount:485},
+  {id:'montpont-rent-leo',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 4 - Léo',amount:550},
+  {id:'montpont-rent-patrick',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 5 - Patrick',amount:500},
+  {id:'montpont-rent-stephane',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Clérac loyer app. 6 - Stéphane',amount:500},
+  {id:'montpont-imodirect',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Imodirect (frais de gestion 6 apparts)',amount:-203.22},
+  {id:'montpont-serris',accountId:'cic-montpont',day:6,frequency:'monthly',label:'Loyer Serris',amount:-1208.54},
+  {id:'montpont-mgc',accountId:'cic-montpont',day:7,frequency:'monthly',label:'Mutuelle MGC',amount:-15.54},
+  {id:'montpont-fees',accountId:'cic-montpont',day:8,frequency:'monthly',label:'Frais de tenue de compte',amount:-13.35},
+  {id:'montpont-energy',accountId:'cic-montpont',day:7,frequency:'monthly',startMonth:'2025-09',endMonth:'2026-07',label:'Total Energies Serris (sept. 2025 à juil. 2026)',amount:-32},
+  {id:'montpont-water1',accountId:'cic-montpont',day:26,frequency:'annual',months:[6,12],label:'Abonnement Eau 239439 (en CB)',amount:-100},
+  {id:'montpont-water2',accountId:'cic-montpont',day:26,frequency:'annual',months:[6,12],label:'Abonnement Eau 032817',amount:-550},
+  {id:'montpont-water3',accountId:'cic-montpont',day:26,frequency:'annual',months:[6,12],label:'Abonnement Eau 032819',amount:-250},
+  {id:'montpont-sosh',accountId:'cic-montpont',day:25,frequency:'monthly',label:'Sosh internet',amount:-24.99},
+  {id:'montpont-tax-clerac',accountId:'cic-montpont',day:15,frequency:'annual',months:[10],label:'Taxe foncière Clérac',amount:-1685},
+  {id:'montpont-tax-carcassonne',accountId:'cic-montpont',day:15,frequency:'annual',months:[10],label:'Taxe foncière Carcassonne',amount:-428},
+  {id:'montpont-cfe-company',accountId:'cic-montpont',day:16,frequency:'annual',months:[12],label:'CFE Société',amount:-887},
+  {id:'montpont-cfe-carcassonne',accountId:'cic-montpont',day:16,frequency:'annual',months:[12],label:'CFE Carcassonne',amount:-169},
+  {id:'montpont-anderlaine-5',accountId:'cic-montpont',day:10,frequency:'annual',months:[12],label:'Anderlaine (5 biens)',amount:-898},
+  {id:'montpont-anderlaine-2',accountId:'cic-montpont',day:16,frequency:'annual',months:[12],label:'Anderlaine (2 biens, app. 5 et 6)',amount:-216},
+  {id:'montpont-luko-77700',accountId:'cic-montpont',day:1,frequency:'annual',months:[7],label:'Luko 77 700',amount:-138.01},
+  {id:'montpont-luko-app1',accountId:'cic-montpont',day:1,frequency:'annual',months:[12],label:'Luko 17 270 (app. 1)',amount:-82.27},
+  {id:'montpont-luko-app2',accountId:'cic-montpont',day:1,frequency:'annual',months:[8],label:'Luko 17 270 (app. 2)',amount:-66},
+  {id:'montpont-luko-app4',accountId:'cic-montpont',day:1,frequency:'annual',months:[9],label:'Luko 17 270 (app. 4)',amount:-59.41},
+  {id:'montpont-luko-app3',accountId:'cic-montpont',day:1,frequency:'annual',months:[12],label:'Luko 17 270 (app. 3)',amount:-62.21},
+  {id:'montpont-luko-app5',accountId:'cic-montpont',day:1,frequency:'annual',months:[9],label:'Luko 17 270 (app. 5)',amount:-53.69},
+  {id:'montpont-luko-app6',accountId:'cic-montpont',day:1,frequency:'annual',months:[9],label:'Luko 17 270 (app. 6)',amount:-64.12},
+  {id:'montpont-ir-nov',accountId:'cic-montpont',day:26,frequency:'once',date:'2026-11-26',label:'IR 2026 sur 2025 3-4',amount:-3709},
+  {id:'montpont-ir-dec',accountId:'cic-montpont',day:28,frequency:'once',date:'2026-12-28',label:'IR 2026 sur 2025 4-4',amount:-3710},
+  // CIC Montévrain
+  {id:'montevrain-tiime',accountId:'cic-montevrayn',day:1,frequency:'monthly',label:'De Tiime',amount:1020},
+  {id:'montevrain-mercedes',accountId:'cic-montevrayn',day:8,frequency:'monthly',label:'Crédit Mercedes',amount:-1017.07},
+  {id:'montevrain-fees',accountId:'cic-montevrayn',day:8,frequency:'monthly',label:'Frais de tenue de compte',amount:-2.25},
+  // BoursoBank and BoursoFirst
+  {id:'bourso-first-fee',accountId:'bourso',day:1,frequency:'monthly',label:'BoursoFirst',amount:-29},
+  {id:'bourso-to-first',accountId:'bourso',day:1,frequency:'monthly',label:'Vers BoursoFirst',amount:-10},
+  {id:'bourso-lombard',accountId:'bourso',day:1,frequency:'quarterly',months:[1,4,7,10],label:'Intérêts Lombard (trimestriels, mois à confirmer)',amount:-503.60},
+  {id:'first-from-bourso',accountId:'bourso-first',day:1,frequency:'monthly',label:'De BoursoBank',amount:10},
+  // Tiime — monthly invoice and provisions are editable templates
+  {id:'tiime-invoice',accountId:'tiime',day:1,frequency:'monthly',label:'Facture X',amount:10000},
+  {id:'tiime-vat',accountId:'tiime',day:1,frequency:'monthly',label:'TVA X',amount:-2200},
+  {id:'tiime-social',accountId:'tiime',day:1,frequency:'monthly',label:'Charges sociales X',amount:-2800},
+  {id:'tiime-fortuneo',accountId:'tiime',day:1,frequency:'monthly',label:'Vers Fortuneo',amount:-6000},
+  {id:'tiime-mercedes',accountId:'tiime',day:2,frequency:'monthly',label:'Crédit Mercedes',amount:-1020},
+  {id:'tiime-electra',accountId:'tiime',day:2,frequency:'monthly',label:'Electra+',amount:-40},
+  {id:'tiime-indigo',accountId:'tiime',day:3,frequency:'monthly',label:'Indigo',amount:-46.40},
+  {id:'tiime-expert',accountId:'tiime',day:3,frequency:'monthly',label:'Frais l-expert',amount:-94.80},
+  {id:'tiime-wemind',accountId:'tiime',day:7,frequency:'monthly',label:'Wemind',amount:-32},
+  {id:'tiime-mercedes-insurance',accountId:'tiime',day:9,frequency:'monthly',label:'Assurance Mercedes CIC',amount:-99.69},
+  {id:'tiime-margin',accountId:'tiime',day:30,frequency:'monthly',label:'Marge X (bilan + AEN…)',amount:-500},
+  {id:'tiime-fees',accountId:'tiime',day:13,frequency:'annual',months:[5],label:'Frais Tiime',amount:-259.06}
+].map(t=>({enabled:true,...t}));
+
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
@@ -21,11 +101,13 @@ function loadState(){
     const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
     if(saved && Array.isArray(saved.accounts) && Array.isArray(saved.transactions)){
       const accounts=saved.accounts.map(a=>({...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}) ,...a}));
+      const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):DEFAULT_RECURRING_TEMPLATES.map(t=>({...t}));
+      DEFAULT_RECURRING_TEMPLATES.forEach(t=>{if(!recurringTemplates.some(x=>x.id===t.id))recurringTemplates.push({...t});});
       DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
-      return {accounts,transactions:saved.transactions};
+      return {accounts,transactions:saved.transactions,recurringTemplates};
     }
   }catch(e){console.warn('Données locales illisibles',e);}
-  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[]};
+  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:DEFAULT_RECURRING_TEMPLATES.map(t=>({...t}))};
 }
 function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
 function accountById(id){return state.accounts.find(a=>a.id===id);}
@@ -101,12 +183,63 @@ function renderTransactions(){
   }).join(''):'<tr><td colspan="8"><div class="empty-state">Aucune transaction trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>';
   $('transaction-footer').textContent=list.length+' opération(s) affichée(s) · Solde à date calculé à partir du solde de départ et des mouvements enregistrés.';
 }
-function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();saveState();}
+
+function monthValueNow(){return today().slice(0,7);}
+function monthName(month){return new Intl.DateTimeFormat('fr-FR',{month:'long',year:'numeric'}).format(new Date(month+'-15T12:00:00'));}
+function recurringFrequencyLabel(t){
+  if(t.frequency==='monthly')return 'Tous les mois · le '+t.day;
+  if(t.frequency==='quarterly')return 'Trimestriel · '+(t.months||[]).map(m=>['','janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][m]).join(', ')+' · le '+t.day;
+  if(t.frequency==='annual')return 'Annuel · '+(t.months||[]).map(m=>['','janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][m]).join(', ')+' · le '+t.day;
+  return 'Unique · '+t.date;
+}
+function renderRecurring(){
+  if(!$('recurring-rows'))return;
+  if(!$('recurring-month').value)$('recurring-month').value=monthValueNow();
+  const templates=state.recurringTemplates||[];
+  $('recurring-rows').innerHTML=templates.map(t=>{
+    const a=accountById(t.accountId)||{name:'Compte inconnu'};
+    const value=t.amount===null||t.amount===undefined?'':String(t.amount);
+    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+t.id+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td>'+escapeHtml(a.name)+'</td><td>'+escapeHtml(recurringFrequencyLabel(t))+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+t.id+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+t.id+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td></tr>';
+  }).join('');
+  const blank=templates.filter(t=>t.enabled&&(t.amount===null||t.amount===undefined||t.amount==='')).length;
+  $('recurring-summary').textContent=templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront ignorées.';
+}
+function dueDateForTemplate(t,month){
+  const [year,monthNumber]=month.split('-').map(Number);
+  if(t.frequency==='once')return t.date===year+'-'+String(monthNumber).padStart(2,'0')+'-'+String(t.day).padStart(2,'0')?t.date:null;
+  if(t.frequency==='monthly'){
+    if(t.startMonth&&month<t.startMonth)return null;
+    if(t.endMonth&&month>t.endMonth)return null;
+  } else if(t.frequency==='quarterly'||t.frequency==='annual'){
+    if(!(t.months||[]).includes(monthNumber))return null;
+  } else return null;
+  const daysInMonth=new Date(year,monthNumber,0).getDate();
+  const day=Math.min(Number(t.day)||1,daysInMonth);
+  return year+'-'+String(monthNumber).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+}
+function generateRecurringForMonth(month){
+  if(!/^\\d{4}-\\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
+  const additions=[];
+  (state.recurringTemplates||[]).forEach(t=>{
+    if(!t.enabled||t.amount===null||t.amount===undefined||t.amount===''||!Number.isFinite(Number(t.amount)))return;
+    const date=dueDateForTemplate(t,month);if(!date)return;
+    const recurringKey=t.id+'@'+date;
+    if(state.transactions.some(x=>x.recurringKey===recurringKey))return;
+    additions.push({id:crypto.randomUUID(),accountId:t.accountId,date,amount:Number(t.amount),label:t.label,createdAt:Date.now()+additions.length,recurringKey,recurringTemplateId:t.id});
+  });
+  if(!additions.length){showToast('Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.');return;}
+  const details=additions.length+' opération(s) seront ajoutées pour '+monthName(month)+'. Les montants vides et les doublons sont ignorés. Continuer ?';
+  if(!window.confirm(details))return;
+  state.transactions.push(...additions);renderAll();showToast(additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'.');
+}
+
+function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();saveState();}
 function showToast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600);}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Transactions'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Transactions',recurring:'Récurrences'})[view]||view;
+  if(view==='recurring')renderRecurring();
   if(view==='accounts')renderAccounts();if(view==='transactions')renderTransactions();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -139,6 +272,18 @@ function downloadCsv(){
 }
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
+$('generate-current-month').addEventListener('click',()=>generateRecurringForMonth(monthValueNow()));
+$('generate-month-btn').addEventListener('click',()=>generateRecurringForMonth($('recurring-month').value||monthValueNow()));
+$('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth($('recurring-month').value||monthValueNow()));
+$('recurring-month').value=monthValueNow();
+$('recurring-rows').addEventListener('change',event=>{
+  const enabled=event.target.closest('[data-recurring-enabled]');
+  if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){t.enabled=enabled.checked;saveState();renderRecurring();}return;}
+  const amount=event.target.closest('[data-recurring-amount]');
+  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){t.amount=amount.value.trim()===''?null:Number(amount.value);saveState();renderRecurring();}return;}
+  const label=event.target.closest('[data-recurring-label]');
+  if(label){const t=state.recurringTemplates.find(x=>x.id===label.dataset.recurringLabel);if(t){t.label=label.value.trim()||t.label;saveState();renderRecurring();}}
+});
 ['quick-add','accounts-add','transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
 $('account-search').addEventListener('input',renderAccounts);
 $('transaction-search').addEventListener('input',renderTransactions);
