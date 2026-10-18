@@ -71,14 +71,27 @@ Deno.serve(async req => {
   if (req.method !== "POST") return json({ error: "Utilisez POST." }, 405);
   try {
     const body = await req.json();
-    const text = String(body?.text ?? "").trim();
     const action = String(body?.action ?? "preview");
-    const parsed = parseEntry(text);
     const uid = credential.user_id;
+    if (action === "list_accounts") {
+      const accounts = await db(`accounts?user_id=eq.${uid}&select=id,name,kind&order=name.asc`);
+      return json({ ok: true, accounts });
+    }
+    const text = String(body?.text ?? "").trim();
+    let parsed;
+    if (body?.label !== undefined || body?.amount !== undefined) {
+      const label = String(body?.label ?? "").trim();
+      const amount = Number(body?.amount);
+      if (!label || label.length > 120) throw new Error("Le libellé doit contenir entre 1 et 120 caractères.");
+      if (!Number.isFinite(amount) || amount === 0 || Math.abs(amount) > 100000000) throw new Error("Montant invalide : négatif pour une dépense, positif pour une entrée.");
+      parsed = { label, amount: Math.round(amount * 100) / 100 };
+    } else {
+      parsed = parseEntry(text);
+    }
     const accountId = String(body?.account_id ?? credential.default_account_id ?? "").trim();
-    if (!accountId) throw new Error("Configure MCP_DEFAULT_ACCOUNT_ID ou choisis un compte dans le raccourci.");
+    if (!accountId) throw new Error("Choisis un compte dans le raccourci ou configure un compte par défaut.");
     const accounts = await db(`accounts?user_id=eq.${uid}&id=eq.${encodeURIComponent(accountId)}&select=id,name`);
-    if (!accounts?.length) throw new Error("Compte par défaut introuvable. Vérifie MCP_DEFAULT_ACCOUNT_ID.");
+    if (!accounts?.length) throw new Error("Compte introuvable parmi les comptes de l'utilisateur autorisé.");
     const date = typeof body?.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : parisToday();
     if (action === "preview") {
       return json({
