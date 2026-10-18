@@ -89,7 +89,7 @@ create policy "audit own rows read" on public.audit_history for select to authen
 
 -- Journalisation des changements sans exposer les données aux autres utilisateurs.
 create or replace function public.record_gestion_history()
-returns trigger language plpgsql security invoker set search_path = public
+returns trigger language plpgsql security definer set search_path = public
 as $$
 declare
   row_data jsonb;
