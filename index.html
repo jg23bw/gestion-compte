@@ -122,6 +122,17 @@
       <p id="cloud-message" class="form-help" role="status" aria-live="polite"></p>
       <div class="modal-actions"><button type="button" class="secondary-button" id="cloud-signup">Créer un compte</button><button type="submit" class="primary-button">Se connecter</button></div>
       <div class="modal-actions"><button type="button" class="secondary-button" id="cloud-logout" hidden>Se déconnecter</button></div>
+      <section id="mcp-settings" class="mcp-settings" hidden>
+        <hr>
+        <h3>Connexions d’assistants IA (MCP)</h3>
+        <p class="form-help">Créez un jeton distinct par assistant. Le jeton complet n’est affiché qu’une seule fois. Ne le partagez pas.</p>
+        <label>Nom de la connexion<input id="mcp-token-name" type="text" maxlength="80" value="Mon assistant"></label>
+        <label>Compte par défaut<select id="mcp-default-account"><option value="">Aucun compte par défaut</option></select></label>
+        <div class="modal-actions"><button type="button" class="secondary-button" id="mcp-create-token">Créer un jeton MCP</button><button type="button" class="secondary-button" id="mcp-refresh-tokens">Actualiser la liste</button></div>
+        <label id="mcp-token-once-label" hidden>Nouveau jeton — copiez-le maintenant<textarea id="mcp-token-once" rows="3" readonly></textarea></label>
+        <p id="mcp-token-message" class="form-help" role="status" aria-live="polite"></p>
+        <div id="mcp-token-list" class="mcp-token-list"></div>
+      </section>
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
