@@ -42,3 +42,17 @@ Ces hypothèses sont volontairement simples et **ne remplacent pas un calcul com
 - Pas d'authentification, de base de données distante ni de synchronisation multi-appareils.
 - Les données locales peuvent être perdues si le stockage du navigateur est effacé ; utilisez l'export JSON.
 - L'application ne préremplit aucun solde bancaire : renseignez les soldes de départ dans « Mes comptes ».
+
+## Base de données en ligne (Supabase gratuit)
+
+Le schéma PostgreSQL de la base se trouve dans [supabase/schema.sql](./supabase/schema.sql). Il prévoit les comptes, transactions, modèles de récurrence et un historique des insertions/modifications/suppressions. Les tables sont protégées par la sécurité au niveau des lignes (RLS) : chaque utilisateur authentifié ne peut accéder qu'à ses propres données.
+
+### Mise en place
+
+1. Créez un projet sur [Supabase](https://supabase.com/) en choisissant le forfait Free.
+2. Dans le projet, ouvrez **SQL Editor**, collez le contenu de `supabase/schema.sql` et exécutez-le.
+3. Dans **Project Settings → API**, récupérez l'URL du projet et la clé publique (publishable/anon). **Ne jamais utiliser ni publier la clé `service_role`** dans l'application web.
+4. L'application doit ensuite être configurée avec l'URL et la clé publique pour activer l'authentification et la synchronisation. Ne renseignez aucune donnée financière tant que l'indicateur de connexion cloud n'est pas opérationnel.
+5. Conservez aussi des exports JSON périodiques : le forfait gratuit Supabase ne comprend pas de sauvegardes automatiques de la base.
+
+**Important :** ajouter le schéma crée la structure de la base, mais ne crée pas à lui seul le projet Supabase et ne connecte pas encore l'interface à cette base. La migration des données déjà présentes dans le navigateur doit être réalisée explicitement, après connexion, sans écraser les données locales.
