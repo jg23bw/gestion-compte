@@ -35,6 +35,7 @@ create table if not exists public.transactions (
 );
 
 alter table public.transactions add column if not exists recurring_key text;
+alter table public.transactions add column if not exists is_paid boolean not null default false;
 
 create unique index if not exists transactions_user_recurring_key_uidx
   on public.transactions(user_id, recurring_key) where recurring_key is not null;
