@@ -47,6 +47,8 @@ Ces hypothèses sont volontairement simples et **ne remplacent pas un calcul com
 
 ## Base de données en ligne (Supabase gratuit)
 
+Si la base Supabase existe déjà et que l'application affiche un avertissement indiquant que le pointage ou l'ordre manuel ne sont pas conservés, ouvrez **SQL Editor** dans le projet Supabase et exécutez le fichier [supabase/migrations/202610180002_transaction_pointage_order.sql](./supabase/migrations/202610180002_transaction_pointage_order.sql). Cette migration ajoute les colonnes manquantes sans supprimer les opérations existantes. Attendez ensuite que l'application indique « Synchronisé en ligne », puis rechargez la page.
+
 Le schéma PostgreSQL de la base se trouve dans [supabase/schema.sql](./supabase/schema.sql). Il prévoit les comptes, transactions, modèles de récurrence et un historique des insertions/modifications/suppressions. Les tables sont protégées par la sécurité au niveau des lignes (RLS) : chaque utilisateur authentifié ne peut accéder qu'à ses propres données.
 
 ### Mise en place
