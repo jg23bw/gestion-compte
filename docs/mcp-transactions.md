@@ -85,3 +85,29 @@ Tu peux ensuite ajouter ce raccourci à l'écran d'accueil et le lancer par Siri
 **Important :** le jeton est un secret. Ne partage pas le raccourci avec d'autres personnes sans retirer son en-tête d'autorisation. Le jeton donne accès à l'ajout de transactions pour l'utilisateur configuré. En cas d'exposition, remplace `MCP_ACCESS_TOKEN` dans les secrets Supabase et dans le raccourci.
 
 Le compte cible est celui configuré dans `MCP_DEFAULT_ACCOUNT_ID`. Il faut le déployer puis tester une opération de faible montant avant usage quotidien. La fonction n'a pas été déployée dans Supabase depuis ce dépôt.
+
+### Réglages retenus pour le raccourci
+
+- Compte par défaut : `cic-montpont` (CIC Montpont).
+- Confirmation obligatoire avant insertion.
+- Date par défaut : date du jour en fuseau Europe/Paris.
+
+Dans la commande `supabase secrets set` ci-dessus, utilise `MCP_DEFAULT_ACCOUNT_ID="cic-montpont"` pour le compte par défaut. Les secrets ne sont pas modifiés automatiquement depuis GitHub : exécute la commande de configuration dans ton terminal.
+
+### Flux de confirmation recommandé
+
+La fonction `quick-add` accepte deux actions :
+- `preview` : interprète la phrase et renvoie le libellé, le montant, la date et le compte sans créer de transaction.
+- `confirm` : crée la transaction uniquement si le JSON contient aussi `"confirmed": true`.
+
+Dans Raccourcis, construis le flux suivant :
+1. **Dicter du texte** en français.
+2. **Obtenir le contenu de l’URL** (POST) sur l’URL `quick-add`, avec les en-têtes `Authorization: Bearer <MCP_ACCESS_TOKEN>` et `Content-Type: application/json`, et un corps JSON contenant `action: preview` et `text: <Texte dicté>`.
+3. **Obtenir le dictionnaire** du résultat, puis extraire `transaction`. Affiche une alerte qui présente `label`, `amount`, `account` et `date`.
+4. Utilise **Choisir dans le menu** avec les options « Confirmer » et « Annuler ». Dans la branche « Annuler », arrête le raccourci.
+5. Dans la branche « Confirmer », refais **Obtenir le contenu de l’URL** sur la même URL avec un corps JSON contenant `action: confirm`, `confirmed: true` et exactement le même `text` dicté.
+6. Affiche `message` en cas de succès, ou `error` si la requête échoue.
+
+Pour le corps JSON de Raccourcis, ajoute des champs de type texte/texte magique plutôt que d’insérer manuellement la dictée dans une chaîne JSON : cela évite les erreurs avec apostrophes ou caractères spéciaux.
+
+Le déploiement et le test restent à effectuer. Commence par une dépense test de faible montant et vérifie qu'une opération n'est pas créée lorsque tu choisis « Annuler ».
