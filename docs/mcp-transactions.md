@@ -51,3 +51,37 @@ Certains clients demandent le jeton dans leur formulaire d'authentification; d'a
 - Les requêtes de base utilisent la clé service_role, donc la fonction vérifie explicitement le propriétaire et l'appartenance du compte avant insertion. Ne réutilise pas cette clé ailleurs.
 - L'endpoint ne peut agir que pour un utilisateur. Pour plusieurs utilisateurs, il faudra remplacer ce modèle par OAuth/Supabase Auth par utilisateur.
 - La fonction a été ajoutée au dépôt mais doit encore être déployée et testée dans ton projet Supabase. Aucun secret ni déploiement distant n'a été effectué depuis ce dépôt.
+
+
+## Saisie ultra-rapide depuis l'iPhone (Raccourcis)
+
+La fonction `quick-add` accepte une phrase comme `pain 2 €` et crée directement la transaction dans le compte par défaut. Les dépenses sont négatives par défaut; utilise `+2500 salaire` ou `salaire 2500 €` pour une entrée. Le montant doit être le dernier élément de la phrase.
+
+### Déployer la fonction
+
+Après avoir configuré les secrets de la section précédente, déploie aussi :
+
+```bash
+supabase functions deploy quick-add
+```
+
+URL à utiliser dans le raccourci :
+
+`https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/quick-add`
+
+### Créer le raccourci iOS
+
+Dans l'app **Raccourcis** sur l'iPhone, crée un raccourci « Ajouter une dépense » avec ces actions :
+
+1. **Dicter du texte** (langue : français).
+2. **Obtenir le contenu de l’URL** avec l'URL ci-dessus.
+   - Méthode : `POST`
+   - En-têtes : `Authorization` = `Bearer TON_MCP_ACCESS_TOKEN` ; `Content-Type` = `application/json`
+   - Corps de la requête : JSON avec la clé `text` et comme valeur le résultat de « Dicter du texte ».
+3. **Obtenir le dictionnaire** depuis le résultat, puis afficher la valeur `message` en cas de succès ou `error` en cas d'échec. Si tu préfères, commence par afficher le résultat brut pour vérifier la configuration.
+
+Tu peux ensuite ajouter ce raccourci à l'écran d'accueil et le lancer par Siri. Dans « Obtenir le contenu de l'URL », choisis bien le résultat de dictée comme variable magique pour la valeur de `text`.
+
+**Important :** le jeton est un secret. Ne partage pas le raccourci avec d'autres personnes sans retirer son en-tête d'autorisation. Le jeton donne accès à l'ajout de transactions pour l'utilisateur configuré. En cas d'exposition, remplace `MCP_ACCESS_TOKEN` dans les secrets Supabase et dans le raccourci.
+
+Le compte cible est celui configuré dans `MCP_DEFAULT_ACCOUNT_ID`. Il faut le déployer puis tester une opération de faible montant avant usage quotidien. La fonction n'a pas été déployée dans Supabase depuis ce dépôt.
