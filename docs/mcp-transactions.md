@@ -93,12 +93,24 @@ URL :
 
 Le raccourci doit envoyer `Authorization: Bearer <JETON_PERSONNEL>` et `Content-Type: application/json`.
 
-Flux recommandé :
-1. **Dicter du texte** : par exemple « pain deux euros ».
-2. Envoyer un POST JSON avec `{"action":"preview","text":"<texte dicté>"}`. Cette étape renvoie le libellé, le montant, la date et le compte sans insérer de transaction.
-3. Afficher ces détails, puis proposer **Confirmer** ou **Annuler**.
-4. Si l'utilisateur confirme, envoyer un second POST avec `{"action":"confirm","confirmed":true,"text":"<même texte dicté>"}`.
-5. Afficher le message de succès ou l'erreur.
+Deux modes sont pris en charge :
+
+**Mode avec champs séparés (recommandé pour Apple Raccourcis)** :
+1. Demander une entrée pour le libellé.
+2. Demander un nombre pour le montant (négatif pour une dépense, positif pour une entrée).
+3. Demander une entrée pour le nom du compte (nom exact affiché dans l'application).
+4. Envoyer un POST JSON `{"action":"preview","label":"Courses","amount":-42.5,"account_name":"Fortuneo"}`.
+5. Afficher les informations renvoyées, puis demander confirmation.
+6. Si confirmé, envoyer `{"action":"confirm","confirmed":true,"label":"Courses","amount":-42.5,"account_name":"Fortuneo"}`.
+
+Le nom du compte est comparé sans tenir compte des accents et de la casse. Pour récupérer les comptes et leurs identifiants, envoyer `{"action":"list_accounts"}`; la réponse contient `accounts`.
+
+**Mode texte libre (compatible avec l'ancien raccourci)** :
+1. Envoyer `{"action":"preview","text":"pain 2 €"}`.
+2. Afficher les informations renvoyées et demander confirmation.
+3. Si confirmé, envoyer `{"action":"confirm","confirmed":true,"text":"pain 2 €"}`.
+
+Dans les deux modes, l'aperçu ne crée rien : seule l'action `confirm` avec `confirmed: true` enregistre l'opération.
 
 Pour un raccourci qui utilise un compte par défaut, crée un jeton avec `default_account_id: "cic-montpont"`. Ne mets jamais le JWT de session Supabase ou une clé `service_role` dans le raccourci : seul le jeton MCP personnel prévu pour cette intégration doit y être utilisé. Ce jeton donne accès aux outils de lecture et d'ajout autorisés; révoque-le si l'iPhone ou le raccourci est partagé/perdu.
 
