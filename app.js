@@ -283,7 +283,7 @@ function tiimeNetBalance(account){
 }
 function bankLogo(account){
   const cls=account.id.startsWith('lbp')?'lbp':account.id.startsWith('fortuneo')?'fortuneo':account.id.startsWith('cic')?'cic':account.id.startsWith('bourso')?'bourso':'tiime';
-  const icons={lbp:'https://commons.wikimedia.org/wiki/Special:FilePath/Logo_La_Banque_postale_2022.svg',fortuneo:'https://commons.wikimedia.org/wiki/Special:FilePath/Fortuneo.svg',cic:'https://commons.wikimedia.org/wiki/Special:FilePath/Cr%C3%A9dit_Industriel_et_Commercial_Logo.svg',bourso:'https://brandlogos.sgp1.digitaloceanspaces.com/svg/arcticons/boursobank.svg',tiime:'./assets/logos/tiime.svg'};
+  const icons={lbp:'https://commons.wikimedia.org/wiki/Special:FilePath/Logo_La_Banque_postale_2022.svg',fortuneo:'https://commons.wikimedia.org/wiki/Special:FilePath/Fortuneo.svg',cic:'https://commons.wikimedia.org/wiki/Special:FilePath/Cr%C3%A9dit_Industriel_et_Commercial_Logo.svg',bourso:'https://brandlogos.sgp1.digitaloceanspaces.com/svg/arcticons/boursobank.svg',tiime:'https://upload.wikimedia.org/wikipedia/commons/2/28/Tiime-logo-color.svg'};
   const src=icons[cls];
   return '<span class="bank-logo '+cls+'">'+(src?'<img src="'+src+'" alt="Logo '+escapeHtml(account.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span '+(src?'hidden':'')+'>'+escapeHtml(account.short||account.name.slice(0,2).toUpperCase())+'</span></span>';
 }
