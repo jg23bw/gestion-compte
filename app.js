@@ -96,6 +96,142 @@ const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T1
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = loadState();
 let toastTimer;
+
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,loadedUserId:null};
+function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
+function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
+function cloudClient(){
+  if(cloud.client)return cloud.client;
+  const config=window.GESTION_SUPABASE_CONFIG;
+  if(!config?.url||!config?.publishableKey||!window.supabase?.createClient)throw new Error('Configuration Supabase introuvable. Vérifiez supabase-config.js et la connexion internet.');
+  cloud.client=window.supabase.createClient(config.url,config.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  return cloud.client;
+}
+function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:a.short||'',kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
+function fromCloudAccount(a){return {id:a.id,name:a.name,short:a.short||'',kind:a.kind,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};}
+function toCloudTransaction(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,transaction_date:t.date,label:t.label,amount:Number(t.amount),source:t.recurringTemplateId?'recurring':'manual',recurring_template_id:t.recurringTemplateId||null,generated_month:t.recurringKey?t.date.slice(0,7):null,recurring_key:t.recurringKey||null,created_at:new Date(Number(t.createdAt)||Date.now()).toISOString(),updated_at:new Date().toISOString()};}
+function fromCloudTransaction(t){return {id:t.id,accountId:t.account_id,date:t.transaction_date,amount:Number(t.amount),label:t.label,createdAt:Date.parse(t.created_at)||Date.now(),recurringKey:t.recurring_key||undefined,recurringTemplateId:t.recurring_template_id||undefined};}
+function toCloudTemplate(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,day_of_month:Number(t.day)||1,frequency:t.frequency,months:t.months||[],start_month:t.startMonth||null,end_month:t.endMonth||null,once_date:t.date||null,label:t.label,amount:t.amount===''||t.amount===undefined?null:t.amount,enabled:t.enabled!==false};}
+function fromCloudTemplate(t){return {id:t.id,accountId:t.account_id,day:Number(t.day_of_month)||1,frequency:t.frequency,months:t.months||[],startMonth:t.start_month||undefined,endMonth:t.end_month||undefined,date:t.once_date||undefined,label:t.label,amount:t.amount===null?null:Number(t.amount),enabled:t.enabled};}
+function uniqueTransactions(rows){
+  const byId=new Map();rows.forEach(t=>byId.set(t.id,t));
+  const byRecurring=new Map(),result=[];
+  [...byId.values()].forEach(t=>{if(t.recurringKey){if(byRecurring.has(t.recurringKey))return;byRecurring.set(t.recurringKey,true);}result.push(t);});
+  return result;
+}
+async function syncCloudState(){
+  if(!cloud.user||cloud.isApplyingCloud||cloud.isSyncing)return;
+  cloud.isSyncing=true;
+  try{
+    const client=cloudClient(),uid=cloud.user.id;
+    const accounts=state.accounts.map(a=>toCloudAccount(a,uid));
+    const templates=(state.recurringTemplates||[]).map(t=>toCloudTemplate(t,uid));
+    const transactions=state.transactions.map(t=>toCloudTransaction(t,uid));
+    if(accounts.length){const {error}=await client.from('accounts').upsert(accounts,{onConflict:'user_id,id'});if(error)throw error;}
+    if(templates.length){const {error}=await client.from('recurring_templates').upsert(templates,{onConflict:'user_id,id'});if(error)throw error;}
+    if(transactions.length){const {error}=await client.from('transactions').upsert(transactions,{onConflict:'id'});if(error)throw error;}
+    const {data:remote,error:readError}=await client.from('transactions').select('id');
+    if(readError)throw readError;
+    const localIds=new Set(state.transactions.map(t=>t.id));
+    for(const row of (remote||[])){if(!localIds.has(row.id)){const {error}=await client.from('transactions').delete().eq('id',row.id);if(error)throw error;}}
+    cloudStatus('Synchronisé en ligne',true);
+  }catch(error){
+    console.error('Supabase sync failed',error);
+    cloudStatus('Erreur de synchronisation',false);
+    showToast('Sauvegarde en ligne impossible : '+(error.message||'vérifiez la configuration Supabase.'));
+  }finally{cloud.isSyncing=false;}
+}
+async function loadCloudState(user){
+  if(cloud.loadedUserId===user.id)return;
+  cloud.loadedUserId=user.id;
+  cloudStatus('Chargement des données…',true);
+  try{
+    const client=cloudClient();
+    const [ar,tr,rr]=await Promise.all([
+      client.from('accounts').select('*'),
+      client.from('transactions').select('*').order('transaction_date',{ascending:true}),
+      client.from('recurring_templates').select('*')
+    ]);
+    for(const result of [ar,tr,rr])if(result.error)throw result.error;
+    const local=JSON.parse(JSON.stringify(state));
+    localStorage.setItem('gestion-comptes-cloud-migration-backup-v1',JSON.stringify({savedAt:new Date().toISOString(),...local}));
+    const remoteAccounts=(ar.data||[]).map(fromCloudAccount);
+    const remoteTransactions=(tr.data||[]).map(fromCloudTransaction);
+    const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
+    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length>0;
+    if(!remoteHasData){
+      cloud.isApplyingCloud=true;
+      renderAll();
+      cloud.isApplyingCloud=false;
+      await syncCloudState();
+      showToast('Première sauvegarde effectuée dans votre base en ligne.');
+    }else{
+      let transactions=remoteTransactions;
+      if(local.transactions.length && remoteTransactions.length===0){
+        transactions=uniqueTransactions([...remoteTransactions,...local.transactions]);
+      }else if(local.transactions.length && remoteTransactions.length>0){
+        const remoteIds=new Set(remoteTransactions.map(t=>t.id));
+        const localOnly=local.transactions.filter(t=>!remoteIds.has(t.id));
+        if(localOnly.length && window.confirm('Une copie locale contient '+localOnly.length+' opération(s) absente(s) du cloud. Voulez-vous les fusionner avec les données en ligne ? Cela peut réintroduire des opérations supprimées sur un autre appareil.\n\nOK : fusionner. Annuler : garder le cloud comme référence.')){
+          transactions=uniqueTransactions([...remoteTransactions,...localOnly]);
+        }
+      }
+      const accountMap=new Map(remoteAccounts.map(a=>[a.id,a]));
+      local.accounts.forEach(a=>{if(!accountMap.has(a.id))accountMap.set(a.id,a);});
+      const templateMap=new Map(remoteTemplates.map(t=>[t.id,t]));
+      local.recurringTemplates.forEach(t=>{if(!templateMap.has(t.id))templateMap.set(t.id,t);});
+      cloud.isApplyingCloud=true;
+      state={accounts:[...accountMap.values()],transactions,recurringTemplates:[...templateMap.values()]};
+      renderAll();
+      cloud.isApplyingCloud=false;
+      await syncCloudState();
+      showToast('Données chargées depuis votre espace en ligne.');
+    }
+    cloudStatus('Synchronisé en ligne',true);
+  }catch(error){
+    cloud.isApplyingCloud=false;
+    cloud.loadedUserId=null;
+    cloudStatus('Cloud indisponible',false);
+    cloudMessage('Impossible de lire la base : '+(error.message||'vérifiez que le schéma SQL a été exécuté dans Supabase.'));
+    console.error('Supabase load failed',error);
+  }
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  if(cloud.user&&!cloud.isApplyingCloud){
+    clearTimeout(cloud.syncTimer);
+    cloudStatus('Enregistrement en cours…',true);
+    cloud.syncTimer=setTimeout(()=>syncCloudState(),500);
+  }
+}
+async function initCloud(){
+  try{
+    const client=cloudClient();
+    client.auth.onAuthStateChange((event,session)=>{
+      cloud.session=session;cloud.user=session?.user||null;
+      if(cloud.user){
+        $('cloud-open').textContent='Compte connecté';
+        $('cloud-logout').hidden=false;
+        cloudStatus('Connecté — synchronisation…',true);
+        if(event!=='TOKEN_REFRESHED')setTimeout(()=>loadCloudState(cloud.user),0);
+      }else{
+        cloud.loadedUserId=null;
+        $('cloud-open').textContent='Connexion cloud';
+        $('cloud-logout').hidden=true;
+        cloudStatus('Mode local — non synchronisé',false);
+      }
+    });
+    const {data,error}=await client.auth.getSession();
+    if(error)throw error;
+    cloud.session=data.session;cloud.user=data.session?.user||null;
+    if(cloud.user){$('cloud-open').textContent='Compte connecté';$('cloud-logout').hidden=false;await loadCloudState(cloud.user);}
+  }catch(error){
+    cloudStatus('Cloud non configuré',false);
+    cloudMessage(error.message||'Impossible d’initialiser Supabase.');
+    console.error('Supabase init failed',error);
+  }
+}
+
 function loadState(){
   try{
     const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -163,8 +299,8 @@ function fillAccountSelects(){
   const opts=state.accounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   $('transaction-account').innerHTML=opts;
   const current=$('transaction-account-filter').value;
-  $('transaction-account-filter').innerHTML='<option value="all">Tous les comptes</option>'+opts;
-  if(state.accounts.some(a=>a.id===current))$('transaction-account-filter').value=current;
+  $('transaction-account-filter').innerHTML=opts;
+  $('transaction-account-filter').value=state.accounts.some(a=>a.id===current)?current:(state.accounts[0]?.id||'');
 }
 function renderTransactions(){
   const accountFilter=$('transaction-account-filter').value,typeFilter=$('transaction-type-filter').value,query=$('transaction-search').value.trim().toLocaleLowerCase('fr');
@@ -298,6 +434,28 @@ $('account-search').addEventListener('input',renderAccounts);
 $('transaction-search').addEventListener('input',renderTransactions);
 $('transaction-account-filter').addEventListener('change',renderTransactions);
 $('transaction-type-filter').addEventListener('change',renderTransactions);
+$('cloud-open').addEventListener('click',()=>{$('cloud-message').textContent=cloud.user?'Vous êtes connecté à votre espace privé.':'Connectez-vous ou créez votre compte pour activer la synchronisation.';$('cloud-logout').hidden=!cloud.user;$('cloud-dialog').showModal();});
+$('cloud-form').addEventListener('submit',async event=>{
+  event.preventDefault();cloudMessage('Connexion en cours…');
+  try{
+    const {data,error}=await cloudClient().auth.signInWithPassword({email:$('cloud-email').value.trim(),password:$('cloud-password').value});
+    if(error)throw error;
+    if(data.session){cloudMessage('Connexion réussie. Chargement de vos données…');$('cloud-dialog').close();}
+  }catch(error){cloudMessage(error.message||'Connexion impossible.');}
+});
+$('cloud-signup').addEventListener('click',async()=>{
+  cloudMessage('Création du compte…');
+  try{
+    const {data,error}=await cloudClient().auth.signUp({email:$('cloud-email').value.trim(),password:$('cloud-password').value});
+    if(error)throw error;
+    if(data.session){cloudMessage('Compte créé. Chargement des données…');$('cloud-dialog').close();}
+    else cloudMessage('Compte créé. Consultez votre e-mail pour confirmer l’adresse, puis connectez-vous.');
+  }catch(error){cloudMessage(error.message||'Création du compte impossible.');}
+});
+$('cloud-logout').addEventListener('click',async()=>{
+  try{const {error}=await cloudClient().auth.signOut();if(error)throw error;$('cloud-dialog').close();cloudMessage('Déconnexion effectuée. Les données locales restent disponibles.');}
+  catch(error){cloudMessage(error.message||'Déconnexion impossible.');}
+});
 $('export-btn').addEventListener('click',()=>{
   const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les transactions en CSV.');
   choice?exportData():downloadCsv();
@@ -331,3 +489,4 @@ document.addEventListener('click',event=>{
   if(account){openAccountEditor(account.dataset.accountOpen);}
 });
 renderAll();
+initCloud();
