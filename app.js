@@ -97,7 +97,7 @@ const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getM
 let state = loadState();
 let toastTimer;
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,loadedUserId:null};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
@@ -119,27 +119,42 @@ function uniqueTransactions(rows){
   [...byId.values()].forEach(t=>{if(t.recurringKey){if(byRecurring.has(t.recurringKey))return;byRecurring.set(t.recurringKey,true);}result.push(t);});
   return result;
 }
+function sameCloudValues(a,b,keys){return keys.every(key=>String(a[key]??'')===String(b[key]??''));}
 async function syncCloudState(){
-  if(!cloud.user||cloud.isApplyingCloud||cloud.isSyncing)return;
+  if(!cloud.user||cloud.isApplyingCloud)return;
+  if(cloud.isSyncing){cloud.syncAgain=true;return;}
   cloud.isSyncing=true;
   try{
     const client=cloudClient(),uid=cloud.user.id;
     const accounts=state.accounts.map(a=>toCloudAccount(a,uid));
     const templates=(state.recurringTemplates||[]).map(t=>toCloudTemplate(t,uid));
     const transactions=state.transactions.map(t=>toCloudTransaction(t,uid));
-    if(accounts.length){const {error}=await client.from('accounts').upsert(accounts,{onConflict:'user_id,id'});if(error)throw error;}
-    if(templates.length){const {error}=await client.from('recurring_templates').upsert(templates,{onConflict:'user_id,id'});if(error)throw error;}
-    if(transactions.length){const {error}=await client.from('transactions').upsert(transactions,{onConflict:'id'});if(error)throw error;}
-    const {data:remote,error:readError}=await client.from('transactions').select('id');
-    if(readError)throw readError;
+    const [ar,tr,rr]=await Promise.all([
+      client.from('accounts').select('*'),
+      client.from('transactions').select('*'),
+      client.from('recurring_templates').select('*')
+    ]);
+    for(const result of [ar,tr,rr])if(result.error)throw result.error;
+    const remoteAccounts=new Map((ar.data||[]).map(row=>[row.id,row]));
+    const remoteTransactions=new Map((tr.data||[]).map(row=>[row.id,row]));
+    const remoteTemplates=new Map((rr.data||[]).map(row=>[row.id,row]));
+    const changedAccounts=accounts.filter(row=>!remoteAccounts.has(row.id)||!sameCloudValues(row,remoteAccounts.get(row.id),['name','short','kind','opening','vat_rate','social_rate','net_opening']));
+    const changedTemplates=templates.filter(row=>!remoteTemplates.has(row.id)||!sameCloudValues(row,remoteTemplates.get(row.id),['account_id','day_of_month','frequency','months','start_month','end_month','once_date','label','amount','enabled']));
+    const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','source','recurring_template_id','generated_month','recurring_key']));
+    if(changedAccounts.length){const {error}=await client.from('accounts').upsert(changedAccounts,{onConflict:'user_id,id'});if(error)throw error;}
+    if(changedTemplates.length){const {error}=await client.from('recurring_templates').upsert(changedTemplates,{onConflict:'user_id,id'});if(error)throw error;}
+    if(changedTransactions.length){const {error}=await client.from('transactions').upsert(changedTransactions,{onConflict:'id'});if(error)throw error;}
     const localIds=new Set(state.transactions.map(t=>t.id));
-    for(const row of (remote||[])){if(!localIds.has(row.id)){const {error}=await client.from('transactions').delete().eq('id',row.id);if(error)throw error;}}
+    for(const row of (tr.data||[])){if(!localIds.has(row.id)){const {error}=await client.from('transactions').delete().eq('id',row.id);if(error)throw error;}}
     cloudStatus('Synchronisé en ligne',true);
   }catch(error){
     console.error('Supabase sync failed',error);
     cloudStatus('Erreur de synchronisation',false);
     showToast('Sauvegarde en ligne impossible : '+(error.message||'vérifiez la configuration Supabase.'));
-  }finally{cloud.isSyncing=false;}
+  }finally{
+    cloud.isSyncing=false;
+    if(cloud.syncAgain){cloud.syncAgain=false;setTimeout(()=>syncCloudState(),100);}
+  }
 }
 async function loadCloudState(user){
   if(cloud.loadedUserId===user.id)return;
