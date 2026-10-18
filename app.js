@@ -470,12 +470,20 @@ function generatedMonths(){
   try{const value=JSON.parse(localStorage.getItem(GENERATED_MONTHS_KEY)||'[]');return Array.isArray(value)?value:[];}catch(error){return [];}
 }
 function monthAlreadyGenerated(month){
+  // Les transactions réelles sont la source de vérité. Le marqueur local ne doit
+  // pas bloquer une régénération si les opérations ont été supprimées de Supabase.
   if(state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month)){
     const months=generatedMonths();
     if(!months.includes(month)){months.push(month);try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}}
     return true;
   }
-  return generatedMonths().includes(month);
+  const months=generatedMonths();
+  const index=months.indexOf(month);
+  if(index!==-1){
+    months.splice(index,1);
+    try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}
+  }
+  return false;
 }
 function generateRecurringForMonth(month){
   if(!/^\d{4}-\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
