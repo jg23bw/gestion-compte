@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'gestion-comptes-v1';
+const GENERATED_MONTHS_KEY = 'gestion-comptes-generated-months-v1';
+const generationInProgress = new Set();
 const DEFAULT_ACCOUNTS = [
   {id:'lbp',name:'La Banque Postale',short:'LB',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
   {id:'fortuneo',name:'Fortuneo',short:'F',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
@@ -307,7 +309,7 @@ function renderDashboard(){
   $('total-balance').textContent=euro(total);$('bank-balance').textContent=euro(bank);$('pro-balance').textContent=euro(pro?tiimeNetBalance(pro):0);
   $('dashboard-accounts').innerHTML=state.accounts.map(a=>accountMarkup(a,true)).join('');
   const recent=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).slice(0,6);
-  $('recent-transactions').innerHTML=recent.length?recent.map(t=>{const a=accountById(t.accountId)||{name:'Compte supprimé'};return '<div class="recent-row"><span class="movement-icon '+(t.amount>=0?'income':'expense')+'">'+(t.amount>=0?'↙':'↗')+'</span><div class="movement-main"><strong>'+escapeHtml(t.label)+'</strong><small>'+escapeHtml(a.name)+' · '+dateFormat(t.date)+'</small></div><span class="movement-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</span></div>';}).join(''):'<div class="empty-state">Aucune opération pour le moment.<br>Ajoutez une transaction pour commencer.</div>';
+  $('recent-transactions').innerHTML=recent.length?recent.map(t=>{const a=accountById(t.accountId)||{name:'Compte supprimé'};return '<div class="recent-row"><span class="movement-icon '+(t.amount>=0?'income':'expense')+'">'+(t.amount>=0?'↙':'↗')+'</span><div class="movement-main"><strong>'+escapeHtml(t.label)+'</strong><small>'+escapeHtml(a.name)+' · '+dateFormat(t.date)+'</small></div><span class="movement-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</span></div>';}).join(''):'<div class="empty-state">Aucune opération pour le moment.<br>Ajoutez une opération pour commencer.</div>';
   $('account-count').textContent=state.accounts.length;
 }
 function renderAccounts(){
@@ -330,7 +332,7 @@ function renderTransactions(){
     const a=accountById(t.accountId);
     return (typeFilter==='all'||(typeFilter==='income'?t.amount>=0:t.amount<0))&&((t.label+' '+(a?.name||'')).toLocaleLowerCase('fr').includes(query));
   });
-  $('transaction-head').innerHTML='<tr><th>ORDRE</th><th>POINTÉE</th><th>DATE</th><th>TRANSACTION</th><th>COMPTE</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(accountFilter==='tiime'?'<th>MONTANT APRÈS PROVISIONS</th><th>SOLDE NET ESTIMÉ</th>':'')+'<th>ACTIONS</th></tr>';
+  $('transaction-head').innerHTML='<tr><th>ORDRE</th><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th><th>COMPTE</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(accountFilter==='tiime'?'<th>MONTANT APRÈS PROVISIONS</th><th>SOLDE NET ESTIMÉ</th>':'')+'<th>ACTIONS</th></tr>';
   $('transaction-rows').innerHTML=list.length?list.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte supprimé',short:'?',kind:'bank'};
     const balance=balanceAfterTransaction(t);
@@ -365,7 +367,11 @@ function renderRecurring(){
     return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+escapeHtml(t.id)+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td><div class="recurring-account-cell">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td><div>'+escapeHtml(recurringFrequencyLabel(t))+'</div>'+(t.frequency==='once'?'':'<label class="recurring-day-label">Jour <input class="recurring-day" type="number" min="1" max="31" step="1" data-recurring-day="'+escapeHtml(t.id)+'" value="'+Number(t.day||1)+'" aria-label="Jour du mois"></label>')+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+escapeHtml(t.id)+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+escapeHtml(t.id)+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td><td class="recurring-actions"><button type="button" class="secondary-button" data-edit-recurring="'+escapeHtml(t.id)+'">Modifier</button><button type="button" class="secondary-button danger-button" data-delete-recurring="'+escapeHtml(t.id)+'">Supprimer</button></td></tr>';
   }).join(''):'<tr><td colspan="6" class="recurring-empty">Aucune récurrence pour le moment. Cliquez sur « Ajouter une récurrence » pour commencer.</td></tr>';
   const blank=templates.filter(t=>t.enabled&&(t.amount===null||t.amount===undefined||t.amount==='')).length;
-  $('recurring-summary').textContent=templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront conservées si un modèle est modifié ou supprimé.';
+  const month=nextMonthValue(),alreadyGenerated=monthAlreadyGenerated(month),button=$('recurring-add-month');
+  if(button){button.disabled=alreadyGenerated||generationInProgress.has(month);button.title=alreadyGenerated?'Les opérations de ce mois ont déjà été générées':'Générer une seule fois les opérations du mois prochain';}
+  $('recurring-summary').textContent=alreadyGenerated
+    ?'Les opérations de '+monthName(month)+' ont déjà été générées. La génération est verrouillée pour éviter les doublons.'
+    :templates.length+' modèles · '+blank+' montant(s) à renseigner · les opérations déjà générées seront conservées si un modèle est modifié ou supprimé.';
 }
 function updateRecurringEditorFields(){
   const frequency=$('recurring-edit-frequency').value;
@@ -419,8 +425,27 @@ function dueDateForTemplate(t,month){
   const day=Math.min(Number(t.day)||1,daysInMonth);
   return year+'-'+String(monthNumber).padStart(2,'0')+'-'+String(day).padStart(2,'0');
 }
+function generatedMonths(){
+  try{const value=JSON.parse(localStorage.getItem(GENERATED_MONTHS_KEY)||'[]');return Array.isArray(value)?value:[];}catch(error){return [];}
+}
+function monthAlreadyGenerated(month){
+  if(state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month)){
+    const months=generatedMonths();
+    if(!months.includes(month)){months.push(month);try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}}
+    return true;
+  }
+  return generatedMonths().includes(month);
+}
 function generateRecurringForMonth(month){
   if(!/^\d{4}-\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
+  if(generationInProgress.has(month))return;
+  if(monthAlreadyGenerated(month)){
+    const message='Les opérations de '+monthName(month)+' ont déjà été générées. Cette action ne peut être effectuée qu’une seule fois par mois.';
+    if($('recurring-summary'))$('recurring-summary').textContent=message;
+    showToast(message);renderRecurring();return;
+  }
+  generationInProgress.add(month);
+  const button=$('recurring-add-month');if(button)button.disabled=true;
   const additions=[];
   (state.recurringTemplates||[]).forEach(t=>{
     if(!t.enabled||t.amount===null||t.amount===undefined||t.amount===''||!Number.isFinite(Number(t.amount)))return;
@@ -429,11 +454,23 @@ function generateRecurringForMonth(month){
     if(state.transactions.some(x=>x.recurringKey===recurringKey))return;
     additions.push({id:crypto.randomUUID(),accountId:t.accountId,date,amount:Number(t.amount),label:t.label,createdAt:Date.now()+additions.length,recurringKey,recurringTemplateId:t.id});
   });
-  if(!additions.length){const message='Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants, les fréquences et les doublons.';if($('recurring-summary'))$('recurring-summary').textContent=message;showToast(message);return;}
+  if(!additions.length){
+    generationInProgress.delete(month);
+    if(button)button.disabled=false;
+    const alreadyExists=state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month);
+    if(alreadyExists){const months=generatedMonths();if(!months.includes(month)){months.push(month);try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}}}
+    const message=alreadyExists
+      ?'Les opérations de '+monthName(month)+' ont déjà été générées. Aucun doublon n’a été ajouté.'
+      :'Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.';
+    if($('recurring-summary'))$('recurring-summary').textContent=message;showToast(message);renderRecurring();return;
+  }
   state.transactions.push(...additions);
+  const months=generatedMonths();if(!months.includes(month))months.push(month);
+  try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}
+  generationInProgress.delete(month);
   renderAll();
-  const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'.';
-  if($('recurring-summary'))$('recurring-summary').textContent=message+' Les montants vides et les doublons ont été ignorés.';
+  const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'. Cette génération est maintenant verrouillée.';
+  if($('recurring-summary'))$('recurring-summary').textContent=message+' Les doublons ne pourront pas être générés une seconde fois.';
   showToast(message);
 }
 
@@ -442,7 +479,7 @@ function showToast(message){const el=$('toast');el.textContent=message;el.classL
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Transactions',recurring:'Récurrences'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',recurring:'Récurrences'})[view]||view;
   if(view==='recurring')renderRecurring();
   if(view==='accounts')renderAccounts();if(view==='transactions')renderTransactions();
   window.scrollTo({top:0,behavior:'smooth'});
@@ -536,10 +573,10 @@ function exportData(){
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='gestion-comptes-'+today()+'.json';a.click();URL.revokeObjectURL(url);showToast('Export JSON téléchargé.');
 }
 function downloadCsv(){
-  const rows=[['Date','Transaction','Compte','Montant','Solde à date','Montant après provisions','Solde net estimé']];
+  const rows=[['Date','Opération','Compte','Montant','Solde à date','Montant après provisions','Solde net estimé']];
   [...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{const a=accountById(t.accountId);rows.push([t.date,t.label,a?.name||'',t.amount,balanceAt(t.accountId,t.date),a?.kind==='pro'?tiimeCalc(a,t.amount).net:'',a?.kind==='pro'?tiimeNetBalance(a):'']);});
   const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
-  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='transactions-'+today()+'.csv';a.click();URL.revokeObjectURL(url);showToast('Export CSV téléchargé.');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='operations-'+today()+'.csv';a.click();URL.revokeObjectURL(url);showToast('Export CSV téléchargé.');
 }
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
