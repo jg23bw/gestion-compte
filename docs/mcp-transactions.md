@@ -1,113 +1,112 @@
-# MCP Gestion de comptes
+# Connexion MCP — Gestion de comptes
 
-Cette fonction expose un serveur MCP personnel pour ajouter et consulter des opérations. Elle ne remplace pas l'authentification de l'application web : elle utilise un jeton dédié, gardé côté serveur, et un UUID Supabase fixe pour limiter les opérations à un seul utilisateur.
+## Architecture multi-utilisateur (première étape)
+
+Chaque utilisateur dispose de son propre jeton MCP révocable. Le jeton est généré depuis une session déjà authentifiée dans Gestion de comptes, sa valeur brute n'est renvoyée qu'une seule fois et seule son empreinte SHA-256 est conservée en base. Le serveur déduit le propriétaire du jeton côté serveur : aucun `user_id` envoyé par le client n'est utilisé pour déterminer l'accès aux données.
+
+Chaque jeton peut avoir un compte par défaut propre à son utilisateur. Le propriétaire du compte est vérifié avant toute insertion. Les clés Supabase privilégiées restent exclusivement côté serveur.
+
+**Limite importante :** cette première étape utilise un jeton Bearer personnel, pas encore le flux OAuth 2.1 de bout en bout. Elle convient aux clients MCP qui acceptent un Bearer token personnalisé. Les clients qui imposent OAuth ne pourront pas se connecter tant que le serveur OAuth et son parcours d'autorisation ne seront pas implémentés. Ne présente pas encore cette intégration comme une connexion universelle « un clic ».
 
 ## Outils MCP
 
-- `list_accounts` : liste les comptes disponibles.
-- `add_transaction` : ajoute une opération. Une dépense doit avoir un montant négatif (`Pain`, `-2`), une entrée un montant positif. La date est aujourd'hui si elle n'est pas fournie.
-- `list_recent_transactions` : vérifie les dernières opérations créées.
+- `list_accounts` : liste les comptes du propriétaire du jeton.
+- `add_transaction` : ajoute une opération après contrôle de l'appartenance du compte. Montant négatif pour une dépense, positif pour une entrée.
+- `list_recent_transactions` : affiche les dernières opérations de ce même utilisateur.
 
-Pour saisir simplement « pain 2 € » sans préciser le compte, configure `MCP_DEFAULT_ACCOUNT_ID` sur le compte utilisé le plus souvent. Les identifiants préconfigurés sont par exemple `lbp`, `fortuneo`, `cic-montpont`, `bourso` et `tiime`.
+## Étapes de mise en place
 
-## Déploiement Supabase
+### 1. Appliquer la migration SQL
 
-Prérequis : Supabase CLI installée et connectée au bon compte.
+Dans Supabase Dashboard → SQL Editor, ouvre et exécute le contenu du fichier :
 
-1. Récupère l'UUID de l'utilisateur dans Supabase Dashboard → Authentication → Users. Ne le confonds pas avec l'identifiant du projet.
-2. Récupère la clé **service_role** dans Project Settings → API/Keys. Elle ne doit jamais être publiée dans le dépôt ni dans le navigateur.
-3. Génère un jeton personnel long et aléatoire, par exemple avec `openssl rand -hex 32`.
-4. À la racine du dépôt, lie le projet et définis les secrets (remplace les valeurs entre chevrons) :
+`supabase/migrations/202610180001_mcp_tokens.sql`
+
+Il crée la table des jetons personnels, dont la lecture est interdite aux rôles navigateur `anon` et `authenticated`.
+
+### 2. Vérifier les secrets serveur existants
+
+Dans le Terminal, à la racine du dépôt :
 
 ```bash
 supabase login
 supabase link --project-ref gpzqvkkysolqksimiqac
-supabase secrets set \
-  MCP_ACCESS_TOKEN="<jeton-aleatoire-de-64-caracteres-ou-plus>" \
-  MCP_USER_ID="<uuid-utilisateur-supabase>" \
-  MCP_DEFAULT_ACCOUNT_ID="lbp" \
-  SUPABASE_URL="https://gpzqvkkysolqksimiqac.supabase.co" \
-  SUPABASE_SERVICE_ROLE_KEY="<cle-service-role>"
-supabase functions deploy mcp-transactions
+supabase secrets list
 ```
 
-Le jeton doit rester secret. Ne l'ajoute ni à GitHub, ni à `supabase-config.js`, ni au code client. Si le jeton est exposé, génère-en un nouveau et remplace le secret.
+Les fonctions utilisent les secrets serveur `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY`. Supabase fournit généralement ces variables d'environnement aux Edge Functions. Si elles sont absentes, configure-les côté Supabase, jamais dans le code client. Ne crée plus de secrets globaux `MCP_USER_ID`, `MCP_ACCESS_TOKEN` ou `MCP_DEFAULT_ACCOUNT_ID` : le modèle multi-utilisateur ne les utilise plus.
 
-## Connexion d'un client MCP
-
-URL du serveur après déploiement :
-
-`https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-transactions`
-
-Le client doit utiliser le transport HTTP MCP et envoyer l'en-tête :
-
-`Authorization: Bearer <MCP_ACCESS_TOKEN>`
-
-Certains clients demandent le jeton dans leur formulaire d'authentification; d'autres ne prennent en charge que OAuth. Si ton client ne permet pas d'envoyer un Bearer token personnalisé, cette version ne pourra pas s'y connecter directement : il faudra ajouter OAuth compatible avec ce client plutôt que de rendre le serveur public.
-
-## Sécurité et limites
-
-- L'endpoint vérifie un jeton dédié et impose le `MCP_USER_ID` configuré côté serveur.
-- Les requêtes de base utilisent la clé service_role, donc la fonction vérifie explicitement le propriétaire et l'appartenance du compte avant insertion. Ne réutilise pas cette clé ailleurs.
-- L'endpoint ne peut agir que pour un utilisateur. Pour plusieurs utilisateurs, il faudra remplacer ce modèle par OAuth/Supabase Auth par utilisateur.
-- La fonction a été ajoutée au dépôt mais doit encore être déployée et testée dans ton projet Supabase. Aucun secret ni déploiement distant n'a été effectué depuis ce dépôt.
-
-
-## Saisie ultra-rapide depuis l'iPhone (Raccourcis)
-
-La fonction `quick-add` accepte une phrase comme `pain 2 €` et crée directement la transaction dans le compte par défaut. Les dépenses sont négatives par défaut; utilise `+2500 salaire` ou `salaire 2500 €` pour une entrée. Le montant doit être le dernier élément de la phrase.
-
-### Déployer la fonction
-
-Après avoir configuré les secrets de la section précédente, déploie aussi :
+### 3. Déployer les trois fonctions
 
 ```bash
+supabase functions deploy mcp-tokens
+supabase functions deploy mcp-transactions
 supabase functions deploy quick-add
 ```
 
-URL à utiliser dans le raccourci :
+### 4. Créer un jeton pour un utilisateur connecté
+
+URL du gestionnaire de jetons :
+
+`https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-tokens`
+
+L'appel doit venir de l'application alors que l'utilisateur est connecté et doit porter son jeton de session Supabase :
+
+- `Authorization: Bearer <JWT_DE_SESSION_SUPABASE>`
+- `Content-Type: application/json`
+
+Pour créer un jeton MCP avec un compte par défaut :
+
+```json
+{
+  "action": "create",
+  "name": "Mon assistant",
+  "default_account_id": "cic-montpont"
+}
+```
+
+L'endpoint renvoie une propriété `token` une seule fois. Copie-la dans le gestionnaire de secrets du client MCP et ne la publie jamais. Le point d'entrée de gestion est protégé par la session de l'utilisateur; il ne faut jamais appeler cette route avec la clé `service_role` depuis le navigateur.
+
+Autres actions, toujours avec le JWT de session de l'utilisateur :
+- lister ses jetons : `{"action":"list"}`
+- révoquer un jeton : `{"action":"revoke","id":"<id-du-jeton>"}`
+
+Ces appels sont prévus pour être intégrés à l'interface de paramètres de Gestion de comptes. Tant que l'interface n'est pas ajoutée, il faut les appeler depuis un contexte authentifié de l'application; ne colle pas le JWT dans un chat ou dans un dépôt.
+
+### 5. Connexion MCP
+
+URL du serveur MCP :
+
+`https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-transactions`
+
+Le client MCP doit envoyer le jeton personnel créé pour cet utilisateur :
+
+`Authorization: Bearer <JETON_PERSONNEL_gdc_...>`
+
+Le jeton est indépendant de l'UUID utilisateur et peut être révoqué. Les outils MCP sont limités aux données du propriétaire du jeton.
+
+## Saisie rapide sur iPhone avec confirmation
+
+URL :
 
 `https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/quick-add`
 
-### Créer le raccourci iOS
+Le raccourci doit envoyer `Authorization: Bearer <JETON_PERSONNEL>` et `Content-Type: application/json`.
 
-Dans l'app **Raccourcis** sur l'iPhone, crée un raccourci « Ajouter une dépense » avec ces actions :
+Flux recommandé :
+1. **Dicter du texte** : par exemple « pain deux euros ».
+2. Envoyer un POST JSON avec `{"action":"preview","text":"<texte dicté>"}`. Cette étape renvoie le libellé, le montant, la date et le compte sans insérer de transaction.
+3. Afficher ces détails, puis proposer **Confirmer** ou **Annuler**.
+4. Si l'utilisateur confirme, envoyer un second POST avec `{"action":"confirm","confirmed":true,"text":"<même texte dicté>"}`.
+5. Afficher le message de succès ou l'erreur.
 
-1. **Dicter du texte** (langue : français).
-2. **Obtenir le contenu de l’URL** avec l'URL ci-dessus.
-   - Méthode : `POST`
-   - En-têtes : `Authorization` = `Bearer TON_MCP_ACCESS_TOKEN` ; `Content-Type` = `application/json`
-   - Corps de la requête : JSON avec la clé `text` et comme valeur le résultat de « Dicter du texte ».
-3. **Obtenir le dictionnaire** depuis le résultat, puis afficher la valeur `message` en cas de succès ou `error` en cas d'échec. Si tu préfères, commence par afficher le résultat brut pour vérifier la configuration.
+Pour un raccourci qui utilise un compte par défaut, crée un jeton avec `default_account_id: "cic-montpont"`. Ne mets jamais le JWT de session Supabase ou une clé `service_role` dans le raccourci : seul le jeton MCP personnel prévu pour cette intégration doit y être utilisé. Ce jeton donne accès aux outils de lecture et d'ajout autorisés; révoque-le si l'iPhone ou le raccourci est partagé/perdu.
 
-Tu peux ensuite ajouter ce raccourci à l'écran d'accueil et le lancer par Siri. Dans « Obtenir le contenu de l'URL », choisis bien le résultat de dictée comme variable magique pour la valeur de `text`.
+## Sécurité et prochaine étape commerciale
 
-**Important :** le jeton est un secret. Ne partage pas le raccourci avec d'autres personnes sans retirer son en-tête d'autorisation. Le jeton donne accès à l'ajout de transactions pour l'utilisateur configuré. En cas d'exposition, remplace `MCP_ACCESS_TOKEN` dans les secrets Supabase et dans le raccourci.
-
-Le compte cible est celui configuré dans `MCP_DEFAULT_ACCOUNT_ID`. Il faut le déployer puis tester une opération de faible montant avant usage quotidien. La fonction n'a pas été déployée dans Supabase depuis ce dépôt.
-
-### Réglages retenus pour le raccourci
-
-- Compte par défaut : `cic-montpont` (CIC Montpont).
-- Confirmation obligatoire avant insertion.
-- Date par défaut : date du jour en fuseau Europe/Paris.
-
-Dans la commande `supabase secrets set` ci-dessus, utilise `MCP_DEFAULT_ACCOUNT_ID="cic-montpont"` pour le compte par défaut. Les secrets ne sont pas modifiés automatiquement depuis GitHub : exécute la commande de configuration dans ton terminal.
-
-### Flux de confirmation recommandé
-
-La fonction `quick-add` accepte deux actions :
-- `preview` : interprète la phrase et renvoie le libellé, le montant, la date et le compte sans créer de transaction.
-- `confirm` : crée la transaction uniquement si le JSON contient aussi `"confirmed": true`.
-
-Dans Raccourcis, construis le flux suivant :
-1. **Dicter du texte** en français.
-2. **Obtenir le contenu de l’URL** (POST) sur l’URL `quick-add`, avec les en-têtes `Authorization: Bearer <MCP_ACCESS_TOKEN>` et `Content-Type: application/json`, et un corps JSON contenant `action: preview` et `text: <Texte dicté>`.
-3. **Obtenir le dictionnaire** du résultat, puis extraire `transaction`. Affiche une alerte qui présente `label`, `amount`, `account` et `date`.
-4. Utilise **Choisir dans le menu** avec les options « Confirmer » et « Annuler ». Dans la branche « Annuler », arrête le raccourci.
-5. Dans la branche « Confirmer », refais **Obtenir le contenu de l’URL** sur la même URL avec un corps JSON contenant `action: confirm`, `confirmed: true` et exactement le même `text` dicté.
-6. Affiche `message` en cas de succès, ou `error` si la requête échoue.
-
-Pour le corps JSON de Raccourcis, ajoute des champs de type texte/texte magique plutôt que d’insérer manuellement la dictée dans une chaîne JSON : cela évite les erreurs avec apostrophes ou caractères spéciaux.
-
-Le déploiement et le test restent à effectuer. Commence par une dépense test de faible montant et vérifie qu'une opération n'est pas créée lorsque tu choisis « Annuler ».
+- La clé `service_role` reste serveur uniquement.
+- Les jetons personnels sont stockés sous forme d'empreinte et peuvent être révoqués.
+- Chaque requête vérifie le jeton et utilise le `user_id` associé en base, jamais une identité fournie par le client.
+- Les comptes demandés sont vérifiés pour appartenir à ce même utilisateur.
+- Il reste à ajouter l'écran de gestion des connexions dans l'application, tests multi-utilisateur et tests de sécurité.
+- Pour une compatibilité universelle avec les clients MCP OAuth-only, il reste à implémenter le flux OAuth 2.1 complet (inscription client, autorisation, consentement, échange/renouvellement/révocation des jetons et métadonnées d'autorisation). Le Bearer token personnel est une étape intermédiaire, pas un remplacement d'OAuth.
