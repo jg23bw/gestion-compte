@@ -419,6 +419,73 @@ function openAccountEditor(id){
   $('edit-vat-rate').value=a.vatRate??20;$('edit-social-rate').value=a.socialRate??45;$('edit-account-net-opening').value=Number(a.netOpening||0);
   $('account-dialog').showModal();
 }
+const MCP_TOKEN_ENDPOINT='https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-tokens';
+async function mcpTokenRequest(payload){
+  if(!cloud.user)throw new Error('Connectez-vous avant de gérer les jetons MCP.');
+  const {data,error}=await cloudClient().auth.getSession();
+  if(error)throw error;
+  const accessToken=data.session?.access_token;
+  if(!accessToken)throw new Error('Session expirée. Reconnectez-vous.');
+  const config=window.GESTION_SUPABASE_CONFIG;
+  const response=await fetch(MCP_TOKEN_ENDPOINT,{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+accessToken,'apikey':config.publishableKey,'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  const result=await response.json().catch(()=>({error:'Réponse serveur illisible.'}));
+  if(!response.ok)throw new Error(result.error||'Impossible de gérer le jeton MCP.');
+  return result;
+}
+function fillMcpAccountSelect(){
+  const select=$('mcp-default-account');
+  if(!select)return;
+  const selected=select.value;
+  select.replaceChildren(new Option('Aucun compte par défaut',''));
+  state.accounts.forEach(account=>select.add(new Option(account.name,account.id)));
+  if([...select.options].some(option=>option.value===selected))select.value=selected;
+}
+async function loadMcpTokens(){
+  const list=$('mcp-token-list');
+  if(!list||!cloud.user)return;
+  list.replaceChildren();
+  $('mcp-token-message').textContent='Chargement des connexions…';
+  try{
+    fillMcpAccountSelect();
+    const result=await mcpTokenRequest({action:'list'});
+    list.replaceChildren();
+    if(!result.tokens?.length){
+      $('mcp-token-message').textContent='Aucun jeton créé pour le moment.';
+      return;
+    }
+    $('mcp-token-message').textContent='';
+    result.tokens.forEach(token=>{
+      const row=document.createElement('div');row.className='mcp-token-row';
+      const info=document.createElement('div');
+      const name=document.createElement('strong');name.textContent=token.name+(token.revoked_at?' — révoqué':'');
+      const meta=document.createElement('small');
+      const account=state.accounts.find(a=>a.id===token.default_account_id);
+      meta.textContent='Compte : '+(account?.name||token.default_account_id||'à choisir')+' · Créé le '+dateFormat(token.created_at?.slice(0,10));
+      info.append(name,document.createElement('br'),meta);row.append(info);
+      if(!token.revoked_at){
+        const revoke=document.createElement('button');revoke.type='button';revoke.className='secondary-button';revoke.textContent='Révoquer';
+        revoke.addEventListener('click',async()=>{
+          if(!window.confirm('Révoquer ce jeton ? L’assistant qui l’utilise perdra immédiatement l’accès.'))return;
+          revoke.disabled=true;
+          try{await mcpTokenRequest({action:'revoke',id:token.id});showToast('Jeton MCP révoqué.');await loadMcpTokens();}
+          catch(error){$('mcp-token-message').textContent=error.message||'Révocation impossible.';revoke.disabled=false;}
+        });
+        row.append(revoke);
+      }
+      list.append(row);
+    });
+  }catch(error){$('mcp-token-message').textContent=error.message||'Impossible de charger les jetons MCP.';}
+}
+function showMcpSettings(){
+  const section=$('mcp-settings');
+  if(!section)return;
+  section.hidden=!cloud.user;
+  if(cloud.user){fillMcpAccountSelect();loadMcpTokens();}
+}
 function exportData(){
   const payload={application:'Gestion de comptes',exportedAt:new Date().toISOString(),...state};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
