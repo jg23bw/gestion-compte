@@ -34,6 +34,15 @@ function balanceAt(accountId,untilDate=null){
   const a=accountById(accountId);if(!a)return 0;
   return Number(a.opening||0)+accountTransactions(accountId).filter(t=>!untilDate||t.date<=untilDate).reduce((sum,t)=>sum+Number(t.amount),0);
 }
+function balanceAfterTransaction(transaction){
+  const a=accountById(transaction.accountId);if(!a)return 0;
+  let balance=Number(a.opening||0);
+  for(const t of accountTransactions(transaction.accountId)){
+    balance+=Number(t.amount);
+    if(t.id===transaction.id)break;
+  }
+  return balance;
+}
 function tiimeCalc(account,amount){
   const rate=Math.min(100,Math.max(0,Number(account.vatRate)||0))/100;
   const social=Math.min(100,Math.max(0,Number(account.socialRate)||0))/100;
@@ -85,7 +94,7 @@ function renderTransactions(){
   $('transaction-head').innerHTML='<tr><th>DATE</th><th>TRANSACTION</th><th>COMPTE</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(accountFilter==='tiime'?'<th>MONTANT APRÈS PROVISIONS</th><th>SOLDE NET ESTIMÉ</th>':'')+'<th>ACTIONS</th></tr>';
   $('transaction-rows').innerHTML=list.length?list.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte supprimé',short:'?',kind:'bank'};
-    const balance=balanceAt(t.accountId,t.date);
+    const balance=balanceAfterTransaction(t);
     const calc=tiimeCalc(a,Number(t.amount));
     const net=tiimeNetBalance(a);
     return '<tr><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td><div class="table-account">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td class="table-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(accountFilter==='tiime'?'<td>'+euro(calc.net)+'</td><td class="table-balance">'+euro(net)+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
