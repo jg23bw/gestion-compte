@@ -265,3 +265,8 @@ tbody tr:hover td{background:#fafbff}
 }
 
 .toast{display:flex;align-items:center;gap:12px;pointer-events:none}.toast.show{pointer-events:auto}.toast-undo{border:1px solid #7585a6;background:#293956;color:#fff;border-radius:6px;padding:6px 10px;font:600 11px 'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}.toast-undo:hover{background:#3b4e72}
+
+/* Le bouton Annuler doit rester au-dessus de la navigation et être cliquable. */
+.toast{z-index:1000;max-width:min(620px,calc(100vw - 32px));}
+.toast-undo{position:relative;z-index:1001;pointer-events:auto;flex-shrink:0;}
+@media(max-width:760px){.toast{bottom:calc(86px + env(safe-area-inset-bottom, 0px));right:12px;left:12px;justify-content:space-between;}}
