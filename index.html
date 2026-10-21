@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=operations-current-balance-1">
+  <link rel="stylesheet" href="styles.css?v=professional-balance-consistency-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=operations-current-balance-1" defer></script>
+  <script src="app.js?v=professional-balance-consistency-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -54,7 +54,7 @@
         <div class="summary-grid">
           <article class="summary-card total-card"><div class="card-top"><span>Solde total</span><span class="card-icon navy">€</span></div><div class="metric" id="total-balance">0,00 €</div><div class="card-foot"><span class="muted">Sur l'ensemble des comptes</span><span class="trend-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
           <article class="summary-card"><div class="card-top"><span>Comptes bancaires</span><span class="card-icon blue">▤</span></div><div class="metric" id="bank-balance">0,00 €</div><div class="card-foot"><span class="muted">Hors compte professionnel</span><span class="tiny-dot blue-dot"></span></div></article>
-          <article class="summary-card"><div class="card-top"><span>Compte professionnel</span><span class="card-icon purple">↗</span></div><div class="metric" id="pro-balance">0,00 €</div><div class="card-foot"><span class="muted">Solde estimé après provisions</span><span class="tiny-dot purple-dot"></span></div></article>
+          <article class="summary-card"><div class="card-top"><span>Compte professionnel</span><span class="card-icon purple">↗</span></div><div class="metric" id="pro-balance">0,00 €</div><div class="card-foot"><span class="muted">Solde du compte, avant provisions</span><span class="tiny-dot purple-dot"></span></div></article>
         </div>
 
         <div class="content-grid">
