@@ -128,3 +128,12 @@ Si le cloud échoue :
 ## 8. Historique et maintenance de cette documentation
 
 Ce document est un contexte vivant, pas un substitut au code actuel. À chaque tâche importante, ajouter une courte entrée datée décrivant les fichiers touchés, les migrations éventuelles et les tests réellement exécutés. Ne jamais consigner des données personnelles de l’utilisateur ni des secrets.
+
+
+## 9. Mise à jour — solde à date dans « Opérations » (21 octobre 2026)
+
+- L’écran « Opérations » affiche désormais une ligne récapitulative « Solde à date » en tête du tableau du compte sélectionné.
+- Le solde à date additionne le solde d’ouverture et les mouvements datés jusqu’à aujourd’hui ; les opérations futures n’y sont pas incluses.
+- Pour le compte professionnel Tiime, la ligne affiche également le solde net estimé à date, calculé avec les mêmes limites de date.
+- La ligne récapitulative est indépendante des filtres de recherche et de type appliqués à la liste des opérations.
+- Vérifications à réaliser après déploiement : `node --check app.js`, contrôle des IDs DOM et test navigateur. Aucun test navigateur n’est revendiqué dans cette modification.
