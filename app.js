@@ -360,7 +360,7 @@ function fillAccountSelects(){
   }
 }
 function renderTransactions(){
-  const accountFilter=$('transaction-account-filter').value,typeFilter=$('transaction-type-filter').value,query=$('transaction-search').value.trim().toLocaleLowerCase('fr'),sort=$('transaction-sort')?.value||'manual';
+  const accountFilter=$('transaction-account-filter').value,typeFilter=$('transaction-type-filter').value,query=$('transaction-search').value.trim().toLocaleLowerCase('fr'),sort=$('transaction-sort')?.value||'date-asc';
   const account=accountById(accountFilter);
   const asOf=today();
   const currentBalance=balanceAt(accountFilter,asOf);
