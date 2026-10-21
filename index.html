@@ -8,7 +8,7 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=professional-balance-consistency-1">
+  <link rel="stylesheet" href="styles.css?v=simple-account-settings-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
   <script src="app.js?v=professional-balance-consistency-1" defer></script>
@@ -137,7 +137,6 @@
       <label>Nom du compte<input id="edit-account-name" required maxlength="80"></label>
       <label>Solde de départ (€)<input id="edit-account-opening" type="number" step="0.01" required></label>
       <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée.</p>
-      <div id="tiime-settings" class="tiime-settings hidden"><h3>Provisions estimatives Tiime</h3><p>Pour une entrée positive, le montant est supposé TTC : la TVA est isolée, puis les cotisations sont estimées sur le montant HT. Ce calcul est indicatif, à ajuster selon votre situation.</p><div class="form-row"><label>TVA (%)<input id="edit-vat-rate" type="number" min="0" max="100" step="0.1"></label><label>Cotisations sur HT (%)<input id="edit-social-rate" type="number" min="0" max="100" step="0.1"></label></div><label>Solde net de départ estimé (€)<input id="edit-account-net-opening" type="number" step="0.01"></label></div>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="account-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
