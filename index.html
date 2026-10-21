@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css?v=simple-account-settings-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=simple-account-settings-2" defer></script>
+  <script src="app.js?v=operations-date-ascending-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -78,7 +78,7 @@
 
       <section class="view" id="transactions-view">
         <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Opérations</h1><p class="subtitle">Consultez et gérez les opérations de tous vos comptes.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
-        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="transaction-sort" aria-label="Trier les opérations"><option value="manual">Ordre manuel</option><option value="date-desc">Date décroissante</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option><option value="pointed">Pointées d’abord</option></select></div>
+        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="transaction-sort" aria-label="Trier les opérations"><option value="date-asc" selected>Date croissante (plus ancienne en premier)</option><option value="date-desc">Date décroissante</option><option value="manual">Ordre manuel</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option><option value="pointed">Pointées d’abord</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="transaction-head"></thead><tbody id="transaction-rows"></tbody></table></div><div class="table-footer" id="transaction-footer"></div></section>
       </section>
 
