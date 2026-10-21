@@ -552,8 +552,6 @@ function openAccountEditor(id){
   const a=accountById(id);if(!a)return;
   $('account-form').reset();$('edit-account-id').value=a.id;$('account-modal-title').textContent='Configurer le compte';
   $('edit-account-name').value=a.name;$('edit-account-opening').value=Number(a.opening||0);
-  $('tiime-settings').classList.toggle('hidden',a.kind!=='pro');
-  $('edit-vat-rate').value=a.vatRate??20;$('edit-social-rate').value=a.socialRate??45;$('edit-account-net-opening').value=Number(a.netOpening||0);
   $('account-dialog').showModal();
 }
 const MCP_TOKEN_ENDPOINT='https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-tokens';
@@ -737,7 +735,6 @@ $('account-form').addEventListener('submit',event=>{
   event.preventDefault();const a=accountById($('edit-account-id').value);if(!a)return;
   prepareUndo();
   a.name=$('edit-account-name').value.trim();a.opening=Number($('edit-account-opening').value)||0;
-  if(a.kind==='pro'){a.vatRate=Math.min(100,Math.max(0,Number($('edit-vat-rate').value)||0));a.socialRate=Math.min(100,Math.max(0,Number($('edit-social-rate').value)||0));a.netOpening=Number($('edit-account-net-opening').value)||0;}
   $('account-dialog').close();renderAll();showToast('Paramètres du compte enregistrés.',true);
 });
 document.addEventListener('change',event=>{
