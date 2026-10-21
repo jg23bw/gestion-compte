@@ -145,3 +145,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le libellé indique que ce solde est affiché avant provisions.
 - Les estimations TVA/cotisations et le solde net de départ estimé restent des indicateurs complémentaires ; ils ne remplacent plus le solde principal du compte.
 - Vérifications effectuées : comparaison des fonctions de calcul et confirmation des modifications par relecture des fichiers GitHub. Le test navigateur n’a pas été exécuté.
+
+
+## 11. Simplification de la fenêtre de paramétrage des comptes (21 octobre 2026)
+
+- La fenêtre « Configurer le compte » est désormais identique pour tous les comptes : nom du compte, solde de départ et actions Annuler/Enregistrer.
+- Les champs Tiime spécifiques (TVA, taux de cotisations et solde net de départ estimé) ont été retirés de cette fenêtre.
+- Les valeurs Tiime déjà présentes dans les données sont conservées afin de ne pas modifier silencieusement les calculs indicatifs existants ; elles ne sont plus éditables depuis cette fenêtre.
+- Vérifications effectuées : lecture du code et des champs concernés sur GitHub. Aucun test navigateur n’a été exécuté.
