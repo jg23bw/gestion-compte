@@ -153,3 +153,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les champs Tiime spécifiques (TVA, taux de cotisations et solde net de départ estimé) ont été retirés de cette fenêtre.
 - Les valeurs Tiime déjà présentes dans les données sont conservées afin de ne pas modifier silencieusement les calculs indicatifs existants ; elles ne sont plus éditables depuis cette fenêtre.
 - Vérifications effectuées : lecture du code et des champs concernés sur GitHub. Aucun test navigateur n’a été exécuté.
+
+
+## 12. Tri par défaut des opérations (21 octobre 2026)
+
+- L’écran « Opérations » affiche par défaut les mouvements par date croissante : la plus ancienne opération apparaît en premier.
+- Les autres tris restent disponibles dans le sélecteur.
+- Le paramètre de version de `app.js` est actualisé pour éviter de conserver l’ancien script en cache.
+- Vérification effectuée : contrôle des valeurs par défaut et du tri appliqué dans le code GitHub. Aucun test navigateur n’a été exécuté.
