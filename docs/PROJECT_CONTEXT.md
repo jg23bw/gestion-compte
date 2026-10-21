@@ -137,3 +137,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Pour le compte professionnel Tiime, la ligne affiche également le solde net estimé à date, calculé avec les mêmes limites de date.
 - La ligne récapitulative est indépendante des filtres de recherche et de type appliqués à la liste des opérations.
 - Vérifications à réaliser après déploiement : `node --check app.js`, contrôle des IDs DOM et test navigateur. Aucun test navigateur n’est revendiqué dans cette modification.
+
+
+## 10. Harmonisation des soldes du compte professionnel (21 octobre 2026)
+
+- Le solde principal Tiime du tableau de bord utilise maintenant le même calcul que les autres comptes : solde de départ (`opening`) + opérations enregistrées (`balanceAt`).
+- Le libellé indique que ce solde est affiché avant provisions.
+- Les estimations TVA/cotisations et le solde net de départ estimé restent des indicateurs complémentaires ; ils ne remplacent plus le solde principal du compte.
+- Vérifications effectuées : comparaison des fonctions de calcul et confirmation des modifications par relecture des fichiers GitHub. Le test navigateur n’a pas été exécuté.
