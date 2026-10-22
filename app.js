@@ -657,7 +657,6 @@ function renderCrypto(){
     if(!searchable.includes(query))return false;
     if(performanceFilter==='gain')return m.gain!==null&&m.gain>0;
     if(performanceFilter==='loss')return m.gain!==null&&m.gain<0;
-    if(performanceFilter==='unpriced')return m.gain===null;
     return true;
   });
   const compareDesc=(a,b,key)=>{
