@@ -637,11 +637,51 @@ async function loadCryptoPrices(){
 }
 function renderCrypto(){
   if(!$('crypto-rows'))return;
-  const holdings=[...(state.cryptoHoldings||[])].sort((a,b)=>(Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||String(a.symbol||'').localeCompare(String(b.symbol||''),'fr'));
-  const priced=holdings.filter(h=>cryptoPrice(h)!==null);
-  const investedAll=holdings.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
-  const investedPriced=priced.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
-  const currentValue=priced.reduce((sum,h)=>sum+(Number(h.quantity)||0)*cryptoPrice(h),0);
+  const allHoldings=[...(state.cryptoHoldings||[])];
+  const query=$('crypto-search')?.value.trim().toLocaleLowerCase('fr')||'';
+  const performanceFilter=$('crypto-performance-filter')?.value||'all';
+  const sort=$('crypto-sort')?.value||'manual';
+  const metrics=new Map(allHoldings.map(h=>{
+    const price=cryptoPrice(h);
+    const invested=Number(h.invested)||0;
+    const quantity=Number(h.quantity)||0;
+    const value=price===null?null:quantity*price;
+    const gain=value===null?null:value-invested;
+    const performance=gain===null||invested<=0?null:gain/invested*100;
+    return [h.id,{price,invested,quantity,value,gain,performance}];
+  }));
+  const symbolOf=holding=>String(holding.symbol||'');
+  let holdings=allHoldings.filter(h=>{
+    const m=metrics.get(h.id);
+    const searchable=(symbolOf(h)+' '+String(h.name||'')).toLocaleLowerCase('fr');
+    if(!searchable.includes(query))return false;
+    if(performanceFilter==='gain')return m.gain!==null&&m.gain>0;
+    if(performanceFilter==='loss')return m.gain!==null&&m.gain<0;
+    if(performanceFilter==='unpriced')return m.gain===null;
+    return true;
+  });
+  const compareDesc=(a,b,key)=>{
+    const av=a[key],bv=b[key];
+    if(av===null&&bv===null)return 0;
+    if(av===null)return 1;
+    if(bv===null)return -1;
+    return bv-av;
+  };
+  holdings.sort((a,b)=>{
+    const ma=metrics.get(a.id),mb=metrics.get(b.id);
+    const bySymbol=symbolOf(a).localeCompare(symbolOf(b),'fr');
+    if(sort==='name')return String(a.name||a.symbol||'').localeCompare(String(b.name||b.symbol||''),'fr')||bySymbol;
+    if(sort==='invested-desc')return mb.invested-ma.invested||bySymbol;
+    if(sort==='quantity-desc')return mb.quantity-ma.quantity||bySymbol;
+    if(sort==='value-desc')return compareDesc(ma,mb,'value')||bySymbol;
+    if(sort==='gain-desc')return compareDesc(ma,mb,'gain')||bySymbol;
+    if(sort==='performance-desc')return compareDesc(ma,mb,'performance')||bySymbol;
+    return (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||bySymbol;
+  });
+  const priced=holdings.filter(h=>metrics.get(h.id).value!==null);
+  const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
+  const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
+  const currentValue=priced.reduce((sum,h)=>sum+metrics.get(h.id).value,0);
   const gain=currentValue-investedPriced;
   const performance=investedPriced>0?gain/investedPriced*100:0;
 
@@ -666,16 +706,15 @@ function renderCrypto(){
   const migration=$('crypto-migration');
   if(migration)migration.hidden=cryptoTableReady!==false;
 
+  const filtered=query!==''||performanceFilter!=='all';
   $('crypto-rows').innerHTML=holdings.length?holdings.map(h=>{
-    const price=cryptoPrice(h);
-    const value=price!==null?(Number(h.quantity)||0)*price:null;
-    const rowGain=value===null?null:value-(Number(h.invested)||0);
-    const rowPerformance=rowGain===null||(Number(h.invested)||0)<=0?null:rowGain/Number(h.invested)*100;
-    return '<tr><td><div class="crypto-coin"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></td><td class="table-amount">'+euro(h.invested)+'</td><td class="crypto-quantity">'+numberFr(h.quantity)+'</td><td class="crypto-price">'+(price===null?'—':euroPrecise(price))+'</td><td class="table-balance">'+(value===null?'—':euro(value))+'</td><td class="table-amount '+(rowGain===null?'':rowGain>0?'positive':rowGain<0?'negative':'')+'">'+(rowGain===null?'—':(rowGain>0?'+':'')+euro(rowGain))+'</td><td class="crypto-performance '+(rowPerformance===null?'':rowPerformance>0?'positive':rowPerformance<0?'negative':'')+'">'+(rowPerformance===null?'—':formatSignedPercent(rowPerformance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="8"><div class="empty-state">Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.</div></td></tr>';
+    const m=metrics.get(h.id);
+    return '<tr><td><div class="crypto-coin"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.')+'</div></td></tr>';
 
-  const missing=holdings.filter(h=>cryptoPrice(h)===null).length;
-  let footer=holdings.length+' position(s) affichée(s) · prix convertis en euros via CoinGecko';
+  const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
+  let footer=holdings.length+' position(s) affichée(s)'+(filtered?' sur '+allHoldings.length:'')+' · prix convertis en euros via CoinGecko';
+  if(filtered)footer+=' · totaux calculés sur les positions affichées';
   if(cryptoPrices.updatedAt)footer+=' · dernière actualisation à '+cryptoTimeLabel(cryptoPrices.updatedAt);
   if(missing)footer+=' · '+missing+' position(s) sans prix : les totaux ne les incluent pas.';
   $('crypto-footer').textContent=footer;
@@ -948,6 +987,8 @@ $('cloud-logout').addEventListener('click',async()=>{
 });
 $('crypto-add').addEventListener('click',()=>openCryptoEditor());
 $('crypto-refresh').addEventListener('click',loadCryptoPrices);
+['crypto-performance-filter','crypto-sort'].forEach(id=>$(id).addEventListener('change',renderCrypto));
+$('crypto-search').addEventListener('input',renderCrypto);
 $('crypto-coin-search').addEventListener('input',event=>{
   const query=event.target.value.trim();
   clearCryptoCoin(false);

@@ -287,6 +287,7 @@ tbody tr:hover td{background:#fafbff}
 /* --- Portefeuille crypto (22 octobre 2026) --- */
 .crypto-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .crypto-toolbar{justify-content:space-between}
+.crypto-filters{margin-bottom:12px}
 .crypto-toolbar .toolbar-note{margin-left:auto;text-align:right}
 .crypto-toolbar .toolbar-note.is-error{color:#d66c58}
 .crypto-notice{border:1px solid #f3d9c8;background:#fff7ef;color:#8a5a35;border-radius:12px;padding:12px 14px;font-size:11px;line-height:1.6;margin:0 0 16px}
