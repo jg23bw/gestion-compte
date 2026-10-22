@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=crypto-page-1">
+  <link rel="stylesheet" href="styles.css?v=crypto-page-2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=crypto-page-1" defer></script>
+  <script src="app.js?v=crypto-page-2" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -154,9 +154,13 @@
     <form id="crypto-form">
       <div class="modal-heading"><div><p class="eyebrow">PORTEFEUILLE CRYPTO</p><h2 id="crypto-modal-title">Ajouter une position</h2></div><button type="button" class="close-button" data-close="crypto-dialog" aria-label="Fermer">×</button></div>
       <input type="hidden" id="crypto-edit-id">
-      <div class="form-row"><label>Symbole<input id="crypto-edit-symbol" required maxlength="12" placeholder="BTC" autocomplete="off"></label><label>Nom<input id="crypto-edit-name" maxlength="60" placeholder="Bitcoin" autocomplete="off"></label></div>
-      <label>Identifiant CoinGecko<input id="crypto-edit-coingecko" required maxlength="80" placeholder="bitcoin" autocomplete="off"></label>
-      <p class="form-help">L’identifiant CoinGecko (par exemple <code>bitcoin</code> ou <code>ripple</code>) sert à récupérer le prix réel en euros. Il est visible sur la page CoinGecko de la crypto.</p>
+      <label>Rechercher une crypto<input id="crypto-coin-search" type="search" placeholder="Bitcoin, ETH, Solana…" autocomplete="off" aria-autocomplete="list" aria-controls="crypto-coin-results" aria-expanded="false"></label>
+      <div id="crypto-coin-results" class="crypto-coin-results" role="listbox" hidden></div>
+      <p id="crypto-coin-selected" class="crypto-coin-selected" aria-live="polite">Aucune crypto sélectionnée.</p>
+      <input type="hidden" id="crypto-edit-coingecko">
+      <input type="hidden" id="crypto-edit-symbol">
+      <input type="hidden" id="crypto-edit-name">
+      <p class="form-help">Choisissez la crypto dans la liste : son nom et son identifiant de prix sont remplis automatiquement. Le prix est ensuite récupéré en euros chez CoinGecko.</p>
       <div class="form-row"><label>Statut<select id="crypto-edit-status"><option value="Détenu">Détenu</option><option value="Vendu (sorti)">Vendu (sorti)</option></select></label><label>Investi (€)<input id="crypto-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label></div>
       <label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label>
       <p class="form-help">La valeur actuelle est calculée en multipliant la quantité par le prix du marché. Une position « Vendu (sorti) » reste affichée mais n’entre pas dans les totaux.</p>

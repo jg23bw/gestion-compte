@@ -303,3 +303,13 @@ tbody tr:hover td{background:#fafbff}
 .crypto-status.is-sold{background:#f2f4f8;color:#8b93a2}
 @media(max-width:1100px){.crypto-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.crypto-summary-grid{grid-template-columns:1fr}.crypto-toolbar{align-items:flex-start;flex-direction:column}.crypto-toolbar .toolbar-note{margin-left:0;text-align:left}}
+.crypto-coin-results{margin:-8px 0 14px;border:1px solid #e1e7f1;border-radius:11px;background:#fff;max-height:240px;overflow:auto;box-shadow:0 12px 30px #19294a14}
+.crypto-coin-option{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid #f2f4f8;background:transparent;text-align:left;cursor:pointer;font:11px 'DM Sans',sans-serif;color:#46536b}
+.crypto-coin-option:last-child{border-bottom:0}
+.crypto-coin-option:hover,.crypto-coin-option:focus{background:#f4f7ff;outline:none}
+.crypto-coin-symbol{min-width:52px;font-weight:700;color:#2f3a50;font-size:10px;letter-spacing:.2px}
+.crypto-coin-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crypto-coin-rank{font-size:9px;color:#9aa3b2}
+.crypto-coin-message{padding:11px 12px;font-size:10px;color:#8f99ab}
+.crypto-coin-selected{font-size:10px;color:#8f99ab;background:#f7f8fb;border-radius:8px;padding:9px 11px;margin:-6px 0 16px}
+.crypto-coin-selected.is-selected{background:#eef8f3;color:#1c8a64;font-weight:600}

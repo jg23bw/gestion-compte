@@ -94,7 +94,7 @@ Procédure :
 
 Sans cette migration, le reste de l’application continue de fonctionner : la page Crypto affiche un bandeau explicite et les positions ne sont pas sauvegardées.
 
-Pour un import initial de positions sans les mettre dans le dépôt, utiliser `supabase/seed-crypto.local.sql` (ignoré par Git) après avoir remplacé `<USER_ID>` par l’UUID de l’utilisateur. Ne jamais committer ce fichier s’il contient des montants réels.
+Pour un import initial de positions sans les mettre dans le dépôt, utiliser `supabase/seed-crypto.local.sql` (ignoré par Git) après avoir remplacé `<USER_ID>` par l’UUID de l’utilisateur. Ne jamais committer ce fichier s’il contient des montants réels. Ce fichier est une reprise de données administratives : le parcours normal d’un utilisateur est le formulaire « Ajouter une position » de la page Crypto, qui écrit directement dans la table avec son propre `user_id`.
 
 ## Migration des jetons MCP
 

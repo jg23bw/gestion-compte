@@ -18,7 +18,9 @@ const DEFAULT_RECURRING_TEMPLATES = [];
 
 const CRYPTO_PRICE_CACHE_KEY='gestion-comptes-crypto-prices-v1';
 const CRYPTO_PRICE_ENDPOINT='https://api.coingecko.com/api/v3/simple/price';
+const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const CRYPTO_REFRESH_MS=60000;
+const cryptoSearch={timer:null,controller:null,results:[]};
 // Les positions crypto sont des données personnelles : elles ne doivent pas être
 // codées en dur dans le dépôt public. Elles sont stockées dans Supabase
 // (table crypto_holdings) et se gèrent depuis la page Crypto.
@@ -683,14 +685,71 @@ function renderCrypto(){
   if(missing)footer+=' · '+missing+' position(s) sans prix : les totaux ne les incluent pas.';
   $('crypto-footer').textContent=footer;
 }
+function cryptoCoinLabel(coin){
+  return (coin.name||coin.symbol||'')+' ('+String(coin.symbol||'').toUpperCase()+')';
+}
+function closeCryptoCoinResults(){
+  clearTimeout(cryptoSearch.timer);
+  if(cryptoSearch.controller){cryptoSearch.controller.abort();cryptoSearch.controller=null;}
+  const container=$('crypto-coin-results');
+  if(container){container.hidden=true;container.innerHTML='';}
+  const input=$('crypto-coin-search');
+  if(input)input.setAttribute('aria-expanded','false');
+}
+function setCryptoCoin(coin){
+  const symbol=String(coin.symbol||'').toUpperCase();
+  const name=coin.name||symbol;
+  $('crypto-edit-coingecko').value=coin.id;
+  $('crypto-edit-symbol').value=symbol;
+  $('crypto-edit-name').value=name;
+  const label=cryptoCoinLabel({name,symbol});
+  $('crypto-coin-search').value=label;
+  const selected=$('crypto-coin-selected');
+  selected.textContent='Sélection : '+label;
+  selected.classList.add('is-selected');
+  closeCryptoCoinResults();
+}
+function clearCryptoCoin(clearSearch=false){
+  $('crypto-edit-coingecko').value='';
+  $('crypto-edit-symbol').value='';
+  $('crypto-edit-name').value='';
+  if(clearSearch)$('crypto-coin-search').value='';
+  const selected=$('crypto-coin-selected');
+  selected.textContent='Aucune crypto sélectionnée.';
+  selected.classList.remove('is-selected');
+}
+async function searchCryptoCoins(query){
+  if(cryptoSearch.controller)cryptoSearch.controller.abort();
+  const controller=new AbortController();
+  cryptoSearch.controller=controller;
+  const container=$('crypto-coin-results');
+  cryptoSearch.results=[];
+  container.hidden=false;
+  container.innerHTML='<div class="crypto-coin-message">Recherche…</div>';
+  $('crypto-coin-search').setAttribute('aria-expanded','true');
+  try{
+    const response=await fetch(CRYPTO_SEARCH_ENDPOINT+'?query='+encodeURIComponent(query),{signal:controller.signal,headers:{Accept:'application/json'}});
+    if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
+    const data=await response.json();
+    const coins=(data.coins||[]).slice(0,10);
+    cryptoSearch.results=coins;
+    if(!coins.length){container.innerHTML='<div class="crypto-coin-message">Aucune crypto trouvée.</div>';return;}
+    container.innerHTML=coins.map((coin,index)=>'<button type="button" class="crypto-coin-option" role="option" data-crypto-coin-index="'+index+'"><span class="crypto-coin-symbol">'+escapeHtml(String(coin.symbol||'').toUpperCase())+'</span><span class="crypto-coin-name">'+escapeHtml(coin.name||'')+'</span>'+(coin.market_cap_rank?'<span class="crypto-coin-rank">#'+Number(coin.market_cap_rank)+'</span>':'')+'</button>').join('');
+  }catch(error){
+    if(error.name==='AbortError')return;
+    console.error('Crypto search failed',error);
+    container.hidden=false;
+    container.innerHTML='<div class="crypto-coin-message">Recherche indisponible : '+escapeHtml(error.message||'réessayez.')+'</div>';
+  }
+}
 function openCryptoEditor(id=null){
   const holding=id?(state.cryptoHoldings||[]).find(h=>h.id===id):null;
   if(id&&!holding)return;
   $('crypto-form').reset();
+  closeCryptoCoinResults();
   $('crypto-edit-id').value=holding?.id||'';
-  $('crypto-edit-symbol').value=holding?.symbol||'';
-  $('crypto-edit-name').value=holding?.name||'';
-  $('crypto-edit-coingecko').value=holding?.coingeckoId||'';
+  if(holding)setCryptoCoin({id:holding.coingeckoId,name:holding.name,symbol:holding.symbol});
+  else clearCryptoCoin(true);
   $('crypto-edit-status').value=holding?.status||'Détenu';
   $('crypto-edit-invested').value=holding?Number(holding.invested||0):'';
   $('crypto-edit-quantity').value=holding?String(holding.quantity??''):'';
@@ -895,6 +954,31 @@ $('cloud-logout').addEventListener('click',async()=>{
 });
 $('crypto-add').addEventListener('click',()=>openCryptoEditor());
 $('crypto-refresh').addEventListener('click',loadCryptoPrices);
+$('crypto-coin-search').addEventListener('input',event=>{
+  const query=event.target.value.trim();
+  clearCryptoCoin(false);
+  clearTimeout(cryptoSearch.timer);
+  if(query.length<2){closeCryptoCoinResults();return;}
+  cryptoSearch.timer=setTimeout(()=>searchCryptoCoins(query),350);
+});
+$('crypto-coin-search').addEventListener('keydown',event=>{
+  if(event.key==='Enter'){
+    event.preventDefault();
+    if(cryptoSearch.results.length)setCryptoCoin(cryptoSearch.results[0]);
+  }else if(event.key==='Escape'){
+    closeCryptoCoinResults();
+  }
+});
+$('crypto-coin-results').addEventListener('click',event=>{
+  const option=event.target.closest('[data-crypto-coin-index]');
+  if(!option)return;
+  const coin=cryptoSearch.results[Number(option.dataset.cryptoCoinIndex)];
+  if(coin)setCryptoCoin(coin);
+});
+$('crypto-dialog').addEventListener('close',closeCryptoCoinResults);
+document.addEventListener('click',event=>{
+  if(!event.target.closest('#crypto-coin-search')&&!event.target.closest('#crypto-coin-results'))closeCryptoCoinResults();
+});
 $('crypto-form').addEventListener('submit',event=>{
   event.preventDefault();
   const id=$('crypto-edit-id').value;
@@ -905,8 +989,12 @@ $('crypto-form').addEventListener('submit',event=>{
   const status=$('crypto-edit-status').value||'Détenu';
   const invested=Number($('crypto-edit-invested').value);
   const quantity=Number($('crypto-edit-quantity').value);
-  if(!symbol||!coingeckoId||!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0){
-    showToast('Vérifiez le symbole, l’identifiant CoinGecko, le montant investi et la quantité.');
+  if(!symbol||!coingeckoId){
+    showToast('Sélectionnez une crypto dans la liste de recherche.');
+    return;
+  }
+  if(!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0){
+    showToast('Vérifiez le montant investi et la quantité détenue.');
     return;
   }
   const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,status,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
