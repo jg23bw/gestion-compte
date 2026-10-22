@@ -39,7 +39,7 @@ Journal des insertions, mises à jour et suppressions des entités prises en cha
 Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son nom, un compte par défaut éventuel, la date d’utilisation et la révocation. Le jeton brut n’est renvoyé qu’au moment de sa création.
 
 ### `crypto_holdings`
-Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur. La colonne historique `status` reste en base pour compatibilité mais n’est plus utilisée par le client.
+Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur. La colonne historique `status` reste en base pour compatibilité mais n’est plus utilisée par le client.
 
 ## Sécurité
 

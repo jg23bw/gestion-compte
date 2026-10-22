@@ -16,8 +16,8 @@ const DEFAULT_ACCOUNTS = [
 // Les modèles de récurrence sont des données personnelles : ils ne doivent pas être codés en dur dans le dépôt public.
 const DEFAULT_RECURRING_TEMPLATES = [];
 
-const CRYPTO_PRICE_CACHE_KEY='gestion-comptes-crypto-prices-v1';
-const CRYPTO_PRICE_ENDPOINT='https://api.coingecko.com/api/v3/simple/price';
+const CRYPTO_PRICE_CACHE_KEY='gestion-comptes-crypto-prices-v2';
+const CRYPTO_MARKET_ENDPOINT='https://api.coingecko.com/api/v3/coins/markets';
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const CRYPTO_REFRESH_MS=60000;
 const cryptoSearch={timer:null,controller:null,results:[]};
@@ -58,7 +58,7 @@ function undoLastAction(){
 
 const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),authReady:false};
 let cryptoTableReady=null;
-const cryptoPrices={values:{},updatedAt:0,error:'',loading:false};
+const cryptoPrices={values:{},images:{},updatedAt:0,error:'',loading:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
@@ -584,6 +584,14 @@ function cryptoPrice(holding){
   const value=Number(cryptoPrices.values[holding.coingeckoId]);
   return Number.isFinite(value)&&value>0?value:null;
 }
+function cryptoImage(holding){
+  const value=cryptoPrices.images?.[holding.coingeckoId];
+  return typeof value==='string'?value:'';
+}
+function cryptoLogoMarkup(image,symbol,extraClass=''){
+  const initials=String(symbol||'?').slice(0,3).toUpperCase();
+  return '<span class="crypto-logo'+(extraClass?' '+extraClass:'')+'" aria-hidden="true"><span>'+escapeHtml(initials)+'</span>'+(image?'<img src="'+escapeHtml(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':'')+'</span>';
+}
 function euroPrecise(value){
   const number=Number(value)||0;
   return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:Math.abs(number)>0&&Math.abs(number)<1?6:2}).format(number);
@@ -603,6 +611,7 @@ function hydrateCryptoPrices(){
     const saved=JSON.parse(localStorage.getItem(CRYPTO_PRICE_CACHE_KEY));
     if(saved&&saved.values&&typeof saved.values==='object'){
       cryptoPrices.values=saved.values;
+      cryptoPrices.images=saved.images&&typeof saved.images==='object'?saved.images:{};
       cryptoPrices.updatedAt=Number(saved.updatedAt)||0;
     }
   }catch(error){console.warn('Cache des prix crypto illisible',error);}
@@ -615,18 +624,22 @@ async function loadCryptoPrices(){
   cryptoPrices.error='';
   renderCrypto();
   try{
-    const response=await fetch(CRYPTO_PRICE_ENDPOINT+'?ids='+encodeURIComponent(ids.join(','))+'&vs_currencies=eur',{headers:{Accept:'application/json'}});
+    const response=await fetch(CRYPTO_MARKET_ENDPOINT+'?vs_currency=eur&ids='+encodeURIComponent(ids.join(','))+'&sparkline=false&per_page=250',{headers:{Accept:'application/json'}});
     if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
     const data=await response.json();
-    const values={};
-    for(const id of ids){
-      const price=Number(data?.[id]?.eur);
+    const values={},images={};
+    for(const coin of Array.isArray(data)?data:[]){
+      const id=coin?.id;
+      if(!id)continue;
+      const price=Number(coin.current_price);
       if(Number.isFinite(price)&&price>0)values[id]=price;
+      if(typeof coin.image==='string'&&coin.image)images[id]=coin.image;
     }
     if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
     cryptoPrices.values={...cryptoPrices.values,...values};
+    cryptoPrices.images={...cryptoPrices.images,...images};
     cryptoPrices.updatedAt=Date.now();
-    try{localStorage.setItem(CRYPTO_PRICE_CACHE_KEY,JSON.stringify({values:cryptoPrices.values,updatedAt:cryptoPrices.updatedAt}));}catch(error){}
+    try{localStorage.setItem(CRYPTO_PRICE_CACHE_KEY,JSON.stringify({values:cryptoPrices.values,images:cryptoPrices.images,updatedAt:cryptoPrices.updatedAt}));}catch(error){}
   }catch(error){
     console.error('Crypto price fetch failed',error);
     cryptoPrices.error=error.message||'prix indisponible';
@@ -708,7 +721,7 @@ function renderCrypto(){
   const filtered=query!==''||performanceFilter!=='all';
   $('crypto-rows').innerHTML=holdings.length?holdings.map(h=>{
     const m=metrics.get(h.id);
-    return '<tr><td><div class="crypto-coin"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+    return '<tr><td><div class="crypto-coin">'+cryptoLogoMarkup(cryptoImage(h),h.symbol)+'<div class="crypto-coin-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
   }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.')+'</div></td></tr>';
 
   const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
@@ -732,13 +745,15 @@ function closeCryptoCoinResults(){
 function setCryptoCoin(coin){
   const symbol=String(coin.symbol||'').toUpperCase();
   const name=coin.name||symbol;
+  const image=coin.large||coin.thumb||coin.image||cryptoPrices.images?.[coin.id]||'';
+  if(coin.id&&image)cryptoPrices.images[coin.id]=image;
   $('crypto-edit-coingecko').value=coin.id;
   $('crypto-edit-symbol').value=symbol;
   $('crypto-edit-name').value=name;
   const label=cryptoCoinLabel({name,symbol});
   $('crypto-coin-search').value=label;
   const selected=$('crypto-coin-selected');
-  selected.textContent='Sélection : '+label;
+  selected.innerHTML=cryptoLogoMarkup(image,symbol,'is-small')+'<span>Sélection : '+escapeHtml(label)+'</span>';
   selected.classList.add('is-selected');
   closeCryptoCoinResults();
 }
@@ -767,7 +782,7 @@ async function searchCryptoCoins(query){
     const coins=(data.coins||[]).slice(0,10);
     cryptoSearch.results=coins;
     if(!coins.length){container.innerHTML='<div class="crypto-coin-message">Aucune crypto trouvée.</div>';return;}
-    container.innerHTML=coins.map((coin,index)=>'<button type="button" class="crypto-coin-option" role="option" data-crypto-coin-index="'+index+'"><span class="crypto-coin-symbol">'+escapeHtml(String(coin.symbol||'').toUpperCase())+'</span><span class="crypto-coin-name">'+escapeHtml(coin.name||'')+'</span>'+(coin.market_cap_rank?'<span class="crypto-coin-rank">#'+Number(coin.market_cap_rank)+'</span>':'')+'</button>').join('');
+    container.innerHTML=coins.map((coin,index)=>'<button type="button" class="crypto-coin-option" role="option" data-crypto-coin-index="'+index+'">'+cryptoLogoMarkup(coin.large||coin.thumb||'',coin.symbol,'is-small')+'<span class="crypto-coin-symbol">'+escapeHtml(String(coin.symbol||'').toUpperCase())+'</span><span class="crypto-coin-name">'+escapeHtml(coin.name||'')+'</span>'+(coin.market_cap_rank?'<span class="crypto-coin-rank">#'+Number(coin.market_cap_rank)+'</span>':'')+'</button>').join('');
   }catch(error){
     if(error.name==='AbortError')return;
     console.error('Crypto search failed',error);
