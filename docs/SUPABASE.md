@@ -13,7 +13,6 @@ Référence du projet vue dans la configuration publique : `gpzqvkkysolqksimiqac
 - `supabase/migrations/202610180001_mcp_tokens.sql` : table des jetons MCP.
 - `supabase/migrations/202610180002_transaction_pointage_order.sql` : colonnes de pointage, ordre et clé de récurrence.
 - `supabase/migrations/202610220001_crypto_holdings.sql` : table des positions crypto, RLS et index.
-- `supabase/seed-crypto.local.sql` : fichier local ignoré par Git pour importer une première fois des positions ; ne pas le committer.
 - `supabase/config.toml` : paramètres des Edge Functions ; les fonctions actuellement présentes sont `mcp-transactions`, `quick-add` et `mcp-tokens`.
 - `supabase/functions/` : implémentations des Edge Functions.
 
@@ -40,7 +39,7 @@ Journal des insertions, mises à jour et suppressions des entités prises en cha
 Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son nom, un compte par défaut éventuel, la date d’utilisation et la révocation. Le jeton brut n’est renvoyé qu’au moment de sa création.
 
 ### `crypto_holdings`
-Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, statut, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur.
+Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur. La colonne historique `status` reste en base pour compatibilité mais n’est plus utilisée par le client.
 
 ## Sécurité
 
@@ -94,7 +93,7 @@ Procédure :
 
 Sans cette migration, le reste de l’application continue de fonctionner : la page Crypto affiche un bandeau explicite et les positions ne sont pas sauvegardées.
 
-Pour un import initial de positions sans les mettre dans le dépôt, utiliser `supabase/seed-crypto.local.sql` (ignoré par Git) après avoir remplacé `<USER_ID>` par l’UUID de l’utilisateur. Ne jamais committer ce fichier s’il contient des montants réels. Ce fichier est une reprise de données administratives : le parcours normal d’un utilisateur est le formulaire « Ajouter une position » de la page Crypto, qui écrit directement dans la table avec son propre `user_id`.
+Pour un import initial de positions sans les mettre dans le dépôt, le parcours normal est le formulaire « Ajouter une position » de la page Crypto : il écrit directement dans la table avec le `user_id` de l’utilisateur connecté. Une reprise de données existantes peut aussi être faite par un administrateur avec un script SQL exécuté hors dépôt, sans jamais committer les montants réels.
 
 ## Migration des jetons MCP
 

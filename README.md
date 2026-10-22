@@ -38,7 +38,7 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Recherche, filtres et tris dans les écrans concernés.
 - Historique mensuel : choix du mois, recherche, filtre par compte/type, tri, total des entrées, sorties et net.
 - Pointage des opérations et ordre manuel.
-- Page crypto avec positions (investi, quantité, statut), prix réels en euros via CoinGecko, valeur actuelle, gain/perte et performance.
+- Page crypto avec positions (investi, quantité), prix réels en euros via CoinGecko, valeur actuelle, gain/perte et performance.
 - Export JSON et export CSV des opérations.
 - Paramètres de compte et estimation indicative de trésorerie du compte professionnel.
 - Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
@@ -87,7 +87,7 @@ Avant de modifier une base réelle, lisez [docs/SUPABASE.md](./docs/SUPABASE.md)
 
 La page « Crypto » affiche les positions de l’utilisateur connecté et calcule leur valeur avec les prix du marché en euros fournis par l’API publique CoinGecko. Les prix sont actualisés au chargement, toutes les 60 secondes lorsque l’onglet est visible, et via le bouton « Actualiser les prix ». Le dernier prix reçu est conservé dans le navigateur pour éviter un écran vide en cas de coupure réseau ; une position sans prix n’est pas inventée et reste exclue des totaux.
 
-Les positions sont des données personnelles : elles ne sont pas codées en dur dans le dépôt. Chaque utilisateur connecté ajoute ses positions depuis la page Crypto : il recherche la crypto par son nom ou son symbole (l’identifiant CoinGecko et le nom sont remplis automatiquement), puis saisit le montant investi et la quantité détenue. Les lignes sont stockées dans la table `public.crypto_holdings` (RLS par utilisateur) et synchronisées automatiquement. Sur une base existante, exécutez [`202610220001_crypto_holdings.sql`](./supabase/migrations/202610220001_crypto_holdings.sql) dans le SQL Editor. Le fichier local ignoré par Git `supabase/seed-crypto.local.sql` ne sert qu’à une reprise ponctuelle de données existantes, pas au parcours utilisateur normal. Un commit ne crée pas la table et n’applique pas la migration : vérifiez toujours le projet Supabase ciblé.
+Les positions sont des données personnelles : elles ne sont pas codées en dur dans le dépôt. Chaque utilisateur connecté ajoute ses positions depuis la page Crypto : il recherche la crypto par son nom ou son symbole (l’identifiant CoinGecko et le nom sont remplis automatiquement), puis saisit le montant investi et la quantité détenue. Les lignes sont stockées dans la table `public.crypto_holdings` (RLS par utilisateur) et synchronisées automatiquement. Sur une base existante, exécutez [`202610220001_crypto_holdings.sql`](./supabase/migrations/202610220001_crypto_holdings.sql) dans le SQL Editor. Un commit ne crée pas la table et n’applique pas la migration : vérifiez toujours le projet Supabase ciblé.
 
 
 

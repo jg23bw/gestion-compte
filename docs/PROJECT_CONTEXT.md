@@ -164,7 +164,8 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 ## 13. Page Crypto et prix en direct (22 octobre 2026)
 
-- Nouvelle vue « Crypto » avec positions (symbole, nom, statut, montant investi, quantité), prix actuel en euros, valeur actuelle, gain/perte et performance.
+- Nouvelle vue « Crypto » avec positions (symbole, nom, montant investi, quantité), prix actuel en euros, valeur actuelle, gain/perte et performance.
+- Le statut « Détenu / Vendu » a été retiré de l’interface et des calculs : toutes les positions enregistrées sont valorisées. La colonne historique `status` reste en base pour compatibilité mais n’est plus lue ni écrite par le client.
 - Parcours utilisateur : « Ajouter une position » ouvre une recherche CoinGecko par nom ou symbole ; la sélection remplit automatiquement le nom et l’identifiant de prix. L’utilisateur saisit ensuite le montant investi et la quantité. Chaque position est enregistrée dans Supabase avec son `user_id` et isolée par RLS.
 - Les prix proviennent de l’API publique CoinGecko (`simple/price`, devise EUR) : chargement à l’ouverture, actualisation toutes les 60 secondes lorsque l’onglet est visible, bouton manuel et cache local du dernier prix. Une position sans prix n’est pas valorisée et est exclue des totaux ; aucun montant n’est inventé.
 - Les positions sont stockées dans Supabase (`public.crypto_holdings`, RLS par `auth.uid()`) via la migration `202610220001_crypto_holdings.sql`, avec repli non bloquant si la table n’existe pas encore : le reste de l’application continue de fonctionner et un bandeau indique la migration à exécuter.

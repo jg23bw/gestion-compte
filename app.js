@@ -74,8 +74,8 @@ function toCloudTransaction(t,userId){return {id:t.id,user_id:userId,account_id:
 function fromCloudTransaction(t){return {id:t.id,accountId:t.account_id,date:t.transaction_date,amount:Number(t.amount),label:t.label,isPaid:t.is_paid===true,sortOrder:Number.isFinite(Number(t.sort_order))&&t.sort_order!==null?Number(t.sort_order):undefined,createdAt:Date.parse(t.created_at)||Date.now(),recurringKey:t.recurring_key||undefined,recurringTemplateId:t.recurring_template_id||undefined};}
 function toCloudTemplate(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,day_of_month:Number(t.day)||1,frequency:t.frequency,months:t.months||[],start_month:t.startMonth||null,end_month:t.endMonth||null,once_date:t.date||null,label:t.label,amount:t.amount===''||t.amount===undefined?null:t.amount,enabled:t.enabled!==false};}
 function fromCloudTemplate(t){return {id:t.id,accountId:t.account_id,day:Number(t.day_of_month)||1,frequency:t.frequency,months:t.months||[],startMonth:t.start_month||undefined,endMonth:t.end_month||undefined,date:t.once_date||undefined,label:t.label,amount:t.amount===null?null:Number(t.amount),enabled:t.enabled};}
-function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,status:h.status||'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
-function fromCloudCryptoHolding(h){return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,status:h.status||'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};}
+function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
+function fromCloudCryptoHolding(h){return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};}
 function isMissingCryptoTable(error){
   const code=error?.code||'',message=error?.message||'';
   return code==='42P01'||code==='PGRST205'||/crypto_holdings/i.test(message)&&/does not exist|could not find|schema cache/i.test(message);
@@ -148,7 +148,7 @@ async function syncCloudState(){
       }else{
         cryptoTableReady=true;
         const remoteCrypto=new Map((cryptoResult.data||[]).map(row=>[row.id,row]));
-        const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','status','invested','quantity','sort_order']));
+        const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','invested','quantity','sort_order']));
         if(changedCrypto.length){const {error}=await client.from('crypto_holdings').upsert(changedCrypto,{onConflict:'user_id,id'});if(error)throw error;}
         for(const id of [...cloud.pendingCryptoDeletes]){
           const {error}=await client.from('crypto_holdings').delete().eq('id',id).eq('user_id',uid);
@@ -584,9 +584,6 @@ function cryptoPrice(holding){
   const value=Number(cryptoPrices.values[holding.coingeckoId]);
   return Number.isFinite(value)&&value>0?value:null;
 }
-function isHeldCrypto(holding){
-  return String(holding.status||'Détenu').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').startsWith('detenu');
-}
 function euroPrecise(value){
   const number=Number(value)||0;
   return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:Math.abs(number)>0&&Math.abs(number)<1?6:2}).format(number);
@@ -641,9 +638,8 @@ async function loadCryptoPrices(){
 function renderCrypto(){
   if(!$('crypto-rows'))return;
   const holdings=[...(state.cryptoHoldings||[])].sort((a,b)=>(Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||String(a.symbol||'').localeCompare(String(b.symbol||''),'fr'));
-  const held=holdings.filter(isHeldCrypto);
-  const priced=held.filter(h=>cryptoPrice(h)!==null);
-  const investedAll=held.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
+  const priced=holdings.filter(h=>cryptoPrice(h)!==null);
+  const investedAll=holdings.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
   const investedPriced=priced.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
   const currentValue=priced.reduce((sum,h)=>sum+(Number(h.quantity)||0)*cryptoPrice(h),0);
   const gain=currentValue-investedPriced;
@@ -672,14 +668,13 @@ function renderCrypto(){
 
   $('crypto-rows').innerHTML=holdings.length?holdings.map(h=>{
     const price=cryptoPrice(h);
-    const active=isHeldCrypto(h);
-    const value=active&&price!==null?(Number(h.quantity)||0)*price:null;
+    const value=price!==null?(Number(h.quantity)||0)*price:null;
     const rowGain=value===null?null:value-(Number(h.invested)||0);
     const rowPerformance=rowGain===null||(Number(h.invested)||0)<=0?null:rowGain/Number(h.invested)*100;
-    return '<tr><td><div class="crypto-coin"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></td><td><span class="crypto-status '+(active?'is-held':'is-sold')+'">'+escapeHtml(h.status||'Détenu')+'</span></td><td class="table-amount">'+euro(h.invested)+'</td><td class="crypto-quantity">'+numberFr(h.quantity)+'</td><td class="crypto-price">'+(price===null?'—':euroPrecise(price))+'</td><td class="table-balance">'+(value===null?'—':euro(value))+'</td><td class="table-amount '+(rowGain===null?'':rowGain>0?'positive':rowGain<0?'negative':'')+'">'+(rowGain===null?'—':(rowGain>0?'+':'')+euro(rowGain))+'</td><td class="crypto-performance '+(rowPerformance===null?'':rowPerformance>0?'positive':rowPerformance<0?'negative':'')+'">'+(rowPerformance===null?'—':formatSignedPercent(rowPerformance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="9"><div class="empty-state">Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.</div></td></tr>';
+    return '<tr><td><div class="crypto-coin"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></td><td class="table-amount">'+euro(h.invested)+'</td><td class="crypto-quantity">'+numberFr(h.quantity)+'</td><td class="crypto-price">'+(price===null?'—':euroPrecise(price))+'</td><td class="table-balance">'+(value===null?'—':euro(value))+'</td><td class="table-amount '+(rowGain===null?'':rowGain>0?'positive':rowGain<0?'negative':'')+'">'+(rowGain===null?'—':(rowGain>0?'+':'')+euro(rowGain))+'</td><td class="crypto-performance '+(rowPerformance===null?'':rowPerformance>0?'positive':rowPerformance<0?'negative':'')+'">'+(rowPerformance===null?'—':formatSignedPercent(rowPerformance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="8"><div class="empty-state">Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.</div></td></tr>';
 
-  const missing=held.filter(h=>cryptoPrice(h)===null).length;
+  const missing=holdings.filter(h=>cryptoPrice(h)===null).length;
   let footer=holdings.length+' position(s) affichée(s) · prix convertis en euros via CoinGecko';
   if(cryptoPrices.updatedAt)footer+=' · dernière actualisation à '+cryptoTimeLabel(cryptoPrices.updatedAt);
   if(missing)footer+=' · '+missing+' position(s) sans prix : les totaux ne les incluent pas.';
@@ -750,7 +745,6 @@ function openCryptoEditor(id=null){
   $('crypto-edit-id').value=holding?.id||'';
   if(holding)setCryptoCoin({id:holding.coingeckoId,name:holding.name,symbol:holding.symbol});
   else clearCryptoCoin(true);
-  $('crypto-edit-status').value=holding?.status||'Détenu';
   $('crypto-edit-invested').value=holding?Number(holding.invested||0):'';
   $('crypto-edit-quantity').value=holding?String(holding.quantity??''):'';
   $('crypto-modal-title').textContent=holding?'Modifier la position':'Ajouter une position';
@@ -986,7 +980,6 @@ $('crypto-form').addEventListener('submit',event=>{
   const symbol=$('crypto-edit-symbol').value.trim().toUpperCase();
   const name=$('crypto-edit-name').value.trim()||symbol;
   const coingeckoId=$('crypto-edit-coingecko').value.trim().toLowerCase();
-  const status=$('crypto-edit-status').value||'Détenu';
   const invested=Number($('crypto-edit-invested').value);
   const quantity=Number($('crypto-edit-quantity').value);
   if(!symbol||!coingeckoId){
@@ -997,7 +990,7 @@ $('crypto-form').addEventListener('submit',event=>{
     showToast('Vérifiez le montant investi et la quantité détenue.');
     return;
   }
-  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,status,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.cryptoHoldings=state.cryptoHoldings.map(h=>h.id===id?record:h);
   else state.cryptoHoldings=[...(state.cryptoHoldings||[]),record];
   $('crypto-dialog').close();

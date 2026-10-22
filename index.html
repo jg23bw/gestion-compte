@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=crypto-page-2">
+  <link rel="stylesheet" href="styles.css?v=crypto-page-3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=crypto-page-2" defer></script>
+  <script src="app.js?v=crypto-page-3" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -95,7 +95,7 @@
         <div class="history-summary-grid crypto-summary-grid"><article class="history-summary-card"><span>Investi</span><strong id="crypto-invested">0,00 €</strong></article><article class="history-summary-card"><span>Valeur actuelle</span><strong id="crypto-value">0,00 €</strong></article><article class="history-summary-card"><span>Gain/Perte</span><strong id="crypto-gain">0,00 €</strong></article><article class="history-summary-card"><span>Performance</span><strong id="crypto-performance">0,00 %</strong></article></div>
         <div class="toolbar crypto-toolbar"><button class="secondary-button" id="crypto-refresh" type="button">Actualiser les prix</button><span class="toolbar-note" id="crypto-price-status">Prix pas encore chargés.</span></div>
         <p class="crypto-notice" id="crypto-migration" hidden><strong>Table crypto absente de Supabase.</strong> Exécutez <code>supabase/migrations/202610220001_crypto_holdings.sql</code> dans le SQL Editor du bon projet, puis rechargez la page. Tant que la migration n’est pas appliquée, les positions ne seront pas sauvegardées.</p>
-        <section class="panel table-panel"><div class="table-scroll"><table class="crypto-table"><thead><tr><th>COIN</th><th>STATUT</th><th>INVESTI</th><th>QUANTITÉ</th><th>PRIX ACTUEL</th><th>VALEUR ACTUELLE</th><th>GAIN/PERTE</th><th>%</th><th>ACTIONS</th></tr></thead><tbody id="crypto-rows"></tbody></table></div><div class="table-footer" id="crypto-footer">Prix en euros fournis par CoinGecko.</div></section>
+        <section class="panel table-panel"><div class="table-scroll"><table class="crypto-table"><thead><tr><th>COIN</th><th>INVESTI</th><th>QUANTITÉ</th><th>PRIX ACTUEL</th><th>VALEUR ACTUELLE</th><th>GAIN/PERTE</th><th>%</th><th>ACTIONS</th></tr></thead><tbody id="crypto-rows"></tbody></table></div><div class="table-footer" id="crypto-footer">Prix en euros fournis par CoinGecko.</div></section>
       </section>
 
       <section class="view" id="recurring-view">
@@ -161,9 +161,8 @@
       <input type="hidden" id="crypto-edit-symbol">
       <input type="hidden" id="crypto-edit-name">
       <p class="form-help">Choisissez la crypto dans la liste : son nom et son identifiant de prix sont remplis automatiquement. Le prix est ensuite récupéré en euros chez CoinGecko.</p>
-      <div class="form-row"><label>Statut<select id="crypto-edit-status"><option value="Détenu">Détenu</option><option value="Vendu (sorti)">Vendu (sorti)</option></select></label><label>Investi (€)<input id="crypto-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label></div>
-      <label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label>
-      <p class="form-help">La valeur actuelle est calculée en multipliant la quantité par le prix du marché. Une position « Vendu (sorti) » reste affichée mais n’entre pas dans les totaux.</p>
+      <div class="form-row"><label>Investi (€)<input id="crypto-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
+      <p class="form-help">La valeur actuelle est calculée en multipliant la quantité par le prix du marché.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="crypto-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>

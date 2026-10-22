@@ -298,9 +298,6 @@ tbody tr:hover td{background:#fafbff}
 .crypto-quantity{color:#4a566c}
 .crypto-price{color:#39445a;font-weight:600}
 .crypto-performance{font-weight:700}
-.crypto-status{display:inline-block;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.2px}
-.crypto-status.is-held{background:#e9f8f1;color:#1c8a64}
-.crypto-status.is-sold{background:#f2f4f8;color:#8b93a2}
 @media(max-width:1100px){.crypto-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.crypto-summary-grid{grid-template-columns:1fr}.crypto-toolbar{align-items:flex-start;flex-direction:column}.crypto-toolbar .toolbar-note{margin-left:0;text-align:left}}
 .crypto-coin-results{margin:-8px 0 14px;border:1px solid #e1e7f1;border-radius:11px;background:#fff;max-height:240px;overflow:auto;box-shadow:0 12px 30px #19294a14}
