@@ -923,9 +923,12 @@ function setCryptoCoin(coin){
   const symbol=String(coin.symbol||'').toUpperCase();
   const name=coin.name||symbol;
   const image=coin.large||coin.thumb||coin.image||cryptoPrices.images?.[coin.id]||'';
+  const previousId=$('crypto-edit-coingecko').value;
   if(coin.id&&image)cryptoPrices.images[coin.id]=image;
-  cryptoLogoRequest++;
-  cryptoLogoDraft='';
+  if(previousId&&previousId!==coin.id){
+    cryptoLogoRequest++;
+    cryptoLogoDraft='';
+  }
   $('crypto-edit-coingecko').value=coin.id;
   $('crypto-edit-symbol').value=symbol;
   $('crypto-edit-name').value=name;
