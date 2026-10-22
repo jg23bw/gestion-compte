@@ -335,3 +335,17 @@ tbody tr:hover td{background:#fafbff}
 @media(max-width:1350px){.summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.summary-card.total-card{grid-column:span 2}}
 @media(max-width:900px){.summary-grid{grid-template-columns:1fr 1fr}.summary-card.total-card{grid-column:span 2}}
 @media(max-width:580px){.summary-grid{grid-template-columns:1fr}.summary-card.total-card{grid-column:auto}.auth-gate-actions{flex-direction:column}.auth-gate-actions button{width:100%}}
+
+/* Logo des comptes et des cryptos */
+.logo-field{border:1px solid #edf0f6;border-radius:12px;padding:13px 14px;margin:0 0 20px;background:#fbfcfe}
+.logo-field-head{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;color:#667187;font-weight:600;margin-bottom:10px}
+.logo-field-head small{font-weight:400;color:#9aa3b2}
+.logo-actions{display:flex;gap:7px;flex-wrap:wrap}
+.small-button{padding:7px 10px;font-size:10px;border-radius:7px}
+.logo-field-body{display:flex;align-items:center;gap:12px}
+.logo-preview{flex:0 0 auto}
+.logo-field-body .form-help{margin:0;flex:1;padding:8px 10px}
+.logo-field .bank-logo,.logo-field .crypto-logo{width:48px;height:48px;flex-basis:48px;border-radius:14px;font-size:13px}
+.logo-field .crypto-logo{border-radius:50%}
+.logo-field .bank-logo img{width:80%;height:80%}
+@media(max-width:580px){.logo-field-body{align-items:flex-start}.logo-field-head{align-items:flex-start;flex-direction:column}.logo-actions{width:100%}}

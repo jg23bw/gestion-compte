@@ -32,6 +32,10 @@ const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getM
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
 let toastTimer;
 let undoPoint=null;
+let accountLogoDraft='';
+let cryptoLogoDraft='';
+let accountLogoRequest=0;
+let cryptoLogoRequest=0;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
 function prepareUndo(){undoPoint={state:cloneData(state),pendingDeletes:[...cloud.pendingDeletes],pendingTemplateDeletes:[...cloud.pendingTemplateDeletes],generatedMonths:localStorage.getItem(GENERATED_MONTHS_KEY)};}
 function undoLastAction(){
@@ -51,12 +55,13 @@ function undoLastAction(){
     currentTemplates.forEach(t=>{if(!restoredTemplateIds.has(t.id))cloud.pendingTemplateDeletes.add(t.id);});
     (state.transactions||[]).forEach(t=>{if(!currentTransactionIds.has(t.id))cloud.pendingDeletes.delete(t.id);});
     (state.recurringTemplates||[]).forEach(t=>{if(!currentTemplateIds.has(t.id))cloud.pendingTemplateDeletes.delete(t.id);});
+    cloud.accountTypesDirty=true;
   }
   if(target.generatedMonths===null)localStorage.removeItem(GENERATED_MONTHS_KEY);else localStorage.setItem(GENERATED_MONTHS_KEY,target.generatedMonths);
   undoPoint=null;renderAll();showToast('Action annulée.');
 }
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),authReady:false};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),pendingAccountDeletes:new Set(),accountTypesDirty:false,authReady:false};
 let cryptoTableReady=null;
 const cryptoPrices={values:{},images:{},updatedAt:0,error:'',loading:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
@@ -77,14 +82,91 @@ function cloudClient(){
   cloud.client=window.supabase.createClient(config.url,config.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   return cloud.client;
 }
-function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:a.short||'',kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
-function fromCloudAccount(a){return {id:a.id,name:a.name,short:a.short||'',kind:a.kind,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};}
+function isLogoValue(value){
+  const text=String(value||'');
+  return /^data:image\//i.test(text)||/^https?:\/\//i.test(text);
+}
+function isAccountType(value){
+  return ['bank','savings','pro','pea','av','cto'].includes(String(value||''));
+}
+function isAccountSubtype(value){
+  return ['pea','av','cto'].includes(String(value||''));
+}
+function normalizeAccountTypes(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return {};
+  const result={};
+  for(const [id,type] of Object.entries(value))if(isAccountSubtype(type))result[id]=type;
+  return result;
+}
+function accountTypeOverrides(){
+  const result={};
+  for(const account of state.accounts||[]){
+    const type=account.accountType||account.kind;
+    if(isAccountSubtype(type)&&type!==account.kind)result[account.id]=type;
+  }
+  return result;
+}
+async function saveAccountTypesToAuth(overrides=accountTypeOverrides()){
+  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer le type de compte.');
+  const {data,error}=await cloudClient().auth.updateUser({data:{accountTypes:overrides}});
+  if(error)throw error;
+  if(data?.user){
+    cloud.user=data.user;
+    if(cloud.session)cloud.session.user=data.user;
+  }
+}
+function readLogoImage(file,onReady){
+  if(!file)return;
+  if(!String(file.type||'').startsWith('image/')||file.type==='image/svg+xml'){
+    showToast('Choisissez une image PNG, JPEG, WebP ou GIF.');
+    return;
+  }
+  if(file.size>4*1024*1024){showToast('Image trop volumineuse (4 Mo maximum).');return;}
+  const reader=new FileReader();
+  reader.onerror=()=>showToast('Impossible de lire cette image.');
+  reader.onload=()=>{
+    const image=new Image();
+    image.onerror=()=>showToast('Impossible de lire cette image.');
+    image.onload=()=>{
+      if(!image.width||!image.height){showToast('Image invalide.');return;}
+      const size=96;
+      const canvas=document.createElement('canvas');
+      canvas.width=size;canvas.height=size;
+      const context=canvas.getContext('2d');
+      if(!context){showToast('Impossible de préparer le logo.');return;}
+      const ratio=Math.min(size/image.width,size/image.height);
+      const width=Math.max(1,Math.round(image.width*ratio));
+      const height=Math.max(1,Math.round(image.height*ratio));
+      context.clearRect(0,0,size,size);
+      context.imageSmoothingEnabled=true;
+      context.imageSmoothingQuality='high';
+      context.drawImage(image,(size-width)/2,(size-height)/2,width,height);
+      let dataUrl='';
+      try{dataUrl=canvas.toDataURL('image/webp',0.82);}catch{}
+      if(!dataUrl.startsWith('data:image/'))dataUrl=canvas.toDataURL('image/png');
+      onReady(dataUrl);
+    };
+    image.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:a.logo||a.short||'',kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
+function fromCloudAccount(a,accountTypes={}){
+  const rawShort=a.short||'';
+  const logo=isLogoValue(rawShort)?rawShort:'';
+  const kind=a.kind||'bank';
+  const override=accountTypes?.[a.id];
+  return {id:a.id,name:a.name,short:logo?accountShort(a.name):rawShort,kind,accountType:isAccountSubtype(override)?override:kind,logo,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};
+}
 function toCloudTransaction(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,transaction_date:t.date,label:t.label,amount:Number(t.amount),is_paid:t.isPaid===true,sort_order:Number.isFinite(Number(t.sortOrder))?Number(t.sortOrder):null,source:t.recurringTemplateId?'recurring':'manual',recurring_template_id:t.recurringTemplateId||null,generated_month:t.recurringKey?t.date.slice(0,7):null,recurring_key:t.recurringKey||null,created_at:new Date(Number(t.createdAt)||Date.now()).toISOString(),updated_at:new Date().toISOString()};}
 function fromCloudTransaction(t){return {id:t.id,accountId:t.account_id,date:t.transaction_date,amount:Number(t.amount),label:t.label,isPaid:t.is_paid===true,sortOrder:Number.isFinite(Number(t.sort_order))&&t.sort_order!==null?Number(t.sort_order):undefined,createdAt:Date.parse(t.created_at)||Date.now(),recurringKey:t.recurring_key||undefined,recurringTemplateId:t.recurring_template_id||undefined};}
 function toCloudTemplate(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,day_of_month:Number(t.day)||1,frequency:t.frequency,months:t.months||[],start_month:t.startMonth||null,end_month:t.endMonth||null,once_date:t.date||null,label:t.label,amount:t.amount===''||t.amount===undefined?null:t.amount,enabled:t.enabled!==false};}
 function fromCloudTemplate(t){return {id:t.id,accountId:t.account_id,day:Number(t.day_of_month)||1,frequency:t.frequency,months:t.months||[],startMonth:t.start_month||undefined,endMonth:t.end_month||undefined,date:t.once_date||undefined,label:t.label,amount:t.amount===null?null:Number(t.amount),enabled:t.enabled};}
-function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
-function fromCloudCryptoHolding(h){return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};}
+function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,status:h.logo||'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
+function fromCloudCryptoHolding(h){
+  const rawStatus=h.status||'';
+  return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,logo:isLogoValue(rawStatus)?rawStatus:'',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};
+}
 function isMissingCryptoTable(error){
   const code=error?.code||'',message=error?.message||'';
   return code==='42P01'||code==='PGRST205'||/crypto_holdings/i.test(message)&&/does not exist|could not find|schema cache/i.test(message);
@@ -148,6 +230,11 @@ async function syncCloudState(){
     const changedTemplates=templates.filter(row=>!remoteTemplates.has(row.id)||!sameCloudValues(row,remoteTemplates.get(row.id),['account_id','day_of_month','frequency','months','start_month','end_month','once_date','label','amount','enabled']));
     const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','is_paid','sort_order','source','recurring_template_id','generated_month','recurring_key']));
     if(changedAccounts.length){const {error}=await client.from('accounts').upsert(changedAccounts,{onConflict:'user_id,id'});if(error)throw error;}
+    for(const id of [...cloud.pendingAccountDeletes]){
+      const {error}=await client.from('accounts').delete().eq('id',id).eq('user_id',uid);
+      if(error)throw error;
+      cloud.pendingAccountDeletes.delete(id);
+    }
     if(changedTemplates.length){const {error}=await client.from('recurring_templates').upsert(changedTemplates,{onConflict:'user_id,id'});if(error)throw error;}
     if(changedTransactions.length){
       let transactionResult=await client.from('transactions').upsert(changedTransactions,{onConflict:'id'});
@@ -179,7 +266,7 @@ async function syncCloudState(){
       }else{
         cryptoTableReady=true;
         const remoteCrypto=new Map((cryptoResult.data||[]).map(row=>[row.id,row]));
-        const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','invested','quantity','sort_order']));
+        const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','status','invested','quantity','sort_order']));
         if(changedCrypto.length){const {error}=await client.from('crypto_holdings').upsert(changedCrypto,{onConflict:'user_id,id'});if(error)throw error;}
         for(const id of [...cloud.pendingCryptoDeletes]){
           const {error}=await client.from('crypto_holdings').delete().eq('id',id).eq('user_id',uid);
@@ -187,6 +274,11 @@ async function syncCloudState(){
           cloud.pendingCryptoDeletes.delete(id);
         }
       }
+    }
+    if(cloud.accountTypesDirty){
+      const overrides=accountTypeOverrides();
+      await saveAccountTypesToAuth(overrides);
+      if(JSON.stringify(accountTypeOverrides())===JSON.stringify(overrides))cloud.accountTypesDirty=false;
     }
     cloudStatus('Synchronisé en ligne',true);
     return true;
@@ -231,8 +323,9 @@ async function loadCloudState(user){
     let cryptoHoldings=[];
     if(cryptoTableReady&&remoteCrypto.length)cryptoHoldings=remoteCrypto;
 
-    // Le crédit lombard est stocké dans les métadonnées privées du compte Auth.
+    // Le crédit lombard et les sous-types de comptes sont stockés dans les métadonnées privées du compte Auth.
     const remoteLombard=normalizeLombardCredit(user.user_metadata?.lombardCredit);
+    const remoteAccountTypes=normalizeAccountTypes(user.user_metadata?.accountTypes);
 
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
     let legacy=null;
@@ -240,7 +333,7 @@ async function loadCloudState(user){
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
       if(saved&&Array.isArray(saved.accounts)&&Array.isArray(saved.transactions))legacy=loadState();
     }catch(error){console.warn('Anciennes données locales illisibles',error);}
-    const remoteAccounts=(ar.data||[]).map(fromCloudAccount);
+    const remoteAccounts=(ar.data||[]).map(account=>fromCloudAccount(account,remoteAccountTypes));
     const remoteTransactions=(tr.data||[]).map(fromCloudTransaction);
     const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
     const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)>0;
@@ -249,12 +342,14 @@ async function loadCloudState(user){
     let importLocal=false;
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
-      state=importLocal?{...legacy,cryptoHoldings,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,lombardCredit:remoteLombard};
+      const importedAccounts=legacy?(legacy.accounts||[]).map(account=>({...account,accountType:remoteAccountTypes[account.id]||account.accountType||account.kind})):[];
+      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,lombardCredit:remoteLombard};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
       state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,lombardCredit:remoteLombard};
     }
 
+    cloud.accountTypesDirty=importLocal&&state.accounts.some(account=>isAccountSubtype(account.accountType)&&account.accountType!==account.kind);
     normalizeTransactionOrder();
     cloud.isApplyingCloud=true;
     renderAll();
@@ -267,6 +362,7 @@ async function loadCloudState(user){
     // Après confirmation de la sauvegarde cloud, supprimer le cache local historique.
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');
+    cloud.accountTypesDirty=false;
     cloud.authReady=true;
     $('auth-gate').hidden=true;
     $('app-shell').hidden=false;
@@ -277,6 +373,7 @@ async function loadCloudState(user){
     cloud.isApplyingCloud=false;
     cloud.loadedUserId=null;
     cloud.authReady=false;
+    cloud.accountTypesDirty=false;
     state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
     $('app-shell').hidden=true;
     $('auth-gate').hidden=false;
@@ -296,6 +393,7 @@ function saveState(){
 function lockApp(message=''){
   clearTimeout(cloud.syncTimer);
   cloud.authReady=false;
+  cloud.accountTypesDirty=false;
   cloud.isApplyingCloud=true;
   state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
   cloud.isApplyingCloud=false;
@@ -406,15 +504,24 @@ function tiimeNetBalance(account){
 function tiimeNetBalanceAt(account,untilDate=today()){
   return Number(account.netOpening||0)+accountTransactions(account.id).filter(t=>t.date<=untilDate).reduce((sum,t)=>sum+tiimeCalc(account,Number(t.amount)).net,0);
 }
+function effectiveAccountType(account){
+  const type=account?.accountType||account?.kind||'bank';
+  return isAccountType(type)?type:'bank';
+}
+function kindLabel(a){
+  const type=effectiveAccountType(a);
+  return type==='pro'?'Professionnel':type==='pea'?'PEA':type==='av'?'Assurance vie':type==='cto'?'CTO':type==='savings'?'Épargne':'Compte courant';
+}
 function bankLogo(account){
   const id=String(account.id||'');
   const cls=id.startsWith('lbp')?'lbp':id.startsWith('fortuneo')?'fortuneo':id.startsWith('cic')?'cic':id.startsWith('bourso')?'bourso':id.startsWith('tiime')?'tiime':'generic';
   const icons={lbp:'https://commons.wikimedia.org/wiki/Special:FilePath/Logo_La_Banque_postale_2022.svg',fortuneo:'https://commons.wikimedia.org/wiki/Special:FilePath/Fortuneo.svg',cic:'https://commons.wikimedia.org/wiki/Special:FilePath/Cr%C3%A9dit_Industriel_et_Commercial_Logo.svg',bourso:'https://brandlogos.sgp1.digitaloceanspaces.com/svg/arcticons/boursobank.svg',tiime:'https://upload.wikimedia.org/wikipedia/commons/2/28/Tiime-logo-color.svg'};
-  const src=icons[cls];
-  return '<span class="bank-logo '+cls+'">'+(src?'<img src="'+src+'" alt="Logo '+escapeHtml(account.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span '+(src?'hidden':'')+'>'+escapeHtml(account.short||account.name.slice(0,2).toUpperCase())+'</span></span>';
+  const custom=account.logo||(isLogoValue(account.short)?account.short:'');
+  const src=custom||icons[cls];
+  const initials=isLogoValue(account.short)?accountShort(account.name):(account.short||account.name.slice(0,2).toUpperCase());
+  return '<span class="bank-logo '+cls+'">'+(src?'<img src="'+escapeHtml(src)+'" alt="Logo '+escapeHtml(account.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span '+(src?'hidden':'')+'>'+escapeHtml(initials)+'</span></span>';
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function kindLabel(a){return a.kind==='pro'?'Professionnel':a.kind==='savings'?'Épargne':'Compte courant';}
 function accountMarkup(a,compact=false){
   const balance=balanceAt(a.id);
   if(compact)return '<div class="account-row" data-account-open="'+a.id+'">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><div class="account-balance">'+euro(balance)+'<small>'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s)</small></div></div>';
@@ -444,7 +551,7 @@ function renderDashboard(){
 }
 function renderAccounts(){
   const query=$('account-search').value.trim().toLocaleLowerCase('fr'),kind=$('account-kind-filter')?.value||'all',sort=$('account-sort')?.value||'name-asc';
-  const accounts=state.accounts.filter(a=>(a.name+' '+a.short).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||a.kind===kind));
+  const accounts=state.accounts.filter(a=>(a.name+' '+a.short+' '+kindLabel(a)).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||effectiveAccountType(a)===kind));
   accounts.sort((a,b)=>{if(sort==='name-desc')return b.name.localeCompare(a.name,'fr');if(sort==='balance-desc')return balanceAt(b.id)-balanceAt(a.id);if(sort==='balance-asc')return balanceAt(a.id)-balanceAt(b.id);if(sort==='kind')return kindLabel(a).localeCompare(kindLabel(b),'fr')||a.name.localeCompare(b.name,'fr');return a.name.localeCompare(b.name,'fr');});
   $('all-accounts').innerHTML=accounts.length?accounts.map(a=>accountMarkup(a)).join(''):'<div class="empty-state">Aucun compte ne correspond aux filtres.</div>';
   $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes';
@@ -639,6 +746,7 @@ function cryptoPrice(holding){
   return Number.isFinite(value)&&value>0?value:null;
 }
 function cryptoImage(holding){
+  if(holding?.logo)return holding.logo;
   const value=cryptoPrices.images?.[holding.coingeckoId];
   return typeof value==='string'?value:'';
 }
@@ -796,22 +904,39 @@ function closeCryptoCoinResults(){
   const input=$('crypto-coin-search');
   if(input)input.setAttribute('aria-expanded','false');
 }
+function updateCryptoLogoPreview(){
+  const symbol=$('crypto-edit-symbol').value||'?';
+  const name=$('crypto-edit-name').value||symbol;
+  const coingeckoId=$('crypto-edit-coingecko').value;
+  const fallback=cryptoPrices.images?.[coingeckoId]||'';
+  const image=cryptoLogoDraft||fallback;
+  $('crypto-logo-preview').innerHTML=cryptoLogoMarkup(image,symbol,'is-small');
+  $('crypto-logo-clear').hidden=!cryptoLogoDraft;
+  const selected=$('crypto-coin-selected');
+  if(coingeckoId){
+    const label=cryptoCoinLabel({name,symbol});
+    selected.innerHTML=cryptoLogoMarkup(image,symbol,'is-small')+'<span>Sélection : '+escapeHtml(label)+'</span>';
+    selected.classList.add('is-selected');
+  }
+}
 function setCryptoCoin(coin){
   const symbol=String(coin.symbol||'').toUpperCase();
   const name=coin.name||symbol;
   const image=coin.large||coin.thumb||coin.image||cryptoPrices.images?.[coin.id]||'';
   if(coin.id&&image)cryptoPrices.images[coin.id]=image;
+  cryptoLogoRequest++;
+  cryptoLogoDraft='';
   $('crypto-edit-coingecko').value=coin.id;
   $('crypto-edit-symbol').value=symbol;
   $('crypto-edit-name').value=name;
   const label=cryptoCoinLabel({name,symbol});
   $('crypto-coin-search').value=label;
-  const selected=$('crypto-coin-selected');
-  selected.innerHTML=cryptoLogoMarkup(image,symbol,'is-small')+'<span>Sélection : '+escapeHtml(label)+'</span>';
-  selected.classList.add('is-selected');
   closeCryptoCoinResults();
+  updateCryptoLogoPreview();
 }
 function clearCryptoCoin(clearSearch=false){
+  cryptoLogoRequest++;
+  cryptoLogoDraft='';
   $('crypto-edit-coingecko').value='';
   $('crypto-edit-symbol').value='';
   $('crypto-edit-name').value='';
@@ -819,6 +944,7 @@ function clearCryptoCoin(clearSearch=false){
   const selected=$('crypto-coin-selected');
   selected.textContent='Aucune crypto sélectionnée.';
   selected.classList.remove('is-selected');
+  updateCryptoLogoPreview();
 }
 async function searchCryptoCoins(query){
   if(cryptoSearch.controller)cryptoSearch.controller.abort();
@@ -849,9 +975,14 @@ function openCryptoEditor(id=null){
   if(id&&!holding)return;
   $('crypto-form').reset();
   closeCryptoCoinResults();
+  cryptoLogoRequest++;
+  cryptoLogoDraft='';
   $('crypto-edit-id').value=holding?.id||'';
   if(holding)setCryptoCoin({id:holding.coingeckoId,name:holding.name,symbol:holding.symbol});
   else clearCryptoCoin(true);
+  cryptoLogoDraft=holding?.logo||'';
+  $('crypto-logo-file').value='';
+  updateCryptoLogoPreview();
   $('crypto-edit-invested').value=holding?Number(holding.invested||0):'';
   $('crypto-edit-quantity').value=holding?String(holding.quantity??''):'';
   $('crypto-modal-title').textContent=holding?'Modifier la position':'Ajouter une position';
@@ -886,17 +1017,62 @@ function openTransaction(accountId=null,transaction=null){
   fillAccountSelects();$('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
   $('transaction-dialog').showModal();
 }
+function updateAccountLogoPreview(){
+  const id=$('edit-account-id').value;
+  const name=$('edit-account-name').value.trim()||'Compte';
+  const kind=$('edit-account-kind').value||'bank';
+  const account={id,name,short:accountShort(name),kind,accountType:kind,logo:accountLogoDraft};
+  $('account-logo-preview').innerHTML=bankLogo(account);
+  $('account-logo-clear').hidden=!accountLogoDraft;
+}
 function openAccountEditor(id=null){
   const a=id?accountById(id):null;
   if(id&&!a)return;
   $('account-form').reset();
+  accountLogoRequest++;
+  accountLogoDraft=a?.logo||(a&&isLogoValue(a.short)?a.short:'');
   $('edit-account-id').value=a?.id||'';
   $('account-modal-eyebrow').textContent=a?'PARAMÈTRES DU COMPTE':'NOUVEAU COMPTE';
   $('account-modal-title').textContent=a?'Configurer le compte':'Ajouter un compte';
   $('edit-account-name').value=a?.name||'';
-  $('edit-account-kind').value=a?.kind||'bank';
+  $('edit-account-kind').value=a?effectiveAccountType(a):'bank';
   $('edit-account-opening').value=a?Number(a.opening||0):0;
+  $('account-logo-file').value='';
+  $('account-delete').hidden=!a;
+  updateAccountLogoPreview();
   $('account-dialog').showModal();
+}
+function deleteAccount(){
+  const id=$('edit-account-id').value;
+  const account=accountById(id);
+  if(!account)return;
+  if(state.accounts.length<=1){
+    showToast('Ajoutez un autre compte avant de supprimer le dernier.');
+    return;
+  }
+  const linkedTransactions=state.transactions.filter(t=>t.accountId===id);
+  const linkedTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId===id);
+  const linked=[];
+  if(linkedTransactions.length)linked.push(linkedTransactions.length+' opération'+(linkedTransactions.length>1?'s':''));
+  if(linkedTemplates.length)linked.push(linkedTemplates.length+' récurrence'+(linkedTemplates.length>1?'s':''));
+  let message='Supprimer le compte « '+account.name+' » ?';
+  if(linked.length){
+    const total=linkedTransactions.length+linkedTemplates.length;
+    message+='\n\n'+linked.join(' et ')+' '+(total>1?'liées':'liée')+' à ce compte '+(total>1?'seront aussi supprimées':'sera aussi supprimée')+'.';
+  }
+  message+='\n\nCette action est définitive.';
+  if(!window.confirm(message))return;
+  if(cloud.user)cloud.pendingAccountDeletes.add(id);
+  for(const transaction of linkedTransactions)cloud.pendingDeletes.delete(transaction.id);
+  for(const template of linkedTemplates)cloud.pendingTemplateDeletes.delete(template.id);
+  state.accounts=state.accounts.filter(a=>a.id!==id);
+  state.transactions=state.transactions.filter(t=>t.accountId!==id);
+  state.recurringTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId!==id);
+  cloud.accountTypesDirty=true;
+  undoPoint=null;
+  if($('account-dialog').open)$('account-dialog').close();
+  renderAll();
+  showToast('Compte supprimé.');
 }
 function openLombardEditor(){
   const credit=state.lombardCredit;
@@ -1156,13 +1332,31 @@ $('crypto-form').addEventListener('submit',event=>{
     showToast('Vérifiez le montant investi et la quantité détenue.');
     return;
   }
-  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,logo:cryptoLogoDraft||'',invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.cryptoHoldings=state.cryptoHoldings.map(h=>h.id===id?record:h);
   else state.cryptoHoldings=[...(state.cryptoHoldings||[]),record];
   $('crypto-dialog').close();
   renderAll();
   showToast(existing?'Position modifiée.':'Position ajoutée.');
   if(coingeckoId&&cryptoPrices.values[coingeckoId]===undefined)loadCryptoPrices();
+});
+$('crypto-logo-choose').addEventListener('click',()=>$('crypto-logo-file').click());
+$('crypto-logo-file').addEventListener('change',event=>{
+  const file=event.target.files?.[0];
+  if(!file)return;
+  event.target.value='';
+  const request=++cryptoLogoRequest;
+  readLogoImage(file,dataUrl=>{
+    if(request!==cryptoLogoRequest)return;
+    cryptoLogoDraft=dataUrl;
+    updateCryptoLogoPreview();
+  });
+});
+$('crypto-logo-clear').addEventListener('click',()=>{
+  cryptoLogoRequest++;
+  cryptoLogoDraft='';
+  $('crypto-logo-file').value='';
+  updateCryptoLogoPreview();
 });
 $('export-btn').addEventListener('click',()=>{
   const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
@@ -1216,23 +1410,48 @@ $('account-form').addEventListener('submit',event=>{
   const id=$('edit-account-id').value;
   const existing=id?accountById(id):null;
   const name=$('edit-account-name').value.trim();
-  const kind=$('edit-account-kind').value;
+  const accountType=$('edit-account-kind').value;
+  const kind=['pea','av','cto'].includes(accountType)?'savings':accountType;
   const opening=Number($('edit-account-opening').value)||0;
   if(!name){showToast('Renseignez le nom du compte.');return;}
-  if(!['bank','savings','pro'].includes(kind)){showToast('Choisissez un type de compte valide.');return;}
+  if(!['bank','savings','pro','pea','av','cto'].includes(accountType)){showToast('Choisissez un type de compte valide.');return;}
   if(existing){
     prepareUndo();
     existing.name=name;
     existing.short=accountShort(name);
     existing.kind=kind;
+    existing.accountType=accountType;
     existing.opening=opening;
+    existing.logo=accountLogoDraft;
   }else{
-    state.accounts.push({id:crypto.randomUUID(),name,short:accountShort(name),kind,opening,vatRate:20,socialRate:45,netOpening:0});
+    state.accounts.push({id:crypto.randomUUID(),name,short:accountShort(name),kind,accountType,opening,vatRate:20,socialRate:45,netOpening:0,logo:accountLogoDraft});
   }
+  cloud.accountTypesDirty=true;
   $('account-dialog').close();
   renderAll();
   showToast(existing?'Paramètres du compte enregistrés.':'Compte ajouté.',!!existing);
 });
+$('account-delete').addEventListener('click',deleteAccount);
+$('account-logo-choose').addEventListener('click',()=>$('account-logo-file').click());
+$('account-logo-file').addEventListener('change',event=>{
+  const file=event.target.files?.[0];
+  if(!file)return;
+  event.target.value='';
+  const request=++accountLogoRequest;
+  readLogoImage(file,dataUrl=>{
+    if(request!==accountLogoRequest)return;
+    accountLogoDraft=dataUrl;
+    updateAccountLogoPreview();
+  });
+});
+$('account-logo-clear').addEventListener('click',()=>{
+  accountLogoRequest++;
+  accountLogoDraft='';
+  $('account-logo-file').value='';
+  updateAccountLogoPreview();
+});
+$('edit-account-name').addEventListener('input',updateAccountLogoPreview);
+$('edit-account-kind').addEventListener('change',updateAccountLogoPreview);
 document.addEventListener('change',event=>{
   const paid=event.target.closest('[data-toggle-paid]');
   if(!paid)return;

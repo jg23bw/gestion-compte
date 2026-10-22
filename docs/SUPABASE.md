@@ -19,7 +19,7 @@ Référence du projet vue dans la configuration publique : `gpzqvkkysolqksimiqac
 ## Tables repérées dans le schéma
 
 ### `accounts`
-Clé primaire composite `(user_id, id)`. Contient le nom, type, solde initial, taux indicatifs et solde net initial. Types acceptés : `bank`, `savings`, `pro`.
+Clé primaire composite `(user_id, id)`. Contient le nom, type, solde initial, taux indicatifs et solde net initial. Types acceptés en base : `bank`, `savings`, `pro`. Les sous-types d’affichage PEA, assurance vie et CTO sont stockés séparément dans les métadonnées Auth et utilisent `kind='savings'` (voir « Types de comptes et logos sans migration »). Le champ texte `short` contient les initiales ou, si l’utilisateur en a choisi un, le logo du compte sous forme de data URL.
 
 ### `transactions`
 Contient l’utilisateur, le compte, date, libellé, montant, source, références de récurrence, horodatages. Les colonnes nécessaires au pointage et au tri sont :
@@ -39,7 +39,7 @@ Journal des insertions, mises à jour et suppressions des entités prises en cha
 Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son nom, un compte par défaut éventuel, la date d’utilisation et la révocation. Le jeton brut n’est renvoyé qu’au moment de sa création.
 
 ### `crypto_holdings`
-Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur. La colonne historique `status` reste en base pour compatibilité mais n’est plus utilisée par le client.
+Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos CoinGecko sont lus en direct via l’API publique et seulement mis en cache côté navigateur. Un logo personnalisé facultatif est stocké dans la colonne texte existante `status` sous forme de data URL ; sans logo, le client écrit `Détenu` pour respecter la contrainte. Aucune colonne supplémentaire n’est nécessaire.
 
 ### Crédit lombard — métadonnées Auth
 Le crédit lombard n’utilise pas de table PostgreSQL dédiée. Le client l’enregistre dans les métadonnées privées de l’utilisateur Auth (`user_metadata.lombardCredit`) avec `supabase.auth.updateUser`. Le montant est déduit des avoirs bruts dans la vue d’ensemble ; le crédit n’est pas une opération et ne modifie pas les soldes des comptes.
@@ -47,6 +47,20 @@ Le crédit lombard n’utilise pas de table PostgreSQL dédiée. Le client l’e
 Cette approche ne nécessite **aucune migration SQL** et aucune politique RLS supplémentaire. Les métadonnées sont rattachées au compte Auth et ne sont pas exposées aux autres utilisateurs par l’application. Elles ne doivent pas servir à des décisions d’autorisation : les permissions restent portées par les tables et les politiques RLS.
 
 Les comptes financiers personnalisés utilisent la table `accounts` existante : aucun changement de schéma n’est nécessaire pour en ajouter. Le client génère un identifiant et synchronise la ligne avec le `user_id` connecté.
+
+## Types de comptes et logos sans migration
+
+- Les types PEA, assurance vie et CTO ne modifient pas la contrainte `accounts.kind`. En base, ils restent `kind='savings'`. Le client conserve le sous-type dans `state.accounts[].accountType` et l’enregistre dans `user_metadata.accountTypes` via `auth.updateUser`, sous la forme `{ "identifiant-du-compte": "pea" | "av" | "cto" }`.
+- La synchronisation envoie la table complète des surcharges après les upserts/suppressions de comptes. Quand un compte redevient un livret standard, change de type de base ou est supprimé, son identifiant disparaît de la table. Le drapeau `cloud.accountTypesDirty` permet de retenter l’écriture si elle échoue.
+- Le logo d’un compte est stocké sous forme de data URL dans `accounts.short`. Sans logo, ce champ contient les initiales. Le logo d’une crypto est stocké de la même façon dans `crypto_holdings.status`. Les images sont redimensionnées côté navigateur en 96 × 96 avant envoi.
+- Aucune migration SQL, colonne ou politique RLS supplémentaire n’est nécessaire. Les métadonnées Auth restent privées et ne doivent pas être utilisées pour des décisions d’autorisation.
+- Un sous-type ou un logo n’est visible sur un autre appareil qu’après la synchronisation réussie. Si `auth.updateUser` échoue, le compte peut être sauvegardé avec son type de base mais le sous-type précis peut être perdu au rechargement. L’application signale l’échec et retente lors d’une synchronisation ultérieure.
+
+## Suppression d’un compte
+
+La fenêtre de configuration permet de supprimer un compte après confirmation. Le client retire le compte, ses opérations et ses récurrences de l’état local, puis supprime la ligne `accounts` dans Supabase. Les clés étrangères `on delete cascade` de `transactions` et `recurring_templates` suppriment les lignes liées côté serveur.
+
+Le dernier compte ne peut pas être supprimé : l’application affiche un message demandant d’en créer un autre d’abord. Cette garde évite de retomber sur le réensemencement des comptes par défaut au prochain chargement. Un jeton MCP existant dont le compte par défaut est supprimé n’est pas mis à jour automatiquement ; il faut le recréer ou le modifier côté serveur si nécessaire.
 
 ## Sécurité
 
@@ -113,6 +127,19 @@ Aucune migration SQL n’est nécessaire. Pour vérifier le parcours :
 6. Tester la suppression depuis la même fenêtre.
 
 La persistance dépend de Supabase Auth (`auth.updateUser`) et de la session active.
+
+## Vérification des types de comptes, logos et suppressions
+
+Aucune migration SQL n’est requise. Pour vérifier avec un utilisateur test :
+1. Se connecter et créer un compte de type PEA, assurance vie ou CTO, avec un petit logo PNG/JPEG/WebP/GIF.
+2. Vérifier que le type et le logo apparaissent dans la liste et après un rechargement de la page.
+3. Dans Supabase, vérifier que `public.accounts.short` contient une data URL `data:image/...` pour ce compte et que `kind` vaut `savings`.
+4. Vérifier dans le compte Auth que `user_metadata.accountTypes` contient l’identifiant du compte avec la valeur `pea`, `av` ou `cto`.
+5. Ajouter une position crypto avec un logo personnalisé et vérifier que `public.crypto_holdings.status` contient la data URL.
+6. Créer un compte de test avec une opération et une récurrence, puis le supprimer depuis le site. Vérifier la disparition du compte et des lignes liées dans Supabase.
+7. Tenter de supprimer le dernier compte : l’opération doit être bloquée avec un message explicite.
+
+Ne pas exécuter ces vérifications avec des données financières réelles. Les logos volumineux sont refusés au-delà de 4 Mo avant redimensionnement.
 
 ## Migration des jetons MCP
 
