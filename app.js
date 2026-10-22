@@ -16,11 +16,18 @@ const DEFAULT_ACCOUNTS = [
 // Les modèles de récurrence sont des données personnelles : ils ne doivent pas être codés en dur dans le dépôt public.
 const DEFAULT_RECURRING_TEMPLATES = [];
 
+const CRYPTO_PRICE_CACHE_KEY='gestion-comptes-crypto-prices-v1';
+const CRYPTO_PRICE_ENDPOINT='https://api.coingecko.com/api/v3/simple/price';
+const CRYPTO_REFRESH_MS=60000;
+// Les positions crypto sont des données personnelles : elles ne doivent pas être
+// codées en dur dans le dépôt public. Elles sont stockées dans Supabase
+// (table crypto_holdings) et se gèrent depuis la page Crypto.
+
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
-let state = {accounts:[],transactions:[],recurringTemplates:[]};
+let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]};
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -47,7 +54,9 @@ function undoLastAction(){
   undoPoint=null;renderAll();showToast('Action annulée.');
 }
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),authReady:false};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),authReady:false};
+let cryptoTableReady=null;
+const cryptoPrices={values:{},updatedAt:0,error:'',loading:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
@@ -63,6 +72,12 @@ function toCloudTransaction(t,userId){return {id:t.id,user_id:userId,account_id:
 function fromCloudTransaction(t){return {id:t.id,accountId:t.account_id,date:t.transaction_date,amount:Number(t.amount),label:t.label,isPaid:t.is_paid===true,sortOrder:Number.isFinite(Number(t.sort_order))&&t.sort_order!==null?Number(t.sort_order):undefined,createdAt:Date.parse(t.created_at)||Date.now(),recurringKey:t.recurring_key||undefined,recurringTemplateId:t.recurring_template_id||undefined};}
 function toCloudTemplate(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,day_of_month:Number(t.day)||1,frequency:t.frequency,months:t.months||[],start_month:t.startMonth||null,end_month:t.endMonth||null,once_date:t.date||null,label:t.label,amount:t.amount===''||t.amount===undefined?null:t.amount,enabled:t.enabled!==false};}
 function fromCloudTemplate(t){return {id:t.id,accountId:t.account_id,day:Number(t.day_of_month)||1,frequency:t.frequency,months:t.months||[],startMonth:t.start_month||undefined,endMonth:t.end_month||undefined,date:t.once_date||undefined,label:t.label,amount:t.amount===null?null:Number(t.amount),enabled:t.enabled};}
+function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,status:h.status||'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
+function fromCloudCryptoHolding(h){return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,status:h.status||'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};}
+function isMissingCryptoTable(error){
+  const code=error?.code||'',message=error?.message||'';
+  return code==='42P01'||code==='PGRST205'||/crypto_holdings/i.test(message)&&/does not exist|could not find|schema cache/i.test(message);
+}
 function uniqueTransactions(rows){
   const byId=new Map();rows.forEach(t=>byId.set(t.id,t));
   const byRecurring=new Map(),result=[];
@@ -86,6 +101,7 @@ async function syncCloudState(){
     const accounts=state.accounts.map(a=>toCloudAccount(a,uid));
     const templates=(state.recurringTemplates||[]).map(t=>toCloudTemplate(t,uid));
     const transactions=state.transactions.map(t=>toCloudTransaction(t,uid));
+    const cryptoHoldings=(state.cryptoHoldings||[]).map(h=>toCloudCryptoHolding(h,uid));
     const [ar,tr,rr]=await Promise.all([
       client.from('accounts').select('*'),
       client.from('transactions').select('*'),
@@ -122,6 +138,23 @@ async function syncCloudState(){
       if(error)throw error;
       cloud.pendingTemplateDeletes.delete(id);
     }
+    if(cryptoTableReady!==false){
+      const cryptoResult=await client.from('crypto_holdings').select('*');
+      if(cryptoResult.error){
+        if(isMissingCryptoTable(cryptoResult.error))cryptoTableReady=false;
+        else throw cryptoResult.error;
+      }else{
+        cryptoTableReady=true;
+        const remoteCrypto=new Map((cryptoResult.data||[]).map(row=>[row.id,row]));
+        const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','status','invested','quantity','sort_order']));
+        if(changedCrypto.length){const {error}=await client.from('crypto_holdings').upsert(changedCrypto,{onConflict:'user_id,id'});if(error)throw error;}
+        for(const id of [...cloud.pendingCryptoDeletes]){
+          const {error}=await client.from('crypto_holdings').delete().eq('id',id).eq('user_id',uid);
+          if(error)throw error;
+          cloud.pendingCryptoDeletes.delete(id);
+        }
+      }
+    }
     cloudStatus('Synchronisé en ligne',true);
     return true;
   }catch(error){
@@ -132,6 +165,7 @@ async function syncCloudState(){
   }finally{
     cloud.isSyncing=false;
     cloud.syncAgain=false;
+    if(cryptoTableReady===false)renderCrypto();
   }
 }
 async function loadCloudState(user){
@@ -151,6 +185,19 @@ async function loadCloudState(user){
     for(const result of [ar,tr,rr])if(result.error)throw result.error;
     if(!cloud.user||cloud.user.id!==user.id)return;
 
+    // La table crypto peut ne pas encore exister : ne pas bloquer le reste de l'application.
+    const cryptoResult=await client.from('crypto_holdings').select('*');
+    let remoteCrypto=[];
+    if(cryptoResult.error){
+      if(!isMissingCryptoTable(cryptoResult.error))throw cryptoResult.error;
+      cryptoTableReady=false;
+    }else{
+      cryptoTableReady=true;
+      remoteCrypto=(cryptoResult.data||[]).map(fromCloudCryptoHolding);
+    }
+    let cryptoHoldings=[];
+    if(cryptoTableReady&&remoteCrypto.length)cryptoHoldings=remoteCrypto;
+
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
     let legacy=null;
     try{
@@ -166,10 +213,10 @@ async function loadCloudState(user){
     let importLocal=false;
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
-      state=importLocal?legacy:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
+      state=importLocal?{...legacy,cryptoHoldings}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
-      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings};
     }
 
     normalizeTransactionOrder();
@@ -179,6 +226,7 @@ async function loadCloudState(user){
     const synced=await syncCloudState();
     if(!synced)throw new Error('La synchronisation Supabase a échoué. Les anciennes données locales ont été conservées.');
     if(!cloud.user||cloud.user.id!==user.id)return;
+    loadCryptoPrices();
 
     // Après confirmation de la sauvegarde cloud, supprimer le cache local historique.
     localStorage.removeItem(STORAGE_KEY);
@@ -193,7 +241,7 @@ async function loadCloudState(user){
     cloud.isApplyingCloud=false;
     cloud.loadedUserId=null;
     cloud.authReady=false;
-    state={accounts:[],transactions:[],recurringTemplates:[]};
+    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]};
     $('app-shell').hidden=true;
     $('auth-gate').hidden=false;
     cloudStatus('Cloud indisponible',false);
@@ -213,7 +261,7 @@ function lockApp(message=''){
   clearTimeout(cloud.syncTimer);
   cloud.authReady=false;
   cloud.isApplyingCloud=true;
-  state={accounts:[],transactions:[],recurringTemplates:[]};
+  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]};
   cloud.isApplyingCloud=false;
   $('app-shell').hidden=true;
   $('auth-gate').hidden=false;
@@ -282,7 +330,7 @@ function loadState(){
       return {accounts,transactions:saved.transactions,recurringTemplates};
     }
   }catch(e){console.warn('Données locales illisibles',e);}
-  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[]};
+  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings:[]};
 }
 
 function accountById(id){return state.accounts.find(a=>a.id===id);}
@@ -530,14 +578,144 @@ function generateRecurringForMonth(month){
   showToast(message,true);
 }
 
-function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();saveState();}
+function cryptoPrice(holding){
+  const value=Number(cryptoPrices.values[holding.coingeckoId]);
+  return Number.isFinite(value)&&value>0?value:null;
+}
+function isHeldCrypto(holding){
+  return String(holding.status||'Détenu').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'').startsWith('detenu');
+}
+function euroPrecise(value){
+  const number=Number(value)||0;
+  return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:Math.abs(number)>0&&Math.abs(number)<1?6:2}).format(number);
+}
+function numberFr(value,maximumFractionDigits=8){
+  return new Intl.NumberFormat('fr-FR',{maximumFractionDigits}).format(Number(value)||0);
+}
+function formatSignedPercent(value){
+  const number=Number(value)||0;
+  return (number>0?'+':'')+new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(number)+' %';
+}
+function cryptoTimeLabel(timestamp){
+  return new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'}).format(new Date(timestamp));
+}
+function hydrateCryptoPrices(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(CRYPTO_PRICE_CACHE_KEY));
+    if(saved&&saved.values&&typeof saved.values==='object'){
+      cryptoPrices.values=saved.values;
+      cryptoPrices.updatedAt=Number(saved.updatedAt)||0;
+    }
+  }catch(error){console.warn('Cache des prix crypto illisible',error);}
+}
+async function loadCryptoPrices(){
+  const ids=[...new Set((state.cryptoHoldings||[]).map(h=>h.coingeckoId).filter(Boolean))];
+  if(!ids.length){renderCrypto();return;}
+  if(cryptoPrices.loading)return;
+  cryptoPrices.loading=true;
+  cryptoPrices.error='';
+  renderCrypto();
+  try{
+    const response=await fetch(CRYPTO_PRICE_ENDPOINT+'?ids='+encodeURIComponent(ids.join(','))+'&vs_currencies=eur',{headers:{Accept:'application/json'}});
+    if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
+    const data=await response.json();
+    const values={};
+    for(const id of ids){
+      const price=Number(data?.[id]?.eur);
+      if(Number.isFinite(price)&&price>0)values[id]=price;
+    }
+    if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
+    cryptoPrices.values={...cryptoPrices.values,...values};
+    cryptoPrices.updatedAt=Date.now();
+    try{localStorage.setItem(CRYPTO_PRICE_CACHE_KEY,JSON.stringify({values:cryptoPrices.values,updatedAt:cryptoPrices.updatedAt}));}catch(error){}
+  }catch(error){
+    console.error('Crypto price fetch failed',error);
+    cryptoPrices.error=error.message||'prix indisponible';
+  }finally{
+    cryptoPrices.loading=false;
+    renderCrypto();
+  }
+}
+function renderCrypto(){
+  if(!$('crypto-rows'))return;
+  const holdings=[...(state.cryptoHoldings||[])].sort((a,b)=>(Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||String(a.symbol||'').localeCompare(String(b.symbol||''),'fr'));
+  const held=holdings.filter(isHeldCrypto);
+  const priced=held.filter(h=>cryptoPrice(h)!==null);
+  const investedAll=held.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
+  const investedPriced=priced.reduce((sum,h)=>sum+(Number(h.invested)||0),0);
+  const currentValue=priced.reduce((sum,h)=>sum+(Number(h.quantity)||0)*cryptoPrice(h),0);
+  const gain=currentValue-investedPriced;
+  const performance=investedPriced>0?gain/investedPriced*100:0;
+
+  $('crypto-invested').textContent=euro(investedAll);
+  $('crypto-value').textContent=euro(currentValue);
+  const gainElement=$('crypto-gain');
+  gainElement.textContent=(gain>0?'+':'')+euro(gain);
+  gainElement.classList.toggle('positive',gain>0);
+  gainElement.classList.toggle('negative',gain<0);
+  const performanceElement=$('crypto-performance');
+  performanceElement.textContent=investedPriced>0?formatSignedPercent(performance):'—';
+  performanceElement.classList.toggle('positive',performance>0);
+  performanceElement.classList.toggle('negative',performance<0);
+
+  const priceStatus=$('crypto-price-status');
+  if(priceStatus){
+    if(cryptoPrices.loading){priceStatus.textContent='Actualisation des prix…';priceStatus.classList.remove('is-error');}
+    else if(cryptoPrices.error){priceStatus.textContent='Prix indisponible : '+cryptoPrices.error;priceStatus.classList.add('is-error');}
+    else if(cryptoPrices.updatedAt){priceStatus.textContent='Prix actualisés à '+cryptoTimeLabel(cryptoPrices.updatedAt)+' · source CoinGecko';priceStatus.classList.remove('is-error');}
+    else{priceStatus.textContent='Prix pas encore chargés.';priceStatus.classList.remove('is-error');}
+  }
+  const migration=$('crypto-migration');
+  if(migration)migration.hidden=cryptoTableReady!==false;
+
+  $('crypto-rows').innerHTML=holdings.length?holdings.map(h=>{
+    const price=cryptoPrice(h);
+    const active=isHeldCrypto(h);
+    const value=active&&price!==null?(Number(h.quantity)||0)*price:null;
+    const rowGain=value===null?null:value-(Number(h.invested)||0);
+    const rowPerformance=rowGain===null||(Number(h.invested)||0)<=0?null:rowGain/Number(h.invested)*100;
+    return '<tr><td><div class="crypto-coin"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></td><td><span class="crypto-status '+(active?'is-held':'is-sold')+'">'+escapeHtml(h.status||'Détenu')+'</span></td><td class="table-amount">'+euro(h.invested)+'</td><td class="crypto-quantity">'+numberFr(h.quantity)+'</td><td class="crypto-price">'+(price===null?'—':euroPrecise(price))+'</td><td class="table-balance">'+(value===null?'—':euro(value))+'</td><td class="table-amount '+(rowGain===null?'':rowGain>0?'positive':rowGain<0?'negative':'')+'">'+(rowGain===null?'—':(rowGain>0?'+':'')+euro(rowGain))+'</td><td class="crypto-performance '+(rowPerformance===null?'':rowPerformance>0?'positive':rowPerformance<0?'negative':'')+'">'+(rowPerformance===null?'—':formatSignedPercent(rowPerformance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="9"><div class="empty-state">Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.</div></td></tr>';
+
+  const missing=held.filter(h=>cryptoPrice(h)===null).length;
+  let footer=holdings.length+' position(s) affichée(s) · prix convertis en euros via CoinGecko';
+  if(cryptoPrices.updatedAt)footer+=' · dernière actualisation à '+cryptoTimeLabel(cryptoPrices.updatedAt);
+  if(missing)footer+=' · '+missing+' position(s) sans prix : les totaux ne les incluent pas.';
+  $('crypto-footer').textContent=footer;
+}
+function openCryptoEditor(id=null){
+  const holding=id?(state.cryptoHoldings||[]).find(h=>h.id===id):null;
+  if(id&&!holding)return;
+  $('crypto-form').reset();
+  $('crypto-edit-id').value=holding?.id||'';
+  $('crypto-edit-symbol').value=holding?.symbol||'';
+  $('crypto-edit-name').value=holding?.name||'';
+  $('crypto-edit-coingecko').value=holding?.coingeckoId||'';
+  $('crypto-edit-status').value=holding?.status||'Détenu';
+  $('crypto-edit-invested').value=holding?Number(holding.invested||0):'';
+  $('crypto-edit-quantity').value=holding?String(holding.quantity??''):'';
+  $('crypto-modal-title').textContent=holding?'Modifier la position':'Ajouter une position';
+  $('crypto-dialog').showModal();
+}
+function deleteCryptoHolding(id){
+  const holding=(state.cryptoHoldings||[]).find(h=>h.id===id);
+  if(!holding)return;
+  if(!window.confirm('Supprimer la position « '+holding.symbol+' » ? Les totaux seront recalculés.'))return;
+  if(cloud.user)cloud.pendingCryptoDeletes.add(holding.id);
+  state.cryptoHoldings=state.cryptoHoldings.filter(h=>h.id!==id);
+  renderAll();
+  showToast('Position supprimée.');
+}
+
+function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();saveState();}
 function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.setAttribute('aria-label','Annuler la dernière action');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();try{undoLastAction();}catch(error){console.error('Undo failed',error);showToast('Impossible d’annuler cette action : '+(error.message||'erreur inconnue.'));}},{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},10000);}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',recurring:'Récurrences'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',recurring:'Récurrences'})[view]||view;
   if(view==='recurring')renderRecurring();
   if(view==='accounts')renderAccounts();if(view==='transactions')renderTransactions();if(view==='history')renderMonthlyHistory();
+  if(view==='crypto'){renderCrypto();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function openTransaction(accountId=null,transaction=null){
@@ -715,6 +893,30 @@ $('cloud-logout').addEventListener('click',async()=>{
   try{const {error}=await cloudClient().auth.signOut();if(error)throw error;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');if($('cloud-dialog').open)$('cloud-dialog').close();lockApp('Déconnexion effectuée. Reconnectez-vous pour accéder à vos données.');}
   catch(error){cloudMessage(error.message||'Déconnexion impossible.');}
 });
+$('crypto-add').addEventListener('click',()=>openCryptoEditor());
+$('crypto-refresh').addEventListener('click',loadCryptoPrices);
+$('crypto-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  const id=$('crypto-edit-id').value;
+  const existing=id?(state.cryptoHoldings||[]).find(h=>h.id===id):null;
+  const symbol=$('crypto-edit-symbol').value.trim().toUpperCase();
+  const name=$('crypto-edit-name').value.trim()||symbol;
+  const coingeckoId=$('crypto-edit-coingecko').value.trim().toLowerCase();
+  const status=$('crypto-edit-status').value||'Détenu';
+  const invested=Number($('crypto-edit-invested').value);
+  const quantity=Number($('crypto-edit-quantity').value);
+  if(!symbol||!coingeckoId||!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0){
+    showToast('Vérifiez le symbole, l’identifiant CoinGecko, le montant investi et la quantité.');
+    return;
+  }
+  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,status,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+  if(existing)state.cryptoHoldings=state.cryptoHoldings.map(h=>h.id===id?record:h);
+  else state.cryptoHoldings=[...(state.cryptoHoldings||[]),record];
+  $('crypto-dialog').close();
+  renderAll();
+  showToast(existing?'Position modifiée.':'Position ajoutée.');
+  if(coingeckoId&&cryptoPrices.values[coingeckoId]===undefined)loadCryptoPrices();
+});
 $('export-btn').addEventListener('click',()=>{
   const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
   choice?exportData():downloadCsv();
@@ -758,11 +960,22 @@ document.addEventListener('click',event=>{
   if(editRecurring){openRecurringEditor(editRecurring.dataset.editRecurring);return;}
   const deleteRecurring=event.target.closest('[data-delete-recurring]');
   if(deleteRecurring){deleteRecurringTemplate(deleteRecurring.dataset.deleteRecurring);return;}
+  const editCrypto=event.target.closest('[data-edit-crypto]');
+  if(editCrypto){openCryptoEditor(editCrypto.dataset.editCrypto);return;}
+  const deleteCrypto=event.target.closest('[data-delete-crypto]');
+  if(deleteCrypto){deleteCryptoHolding(deleteCrypto.dataset.deleteCrypto);return;}
   const editAccount=event.target.closest('[data-edit-account]');
   if(editAccount){event.stopPropagation();openAccountEditor(editAccount.dataset.editAccount);return;}
   const history=event.target.closest('[data-account-transactions]');
   if(history){event.stopPropagation();navigate('transactions');$('transaction-account-filter').value=history.dataset.accountTransactions;renderTransactions();return;}
   const account=event.target.closest('[data-account-open]');
   if(account){openAccountEditor(account.dataset.accountOpen);}
+});
+hydrateCryptoPrices();
+setInterval(()=>{
+  if(!document.hidden&&(state.cryptoHoldings||[]).length)loadCryptoPrices();
+},CRYPTO_REFRESH_MS);
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&(state.cryptoHoldings||[]).length&&Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();
 });
 initCloud();

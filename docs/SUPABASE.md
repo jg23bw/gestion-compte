@@ -12,6 +12,8 @@ Référence du projet vue dans la configuration publique : `gpzqvkkysolqksimiqac
 - `supabase/schema.sql` : schéma SQL de référence et RLS.
 - `supabase/migrations/202610180001_mcp_tokens.sql` : table des jetons MCP.
 - `supabase/migrations/202610180002_transaction_pointage_order.sql` : colonnes de pointage, ordre et clé de récurrence.
+- `supabase/migrations/202610220001_crypto_holdings.sql` : table des positions crypto, RLS et index.
+- `supabase/seed-crypto.local.sql` : fichier local ignoré par Git pour importer une première fois des positions ; ne pas le committer.
 - `supabase/config.toml` : paramètres des Edge Functions ; les fonctions actuellement présentes sont `mcp-transactions`, `quick-add` et `mcp-tokens`.
 - `supabase/functions/` : implémentations des Edge Functions.
 
@@ -36,6 +38,9 @@ Journal des insertions, mises à jour et suppressions des entités prises en cha
 
 ### `mcp_tokens`
 Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son nom, un compte par défaut éventuel, la date d’utilisation et la révocation. Le jeton brut n’est renvoyé qu’au moment de sa création.
+
+### `crypto_holdings`
+Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, statut, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur.
 
 ## Sécurité
 
@@ -73,6 +78,23 @@ Dans le dashboard du **projet exact utilisé par l’application** :
 Cette migration ajoute les colonnes avec `ADD COLUMN IF NOT EXISTS`, initialise les valeurs `sort_order` manquantes à partir de la date/heure de création, crée un index unique partiel sur les clés de récurrence non nulles et demande à PostgREST de recharger son schéma. Elle ne doit pas être considérée comme appliquée tant que son exécution sur le serveur n’a pas été confirmée.
 
 Le fichier `supabase/schema.sql` contient déjà ces colonnes et l’index. Le schéma est une référence pour une installation ; la migration est destinée aux bases déjà initialisées. Éviter de lancer des scripts destructifs ou de réinitialiser les tables pour corriger un simple décalage de schéma.
+
+## Base déjà existante : positions crypto
+
+Fichier : [`migrations/202610220001_crypto_holdings.sql`](../supabase/migrations/202610220001_crypto_holdings.sql).
+
+Cette migration crée `public.crypto_holdings`, active RLS, ajoute la politique `crypto holdings own rows`, l’index d’ordre et les droits pour les utilisateurs authentifiés. Elle est idempotente (`if not exists`, `drop policy if exists`) et ne modifie aucune autre table.
+
+Procédure :
+1. Ouvrir le SQL Editor du projet utilisé par l’application.
+2. Exécuter le fichier complet.
+3. Vérifier que la table `public.crypto_holdings` existe et que RLS est activée.
+4. Recharger l’application, se connecter et ouvrir « Crypto ».
+5. Ajouter une position test, vérifier la valeur calculée avec le prix CoinGecko, recharger la page et confirmer la persistance. Supprimer la position test ensuite.
+
+Sans cette migration, le reste de l’application continue de fonctionner : la page Crypto affiche un bandeau explicite et les positions ne sont pas sauvegardées.
+
+Pour un import initial de positions sans les mettre dans le dépôt, utiliser `supabase/seed-crypto.local.sql` (ignoré par Git) après avoir remplacé `<USER_ID>` par l’UUID de l’utilisateur. Ne jamais committer ce fichier s’il contient des montants réels.
 
 ## Migration des jetons MCP
 

@@ -13,6 +13,7 @@ Application web personnelle en français pour suivre des comptes, opérations et
 - [Schéma SQL initial](./supabase/schema.sql)
 - [Migration MCP multi-utilisateur](./supabase/migrations/202610180001_mcp_tokens.sql)
 - [Migration pointage et ordre manuel](./supabase/migrations/202610180002_transaction_pointage_order.sql)
+- [Migration positions crypto](./supabase/migrations/202610220001_crypto_holdings.sql)
 - [Application hébergée sur GitHub Pages](https://jg23bw.github.io/gestion-compte/)
 
 ## Comptes préconfigurés
@@ -37,6 +38,7 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Recherche, filtres et tris dans les écrans concernés.
 - Historique mensuel : choix du mois, recherche, filtre par compte/type, tri, total des entrées, sorties et net.
 - Pointage des opérations et ordre manuel.
+- Page crypto avec positions (investi, quantité, statut), prix réels en euros via CoinGecko, valeur actuelle, gain/perte et performance.
 - Export JSON et export CSV des opérations.
 - Paramètres de compte et estimation indicative de trésorerie du compte professionnel.
 - Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
@@ -81,6 +83,12 @@ Le code utilise les colonnes `transactions.is_paid`, `transactions.sort_order` e
 
 Avant de modifier une base réelle, lisez [docs/SUPABASE.md](./docs/SUPABASE.md), exportez les données et vérifiez les résultats. Ne prétendez pas que la migration distante a été exécutée : un commit GitHub ne l’applique pas à Supabase.
 
-## Intégration MCP
+## Crypto : données et prix en direct
+
+La page « Crypto » affiche les positions de l’utilisateur connecté et calcule leur valeur avec les prix du marché en euros fournis par l’API publique CoinGecko. Les prix sont actualisés au chargement, toutes les 60 secondes lorsque l’onglet est visible, et via le bouton « Actualiser les prix ». Le dernier prix reçu est conservé dans le navigateur pour éviter un écran vide en cas de coupure réseau ; une position sans prix n’est pas inventée et reste exclue des totaux.
+
+Les positions sont des données personnelles : elles ne sont pas codées en dur dans le dépôt. Elles sont stockées dans la table `public.crypto_holdings` (RLS par utilisateur) et se gèrent depuis la page Crypto. Sur une base existante, exécutez [`202610220001_crypto_holdings.sql`](./supabase/migrations/202610220001_crypto_holdings.sql) dans le SQL Editor. Pour importer une première fois les positions fournies hors dépôt, utilisez le fichier local ignoré par Git `supabase/seed-crypto.local.sql` et remplacez `<USER_ID>` par l’UUID de votre utilisateur. Un commit ne crée pas la table et n’applique pas la migration : vérifiez toujours le projet Supabase ciblé.
+
+
 
 Le serveur MCP personnel et l’ajout rapide sont décrits dans [docs/mcp-transactions.md](./docs/mcp-transactions.md). Le système utilise des jetons Bearer personnels révocables ; il ne s’agit pas encore d’une implémentation OAuth 2.1 universelle. Les secrets privilégiés restent côté serveur.

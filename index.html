@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=simple-account-settings-1">
+  <link rel="stylesheet" href="styles.css?v=crypto-page-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=operations-date-ascending-1" defer></script>
+  <script src="app.js?v=crypto-page-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -33,6 +33,7 @@
       <button class="nav-item" data-view="accounts"><span class="nav-icon">▤</span> Mes comptes <span class="nav-count" id="account-count">9</span></button>
       <button class="nav-item" data-view="transactions"><span class="nav-icon">↕</span> Opérations</button>
       <button class="nav-item" data-view="history"><span class="nav-icon">▤</span> Historique mensuel</button>
+      <button class="nav-item" data-view="crypto"><span class="nav-icon">₿</span> Crypto</button>
       <button class="nav-item" data-view="recurring"><span class="nav-icon">⟳</span> Récurrences</button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Données synchronisées</strong><p>Connectez-vous pour sauvegarder vos comptes et opérations dans votre base privée en ligne.</p><button class="secondary-button cloud-open" id="cloud-open">Connexion cloud</button></div>
@@ -89,6 +90,14 @@
         <section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Date</th><th>Opération</th><th>Compte</th><th>Montant</th><th>Pointage</th></tr></thead><tbody id="history-rows"></tbody></table></div><div class="table-footer" id="history-footer">Choisissez un mois pour consulter son historique.</div></section>
       </section>
 
+      <section class="view" id="crypto-view">
+        <div class="page-heading"><div><p class="eyebrow">PORTEFEUILLE CRYPTO</p><h1>Crypto</h1><p class="subtitle">Suivez vos positions au prix réel du marché, converti en euros.</p></div><button class="primary-button" id="crypto-add"><span>＋</span> Ajouter une position</button></div>
+        <div class="history-summary-grid crypto-summary-grid"><article class="history-summary-card"><span>Investi</span><strong id="crypto-invested">0,00 €</strong></article><article class="history-summary-card"><span>Valeur actuelle</span><strong id="crypto-value">0,00 €</strong></article><article class="history-summary-card"><span>Gain/Perte</span><strong id="crypto-gain">0,00 €</strong></article><article class="history-summary-card"><span>Performance</span><strong id="crypto-performance">0,00 %</strong></article></div>
+        <div class="toolbar crypto-toolbar"><button class="secondary-button" id="crypto-refresh" type="button">Actualiser les prix</button><span class="toolbar-note" id="crypto-price-status">Prix pas encore chargés.</span></div>
+        <p class="crypto-notice" id="crypto-migration" hidden><strong>Table crypto absente de Supabase.</strong> Exécutez <code>supabase/migrations/202610220001_crypto_holdings.sql</code> dans le SQL Editor du bon projet, puis rechargez la page. Tant que la migration n’est pas appliquée, les positions ne seront pas sauvegardées.</p>
+        <section class="panel table-panel"><div class="table-scroll"><table class="crypto-table"><thead><tr><th>COIN</th><th>STATUT</th><th>INVESTI</th><th>QUANTITÉ</th><th>PRIX ACTUEL</th><th>VALEUR ACTUELLE</th><th>GAIN/PERTE</th><th>%</th><th>ACTIONS</th></tr></thead><tbody id="crypto-rows"></tbody></table></div><div class="table-footer" id="crypto-footer">Prix en euros fournis par CoinGecko.</div></section>
+      </section>
+
       <section class="view" id="recurring-view">
         <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Ajoutez, modifiez, suspendez ou supprimez vos opérations programmées. Les opérations déjà générées restent dans l’historique.</p></div><div class="heading-actions"><button class="secondary-button" id="recurring-add-template">Ajouter une récurrence</button><button class="primary-button" id="recurring-add-month">Générer les opérations du mois prochain</button></div></div>
         <div class="recurring-controls panel"><input id="recurring-month" type="hidden"><span id="recurring-summary">Les opérations seront ajoutées automatiquement pour le mois prochain. Les doublons seront ignorés.</span></div>
@@ -138,6 +147,20 @@
       <label>Solde de départ (€)<input id="edit-account-opening" type="number" step="0.01" required></label>
       <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="account-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="crypto-dialog" class="modal">
+    <form id="crypto-form">
+      <div class="modal-heading"><div><p class="eyebrow">PORTEFEUILLE CRYPTO</p><h2 id="crypto-modal-title">Ajouter une position</h2></div><button type="button" class="close-button" data-close="crypto-dialog" aria-label="Fermer">×</button></div>
+      <input type="hidden" id="crypto-edit-id">
+      <div class="form-row"><label>Symbole<input id="crypto-edit-symbol" required maxlength="12" placeholder="BTC" autocomplete="off"></label><label>Nom<input id="crypto-edit-name" maxlength="60" placeholder="Bitcoin" autocomplete="off"></label></div>
+      <label>Identifiant CoinGecko<input id="crypto-edit-coingecko" required maxlength="80" placeholder="bitcoin" autocomplete="off"></label>
+      <p class="form-help">L’identifiant CoinGecko (par exemple <code>bitcoin</code> ou <code>ripple</code>) sert à récupérer le prix réel en euros. Il est visible sur la page CoinGecko de la crypto.</p>
+      <div class="form-row"><label>Statut<select id="crypto-edit-status"><option value="Détenu">Détenu</option><option value="Vendu (sorti)">Vendu (sorti)</option></select></label><label>Investi (€)<input id="crypto-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label></div>
+      <label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label>
+      <p class="form-help">La valeur actuelle est calculée en multipliant la quantité par le prix du marché. Une position « Vendu (sorti) » reste affichée mais n’entre pas dans les totaux.</p>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close="crypto-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
 

@@ -283,3 +283,23 @@ tbody tr:hover td{background:#fafbff}
 
 /* Solde réel affiché avant la liste des opérations prévues. */
 .transaction-current-balance{background:#eef3ff!important;border-bottom:2px solid #d6e1ff}.transaction-current-balance td{padding-top:15px;padding-bottom:15px}.transaction-current-balance td:first-child{color:#1b2c4b}.transaction-current-balance .balance-date{display:block;margin-top:3px;color:#77849a;font-size:11px;font-weight:400}.transaction-current-balance .table-balance{color:#1f3971;font-size:15px}
+
+/* --- Portefeuille crypto (22 octobre 2026) --- */
+.crypto-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.crypto-toolbar{justify-content:space-between}
+.crypto-toolbar .toolbar-note{margin-left:auto;text-align:right}
+.crypto-toolbar .toolbar-note.is-error{color:#d66c58}
+.crypto-notice{border:1px solid #f3d9c8;background:#fff7ef;color:#8a5a35;border-radius:12px;padding:12px 14px;font-size:11px;line-height:1.6;margin:0 0 16px}
+.crypto-notice code{font-size:10px;background:#fff;border:1px solid #f0dfd0;border-radius:5px;padding:1px 4px}
+.crypto-table td{vertical-align:middle}
+.crypto-coin strong{display:block;font-size:12px;color:#2f3a50;letter-spacing:.2px}
+.crypto-coin small{display:block;font-size:9px;color:#9aa3b2;margin-top:3px}
+.crypto-quantity,.crypto-price,.crypto-performance,.crypto-table .table-amount,.crypto-table .table-balance{font-variant-numeric:tabular-nums}
+.crypto-quantity{color:#4a566c}
+.crypto-price{color:#39445a;font-weight:600}
+.crypto-performance{font-weight:700}
+.crypto-status{display:inline-block;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.2px}
+.crypto-status.is-held{background:#e9f8f1;color:#1c8a64}
+.crypto-status.is-sold{background:#f2f4f8;color:#8b93a2}
+@media(max-width:1100px){.crypto-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.crypto-summary-grid{grid-template-columns:1fr}.crypto-toolbar{align-items:flex-start;flex-direction:column}.crypto-toolbar .toolbar-note{margin-left:0;text-align:left}}

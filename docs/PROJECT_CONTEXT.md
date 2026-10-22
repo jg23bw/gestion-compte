@@ -44,7 +44,7 @@
 
 ### Vues de l’application
 
-Les sections HTML inspectées incluent `accounts-view`, `transactions-view`, `history-view` et `recurring-view`. La navigation change la vue active sans routeur externe. Les fonctions de rendu principales présentes dans `app.js` incluent `renderDashboard`, `renderAccounts`, `renderTransactions`, `renderMonthlyHistory`, `renderRecurring` et `renderAll`.
+Les sections HTML inspectées incluent `accounts-view`, `transactions-view`, `history-view`, `crypto-view` et `recurring-view`. La navigation change la vue active sans routeur externe. Les fonctions de rendu principales présentes dans `app.js` incluent `renderDashboard`, `renderAccounts`, `renderTransactions`, `renderMonthlyHistory`, `renderCrypto`, `renderRecurring` et `renderAll`.
 
 ## 4. Modèle de données métier
 
@@ -161,3 +161,13 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les autres tris restent disponibles dans le sélecteur.
 - Le paramètre de version de `app.js` est actualisé pour éviter de conserver l’ancien script en cache.
 - Vérification effectuée : contrôle des valeurs par défaut et du tri appliqué dans le code GitHub. Aucun test navigateur n’a été exécuté.
+
+## 13. Page Crypto et prix en direct (22 octobre 2026)
+
+- Nouvelle vue « Crypto » avec positions (symbole, nom, statut, montant investi, quantité), prix actuel en euros, valeur actuelle, gain/perte et performance.
+- Les prix proviennent de l’API publique CoinGecko (`simple/price`, devise EUR) : chargement à l’ouverture, actualisation toutes les 60 secondes lorsque l’onglet est visible, bouton manuel et cache local du dernier prix. Une position sans prix n’est pas valorisée et est exclue des totaux ; aucun montant n’est inventé.
+- Les positions sont stockées dans Supabase (`public.crypto_holdings`, RLS par `auth.uid()`) via la migration `202610220001_crypto_holdings.sql`, avec repli non bloquant si la table n’existe pas encore : le reste de l’application continue de fonctionner et un bandeau indique la migration à exécuter.
+- Les montants personnels ne sont pas codés en dur dans le dépôt. `supabase/seed-crypto.local.sql` est ignoré par Git et sert uniquement à un import local ponctuel après remplacement de `<USER_ID>`.
+- Le dépôt a été repassé en public pour rétablir GitHub Pages, qui ne publie pas depuis un dépôt privé sur une offre gratuite. Le code reste sans secret ; les données restent protégées par Auth et RLS.
+- Vérifications effectuées : `node --check app.js`, contrôle scripté de tous les appels `$('...')` par rapport aux `id` de `index.html`, vérification CORS et réponse EUR de CoinGecko. Aucun test navigateur complet avec session Supabase n’a été exécuté dans ce contexte.
+- Reste à faire : appliquer la migration crypto dans le bon projet Supabase, importer les positions (SQL local ou formulaire), vérifier l’affichage des prix et la persistance après rechargement.
