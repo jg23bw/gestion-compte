@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=accounts-lombard-3">
+  <link rel="stylesheet" href="styles.css?v=accounts-lombard-4">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=accounts-lombard-3" defer></script>
+  <script src="app.js?v=accounts-lombard-4" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -50,8 +50,7 @@
 
       <section class="view active" id="dashboard-view">
         <div class="page-heading">
-          <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div>
-          
+          <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div><button class="primary-button" id="dashboard-add-account"><span>＋</span> Ajouter un compte</button>
         </div>
         <div class="summary-grid">
           <article class="summary-card total-card"><div class="card-top"><span>Patrimoine net</span><span class="card-icon navy">€</span></div><div class="metric" id="net-balance">0,00 €</div><div class="card-foot"><span class="muted" id="net-detail">Avoirs bruts − dette lombard</span><span class="trend-pill" id="accounts-count-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>

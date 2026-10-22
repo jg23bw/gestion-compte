@@ -1050,6 +1050,7 @@ $('recurring-form').addEventListener('submit',event=>{
 ['transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
 $('accounts-add').addEventListener('click',()=>openAccountEditor());
 $('dashboard-account-add').addEventListener('click',()=>openAccountEditor());
+$('dashboard-add-account').addEventListener('click',()=>openAccountEditor());
 $('lombard-manage').addEventListener('click',openLombardEditor);
 $('account-search').addEventListener('input',renderAccounts);
 $('account-kind-filter').addEventListener('change',renderAccounts);$('account-sort').addEventListener('change',renderAccounts);
