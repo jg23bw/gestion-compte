@@ -1,9 +1,9 @@
-# Logos bancaires
+# Logos des banques et courtiers
 
 Ces fichiers servent uniquement à afficher automatiquement le logo de la banque
-sélectionnée dans le formulaire de compte. Les marques et logos appartiennent à
-leurs titulaires respectifs ; ils sont utilisés ici pour identifier
-l’établissement choisi par l’utilisateur.
+ou du courtier sélectionné dans le formulaire de compte. Les marques et logos
+appartiennent à leurs titulaires respectifs ; ils sont utilisés ici pour
+identifier l’établissement choisi par l’utilisateur.
 
 Sources :
 
@@ -21,7 +21,13 @@ Sources :
 - Hello bank! : <https://commons.wikimedia.org/wiki/Special:FilePath/Hello%20bank%20logo%202013.svg>
 - Monabanq : <https://commons.wikimedia.org/wiki/Special:FilePath/Logo%20Monabanq.png>
 - Trade Republic : <https://commons.wikimedia.org/wiki/Special:FilePath/Trade%20Republic%20logo%202021.svg>
+- Interactive Brokers : <https://commons.wikimedia.org/wiki/Special:FilePath/Interactive%20Brokers%20Logo%20(2014).svg>
+- Swissquote : <https://commons.wikimedia.org/wiki/Special:FilePath/Logo%20Swissquote.svg>
+- DEGIRO : <https://commons.wikimedia.org/wiki/Special:FilePath/Degiro%20logo.svg>
+- Saxo Banque : <https://commons.wikimedia.org/wiki/Special:FilePath/Saxo%20Bank%20logo.svg>
+- eToro : <https://commons.wikimedia.org/wiki/Special:FilePath/Etoro%20logo.svg>
+- XTB : <https://commons.wikimedia.org/wiki/Special:FilePath/XTB%20logo.svg>
 - Revolut, N26 et Wise : Simple Icons, <https://simpleicons.org/> (CC0 1.0)
 
-Les banques sans fichier local (BforBank, Caisse d’Épargne, Bourse Direct) sont
-affichées avec un monogramme coloré.
+Les établissements sans fichier local (BforBank, Caisse d’Épargne, Bourse
+Direct) sont affichés avec un monogramme coloré.
