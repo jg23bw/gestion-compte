@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=crypto-page-6">
+  <link rel="stylesheet" href="styles.css?v=accounts-lombard-3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=crypto-page-6" defer></script>
+  <script src="app.js?v=accounts-lombard-3" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -19,6 +19,7 @@
       <span class="brand-mark">G<span>+</span></span>
       <h1>Votre espace de comptes est privé</h1>
       <p>Connectez-vous pour charger vos comptes, opérations et récurrences depuis votre espace personnel sécurisé.</p>
+      <div class="auth-gate-actions"><button type="button" class="primary-button" id="auth-login">Se connecter</button><button type="button" class="secondary-button" id="auth-signup">Créer un compte</button></div>
       <p class="auth-gate-note">Aucune donnée de compte n’est affichée avant la connexion.</p>
     </div>
   </section>
@@ -53,14 +54,16 @@
           
         </div>
         <div class="summary-grid">
-          <article class="summary-card total-card"><div class="card-top"><span>Solde total</span><span class="card-icon navy">€</span></div><div class="metric" id="total-balance">0,00 €</div><div class="card-foot"><span class="muted">Sur l'ensemble des comptes</span><span class="trend-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
-          <article class="summary-card"><div class="card-top"><span>Comptes bancaires</span><span class="card-icon blue">▤</span></div><div class="metric" id="bank-balance">0,00 €</div><div class="card-foot"><span class="muted">Hors compte professionnel</span><span class="tiny-dot blue-dot"></span></div></article>
-          <article class="summary-card"><div class="card-top"><span>Compte professionnel</span><span class="card-icon purple">↗</span></div><div class="metric" id="pro-balance">0,00 €</div><div class="card-foot"><span class="muted">Solde du compte, avant provisions</span><span class="tiny-dot purple-dot"></span></div></article>
+          <article class="summary-card total-card"><div class="card-top"><span>Patrimoine net</span><span class="card-icon navy">€</span></div><div class="metric" id="net-balance">0,00 €</div><div class="card-foot"><span class="muted" id="net-detail">Avoirs bruts − dette lombard</span><span class="trend-pill" id="accounts-count-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
+          <article class="summary-card"><div class="card-top"><span>Avoirs bruts</span><span class="card-icon blue">▤</span></div><div class="metric" id="total-balance">0,00 €</div><div class="card-foot"><span class="muted">Sur l'ensemble des comptes</span><span class="tiny-dot blue-dot"></span></div></article>
+          <article class="summary-card lombard-card"><div class="card-top"><span>Crédit lombard</span><span class="card-icon debt">−</span></div><div class="metric" id="lombard-balance">0,00 €</div><div class="card-foot"><span class="muted" id="lombard-label">Aucun crédit enregistré</span><button type="button" class="text-button" id="lombard-manage">Ajouter</button></div></article>
+          <article class="summary-card"><div class="card-top"><span>Comptes personnels</span><span class="card-icon blue">▤</span></div><div class="metric" id="bank-balance">0,00 €</div><div class="card-foot"><span class="muted">Bancaires et épargne, hors professionnel</span><span class="tiny-dot blue-dot"></span></div></article>
+          <article class="summary-card"><div class="card-top"><span>Comptes professionnels</span><span class="card-icon purple">↗</span></div><div class="metric" id="pro-balance">0,00 €</div><div class="card-foot"><span class="muted">Soldes avant provisions</span><span class="tiny-dot purple-dot"></span></div></article>
         </div>
 
         <div class="content-grid">
           <section class="panel accounts-panel">
-            <div class="panel-heading"><div><h2>Mes comptes</h2><p>Vue rapide des soldes actuels</p></div><button class="text-button" data-goto="accounts">Voir tous <span>→</span></button></div>
+            <div class="panel-heading"><div><h2>Mes comptes</h2><p>Vue rapide des soldes actuels</p></div><div class="panel-heading-actions"><button class="text-button" id="dashboard-account-add">＋ Ajouter</button><button class="text-button" data-goto="accounts">Voir tous <span>→</span></button></div></div>
             <div class="account-list" id="dashboard-accounts"></div>
           </section>
           <section class="panel activity-panel">
@@ -72,7 +75,7 @@
       </section>
 
       <section class="view" id="accounts-view">
-        <div class="page-heading"><div><p class="eyebrow">VOTRE PATRIMOINE LIQUIDE</p><h1>Mes comptes</h1><p class="subtitle">Configurez les soldes de départ et accédez à l’historique de chaque compte.</p></div></div>
+        <div class="page-heading"><div><p class="eyebrow">VOTRE PATRIMOINE LIQUIDE</p><h1>Mes comptes</h1><p class="subtitle">Ajoutez vos comptes, configurez les soldes de départ et accédez à l’historique de chaque compte.</p></div><button class="primary-button" id="accounts-add"><span>＋</span> Ajouter un compte</button></div>
         <div class="toolbar"><div class="search-box"><span>⌕</span><input id="account-search" placeholder="Rechercher un compte…" aria-label="Rechercher un compte"></div><select id="account-kind-filter" aria-label="Filtrer par type de compte"><option value="all">Tous les types</option><option value="bank">Comptes bancaires</option><option value="savings">Livrets</option><option value="pro">Professionnel</option></select><select id="account-sort" aria-label="Trier les comptes"><option value="name-asc">Nom A → Z</option><option value="name-desc">Nom Z → A</option><option value="balance-desc">Solde décroissant</option><option value="balance-asc">Solde croissant</option><option value="kind">Type de compte</option></select><span class="toolbar-note" id="accounts-total-label">9 comptes</span></div>
         <div class="accounts-grid" id="all-accounts"></div>
       </section>
@@ -142,12 +145,25 @@
 
   <dialog id="account-dialog" class="modal">
     <form id="account-form">
-      <div class="modal-heading"><div><p class="eyebrow">PARAMÈTRES DU COMPTE</p><h2 id="account-modal-title">Configurer le compte</h2></div><button type="button" class="close-button" data-close="account-dialog" aria-label="Fermer">×</button></div>
+      <div class="modal-heading"><div><p class="eyebrow" id="account-modal-eyebrow">PARAMÈTRES DU COMPTE</p><h2 id="account-modal-title">Configurer le compte</h2></div><button type="button" class="close-button" data-close="account-dialog" aria-label="Fermer">×</button></div>
       <input type="hidden" id="edit-account-id">
-      <label>Nom du compte<input id="edit-account-name" required maxlength="80"></label>
+      <label>Nom du compte<input id="edit-account-name" required maxlength="80" placeholder="Ex. Livret A, compte joint…"></label>
+      <label>Type de compte<select id="edit-account-kind" required><option value="bank">Compte courant</option><option value="savings">Livret / épargne</option><option value="pro">Professionnel</option></select></label>
       <label>Solde de départ (€)<input id="edit-account-opening" type="number" step="0.01" required></label>
-      <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée.</p>
+      <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée. Pour ajouter un nouveau compte, renseignez son nom, son type et son solde actuel.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="account-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="lombard-dialog" class="modal">
+    <form id="lombard-form">
+      <div class="modal-heading"><div><p class="eyebrow">DETTE FINANCIÈRE</p><h2>Crédit lombard</h2></div><button type="button" class="close-button" data-close="lombard-dialog" aria-label="Fermer">×</button></div>
+      <label>Libellé<input id="lombard-edit-label" maxlength="120" required placeholder="Ex. Crédit lombard"></label>
+      <label>Dette actuelle (€)<input id="lombard-edit-amount" type="number" min="0" step="0.01" required placeholder="0,00"></label>
+      <label>Taux annuel (%) — facultatif<input id="lombard-edit-rate" type="number" min="0" max="100" step="0.01" placeholder="Ex. 4,5"></label>
+      <label>Notes<textarea id="lombard-edit-notes" rows="3" maxlength="500" placeholder="Contrepartie, échéance, établissement…"></textarea></label>
+      <p class="form-help">Le montant de la dette est déduit des avoirs bruts de tous les comptes pour calculer le patrimoine net affiché dans la vue d’ensemble.</p>
+      <div class="modal-actions"><button type="button" class="secondary-button danger-button" id="lombard-delete" hidden>Supprimer</button><button type="button" class="secondary-button" data-close="lombard-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
 
@@ -170,8 +186,8 @@
 
   <dialog id="cloud-dialog" class="modal cloud-dialog">
     <form id="cloud-form">
-      <div class="modal-heading"><div><p class="eyebrow">SAUVEGARDE EN LIGNE</p><h2>Connexion à votre espace</h2></div><button type="button" class="close-button" data-close="cloud-dialog" aria-label="Fermer">×</button></div>
-      <p class="form-help">Créez un compte ou connectez-vous pour synchroniser vos données sur vos appareils. Utilisez un mot de passe unique.</p>
+      <div class="modal-heading"><div><p class="eyebrow">SAUVEGARDE EN LIGNE</p><h2>Connexion ou création de compte</h2></div><button type="button" class="close-button" data-close="cloud-dialog" aria-label="Fermer">×</button></div>
+      <p class="form-help">Créez un compte ou connectez-vous pour synchroniser vos données sur vos appareils. Utilisez un mot de passe unique d’au moins 8 caractères.</p>
       <label>Adresse e-mail<input id="cloud-email" type="email" autocomplete="email" required maxlength="254"></label>
       <label>Mot de passe<input id="cloud-password" type="password" autocomplete="current-password" required minlength="8" maxlength="128"></label>
       <p id="cloud-message" class="form-help" role="status" aria-live="polite"></p>

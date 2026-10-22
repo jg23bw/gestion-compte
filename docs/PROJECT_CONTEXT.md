@@ -1,6 +1,6 @@
 # Contexte projet — Gestion de comptes
 
-**Dernière mise à jour documentaire : 2026-10-18.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
+**Dernière mise à jour documentaire : 2026-10-22.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
 ## 1. Résumé rapide
 
@@ -49,7 +49,10 @@ Les sections HTML inspectées incluent `accounts-view`, `transactions-view`, `hi
 ## 4. Modèle de données métier
 
 ### Comptes
-État JavaScript : `state.accounts`. Les propriétés côté client comprennent `id`, `name`, `short`, `kind`, `opening`, `vatRate`, `socialRate`, `netOpening`. Les types de compte connus sont `bank`, `savings`, `pro`.
+État JavaScript : `state.accounts`. Les propriétés côté client comprennent `id`, `name`, `short`, `kind`, `opening`, `vatRate`, `socialRate`, `netOpening`. Les types de compte connus sont `bank`, `savings`, `pro`. Les comptes prédéfinis sont des valeurs initiales ; l’utilisateur peut en ajouter depuis « Mes comptes » et modifier leur nom, type et solde de départ. Aucun changement de schéma n’est nécessaire : la table `accounts` accepte déjà un identifiant texte.
+
+### Crédit lombard
+État JavaScript : `state.lombardCredit`, soit `null`, soit `{label, amount, rate, notes}`. Il est enregistré dans les métadonnées privées du compte Supabase Auth (`user_metadata.lombardCredit`) via `auth.updateUser`, sans table ni migration SQL. Le montant est une dette positive déduite des avoirs bruts ; il ne crée pas d’opération et ne modifie pas le solde d’un compte. Le taux et les notes sont informatifs.
 
 ### Opérations
 État : `state.transactions`. Champs côté client importants : `id`, `accountId`, `date`, `label`, `amount`, `isPaid`, `sortOrder`, `createdAt`, `recurringKey`, `recurringTemplateId`. Le stockage Supabase les mappe notamment sur `account_id`, `transaction_date`, `is_paid`, `sort_order`, `recurring_key`, `recurring_template_id`.
@@ -71,6 +74,7 @@ Les tables principales sont liées à `auth.users` et les politiques RLS doivent
 - Interface en français.
 - Application personnelle, avec simplicité prioritaire et sans dépendance à une chaîne de build.
 - Les soldes sont calculés depuis le solde initial et les opérations, pas depuis un flux bancaire.
+- Le patrimoine net affiché dans la vue d’ensemble correspond aux avoirs bruts de tous les comptes moins le crédit lombard.
 - Pas de connexion bancaire automatique.
 - Export JSON disponible pour sauvegarde ; CSV pour les opérations.
 - La génération des récurrences concerne le mois sélectionné par la logique de génération (le comportement UI courant vise le mois suivant), doit éviter les doublons et doit afficher une erreur explicite si on essaie de générer un mois déjà traité. Ne pas recréer les mêmes opérations en répétant l’action.
@@ -174,3 +178,14 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le dépôt a été repassé en public pour rétablir GitHub Pages, qui ne publie pas depuis un dépôt privé sur une offre gratuite. Le code reste sans secret ; les données restent protégées par Auth et RLS.
 - Vérifications effectuées : `node --check app.js`, contrôle scripté de tous les appels `$('...')` par rapport aux `id` de `index.html`, vérification CORS et réponse EUR de CoinGecko. Aucun test navigateur complet avec session Supabase n’a été exécuté dans ce contexte.
 - Reste à faire : appliquer la migration crypto dans le bon projet Supabase, importer les positions (SQL local ou formulaire), vérifier l’affichage des prix et la persistance après rechargement.
+
+## 14. Comptes personnalisés et crédit lombard (22 octobre 2026)
+
+- Il est désormais possible d’ajouter un compte financier depuis le bouton « Ajouter » du tableau de bord ou depuis « Mes comptes » : nom, type (courant, épargne ou professionnel) et solde de départ. Le compte est créé dans l’état local puis synchronisé dans `public.accounts` avec le `user_id` connecté. Les comptes ajoutés utilisent un logo générique avec leurs initiales.
+- La fenêtre de configuration existante sert aussi à modifier le nom, le type et le solde de départ d’un compte. Aucun bouton de suppression de compte n’a été ajouté pour éviter une suppression en cascade involontaire des opérations.
+- La vue d’ensemble affiche désormais cinq indicateurs : patrimoine net, avoirs bruts, crédit lombard, comptes bancaires et comptes professionnels. Le patrimoine net vaut `avoirs bruts − dette lombard` et devient négatif si la dette dépasse les avoirs.
+- Le crédit lombard se gère depuis la carte dédiée : libellé, dette actuelle, taux annuel facultatif et notes. Il est enregistré dans les métadonnées privées du compte Supabase Auth (`user_metadata.lombardCredit`) via `auth.updateUser`.
+- Aucune table ni migration SQL n’est nécessaire pour le crédit lombard. La sauvegarde et la suppression passent par le site et sont disponibles après reconnexion sur un autre appareil.
+- L’écran de connexion propose maintenant des boutons directs « Se connecter » et « Créer un compte ». L’inscription utilisait déjà `auth.signUp` ; selon les paramètres Supabase, une confirmation par e-mail reste nécessaire.
+- Vérifications effectuées : `node --check app.js`, contrôle des IDs DOM, test navigateur local avec des comptes et un crédit synthétiques, vérification du calcul `1900 − 300 = 1600`, ouverture des dialogues d’ajout de compte depuis le tableau de bord et « Mes comptes », ouverture du dialogue Lombard depuis la carte, sauvegarde et suppression avec un client Auth simulé, aucune erreur console. La persistance réelle via `auth.updateUser` n’a pas été testée avec un utilisateur connecté dans ce contexte.
+- Reste à faire : vérifier avec un utilisateur connecté l’ajout d’un compte, l’enregistrement du crédit par le site et sa persistance après rechargement et reconnexion.

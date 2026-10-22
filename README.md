@@ -28,11 +28,13 @@ Application web personnelle en français pour suivre des comptes, opérations et
 - Livret Boursobank BoursoFirst
 - Compte professionnel Tiime
 
-Les noms sont des valeurs initiales du code ; les données personnelles des utilisateurs ne doivent pas être ajoutées au dépôt.
+Les noms sont des valeurs initiales du code ; les données personnelles des utilisateurs ne doivent pas être ajoutées au dépôt. Chaque utilisateur peut ensuite ajouter ses propres comptes depuis le bouton « Ajouter » du tableau de bord ou depuis « Mes comptes », puis modifier leur nom, leur type et leur solde de départ.
 
 ## Fonctionnalités
 
-- Tableau de bord avec soldes cumulés et dernières opérations.
+- Tableau de bord avec soldes cumulés, patrimoine net et dernières opérations.
+- Création de comptes financiers personnalisés (courant, épargne ou professionnel).
+- Gestion d’un crédit lombard déduit des avoirs bruts pour calculer le patrimoine net.
 - Ajout, modification, suppression et annulation de certaines opérations.
 - Calcul des soldes à partir d’un solde initial et des opérations datées.
 - Recherche, filtres et tris dans les écrans concernés.
@@ -43,7 +45,7 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Paramètres de compte et estimation indicative de trésorerie du compte professionnel.
 - Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
 - Génération des opérations pour un mois, détection des doublons et exclusion des montants non renseignés.
-- Synchronisation avec Supabase, connexion utilisateur et interface de gestion de jetons MCP.
+- Synchronisation avec Supabase, connexion utilisateur, création de compte utilisateur et interface de gestion de jetons MCP.
 
 ## Démarrer et modifier
 
@@ -63,7 +65,7 @@ Il n’y a pas de `package.json` ni de pipeline de build front-end au moment de 
 
 ## Stockage et confidentialité
 
-L’application peut synchroniser comptes, paramètres, opérations et modèles de récurrence avec Supabase après connexion. Les tables métier utilisent RLS et chaque ligne appartient à un utilisateur. Le navigateur conserve également des marqueurs locaux (notamment l’état de génération des mois) et une copie de sécurité peut être créée pendant la migration des données locales.
+L’application peut synchroniser comptes, paramètres, opérations, modèles de récurrence, positions crypto et crédit lombard avec Supabase après connexion. Les tables métier utilisent RLS et chaque ligne appartient à un utilisateur. Le navigateur conserve également des marqueurs locaux (notamment l’état de génération des mois) et une copie de sécurité peut être créée pendant la migration des données locales.
 
 Ne placez pas de données financières réelles, de jetons MCP, de JWT, de clé `service_role`, de mot de passe ou d’autres secrets dans le dépôt. La clé publishable de Supabase destinée au navigateur n’est pas une clé privilégiée ; les permissions doivent être protégées par Auth et RLS. Voir [docs/SUPABASE.md](./docs/SUPABASE.md).
 
@@ -89,6 +91,12 @@ La page « Crypto » affiche les positions de l’utilisateur connecté et calcu
 
 Les positions sont des données personnelles : elles ne sont pas codées en dur dans le dépôt. Chaque utilisateur connecté ajoute ses positions depuis la page Crypto : il recherche la crypto par son nom ou son symbole (l’identifiant CoinGecko et le nom sont remplis automatiquement), puis saisit le montant investi et la quantité détenue. Les lignes sont stockées dans la table `public.crypto_holdings` (RLS par utilisateur) et synchronisées automatiquement. Sur une base existante, exécutez [`202610220001_crypto_holdings.sql`](./supabase/migrations/202610220001_crypto_holdings.sql) dans le SQL Editor. Un commit ne crée pas la table et n’applique pas la migration : vérifiez toujours le projet Supabase ciblé.
 
+## Crédit lombard et patrimoine net
 
+La vue d’ensemble affiche le patrimoine net calculé comme la somme des avoirs de tous les comptes, moins la dette du crédit lombard. Le crédit se gère depuis la carte « Crédit lombard » : libellé, dette actuelle, taux annuel facultatif et notes. Une seule valeur est conservée par utilisateur.
+
+Le crédit est enregistré dans les métadonnées privées du compte Supabase Auth (`user_metadata.lombardCredit`) via `auth.updateUser`. Il est ainsi disponible sur les appareils où l’utilisateur se connecte, sans créer de table et **sans exécuter de migration SQL**. Aucun autre utilisateur ne peut lire ces métadonnées depuis l’application.
+
+Un utilisateur peut créer son espace depuis « Créer un compte » sur l’écran de connexion. Selon les paramètres Auth du projet Supabase, un e-mail de confirmation peut être nécessaire avant la première connexion.
 
 Le serveur MCP personnel et l’ajout rapide sont décrits dans [docs/mcp-transactions.md](./docs/mcp-transactions.md). Le système utilise des jetons Bearer personnels révocables ; il ne s’agit pas encore d’une implémentation OAuth 2.1 universelle. Les secrets privilégiés restent côté serveur.

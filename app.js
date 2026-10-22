@@ -29,7 +29,7 @@ const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
-let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]};
+let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -60,6 +60,15 @@ const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud
 let cryptoTableReady=null;
 const cryptoPrices={values:{},images:{},updatedAt:0,error:'',loading:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
+function frenchAuthError(error){
+  const message=String(error?.message||'').trim();
+  if(/already registered|already been registered|user already exists/i.test(message))return 'Un compte existe déjà avec cette adresse. Utilisez « Se connecter ».';
+  if(/invalid login credentials/i.test(message))return 'Adresse e-mail ou mot de passe incorrect.';
+  if(/email not confirmed/i.test(message))return 'Confirmez votre adresse e-mail avant de vous connecter.';
+  if(/rate limit|too many/i.test(message))return 'Trop de tentatives. Réessayez dans quelques minutes.';
+  if(/password/i.test(message)&&/least|characters|length/i.test(message))return 'Le mot de passe ne respecte pas la longueur minimale demandée.';
+  return message||'Opération impossible.';
+}
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
 function cloudClient(){
   if(cloud.client)return cloud.client;
@@ -79,6 +88,28 @@ function fromCloudCryptoHolding(h){return {id:h.id,symbol:h.symbol,name:h.name||
 function isMissingCryptoTable(error){
   const code=error?.code||'',message=error?.message||'';
   return code==='42P01'||code==='PGRST205'||/crypto_holdings/i.test(message)&&/does not exist|could not find|schema cache/i.test(message);
+}
+function normalizeLombardCredit(credit){
+  if(!credit)return null;
+  const rawRate=credit.rate;
+  const rate=rawRate===''||rawRate===null||rawRate===undefined?null:Number(rawRate);
+  return {
+    label:(String(credit.label||'Crédit lombard').trim()||'Crédit lombard').slice(0,120),
+    amount:Math.max(0,Number(credit.amount)||0),
+    rate:Number.isFinite(rate)?Math.min(100,Math.max(0,rate)):null,
+    notes:String(credit.notes||'').trim().slice(0,500)
+  };
+}
+async function saveLombardCreditToAuth(credit){
+  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer le crédit lombard.');
+  const normalized=normalizeLombardCredit(credit);
+  const {data,error}=await cloudClient().auth.updateUser({data:{lombardCredit:normalized}});
+  if(error)throw error;
+  if(data?.user){
+    cloud.user=data.user;
+    if(cloud.session)cloud.session.user=data.user;
+  }
+  return normalized;
 }
 function uniqueTransactions(rows){
   const byId=new Map();rows.forEach(t=>byId.set(t.id,t));
@@ -200,6 +231,9 @@ async function loadCloudState(user){
     let cryptoHoldings=[];
     if(cryptoTableReady&&remoteCrypto.length)cryptoHoldings=remoteCrypto;
 
+    // Le crédit lombard est stocké dans les métadonnées privées du compte Auth.
+    const remoteLombard=normalizeLombardCredit(user.user_metadata?.lombardCredit);
+
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
     let legacy=null;
     try{
@@ -209,16 +243,16 @@ async function loadCloudState(user){
     const remoteAccounts=(ar.data||[]).map(fromCloudAccount);
     const remoteTransactions=(tr.data||[]).map(fromCloudTransaction);
     const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
-    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length>0;
+    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)>0;
     const hasLegacy=!!legacy&&(legacy.accounts.length+legacy.transactions.length+(legacy.recurringTemplates||[]).length>0);
 
     let importLocal=false;
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
-      state=importLocal?{...legacy,cryptoHoldings}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings};
+      state=importLocal?{...legacy,cryptoHoldings,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,lombardCredit:remoteLombard};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
-      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,lombardCredit:remoteLombard};
     }
 
     normalizeTransactionOrder();
@@ -243,7 +277,7 @@ async function loadCloudState(user){
     cloud.isApplyingCloud=false;
     cloud.loadedUserId=null;
     cloud.authReady=false;
-    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]};
+    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
     $('app-shell').hidden=true;
     $('auth-gate').hidden=false;
     cloudStatus('Cloud indisponible',false);
@@ -263,7 +297,7 @@ function lockApp(message=''){
   clearTimeout(cloud.syncTimer);
   cloud.authReady=false;
   cloud.isApplyingCloud=true;
-  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]};
+  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
   cloud.isApplyingCloud=false;
   $('app-shell').hidden=true;
   $('auth-gate').hidden=false;
@@ -329,13 +363,18 @@ function loadState(){
       const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';return merged;});
       const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):[];
       DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
-      return {accounts,transactions:saved.transactions,recurringTemplates};
+      return {accounts,transactions:saved.transactions,recurringTemplates,lombardCredit:saved.lombardCredit||null};
     }
   }catch(e){console.warn('Données locales illisibles',e);}
-  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings:[]};
+  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
 }
 
 function accountById(id){return state.accounts.find(a=>a.id===id);}
+function accountShort(name){
+  const words=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(words.length>1)return words.slice(0,3).map(w=>w[0]).join('').toUpperCase().slice(0,3);
+  return String(name||'').trim().slice(0,2).toUpperCase();
+}
 function transactionOrder(a,b){const ao=Number.isFinite(Number(a.sortOrder))&&a.sortOrder!==null?Number(a.sortOrder):null,bo=Number.isFinite(Number(b.sortOrder))&&b.sortOrder!==null?Number(b.sortOrder):null;if(ao!==null&&bo!==null&&ao!==bo)return ao-bo;if(ao!==null&&bo===null)return -1;if(ao===null&&bo!==null)return 1;return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;}
 function accountTransactions(accountId){return state.transactions.filter(t=>t.accountId===accountId).sort(transactionOrder);}
 function normalizeTransactionOrder(){for(const account of state.accounts){const rows=state.transactions.filter(t=>t.accountId===account.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);rows.forEach((t,index)=>{if(!Number.isFinite(Number(t.sortOrder))||t.sortOrder===null)t.sortOrder=index+1;});}}
@@ -344,6 +383,8 @@ function balanceAt(accountId,untilDate=null){
   const a=accountById(accountId);if(!a)return 0;
   return Number(a.opening||0)+accountTransactions(accountId).filter(t=>!untilDate||t.date<=untilDate).reduce((sum,t)=>sum+Number(t.amount),0);
 }
+function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
+function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
 function balanceAfterTransaction(transaction){
   const a=accountById(transaction.accountId);if(!a)return 0;
   let balance=Number(a.opening||0);
@@ -366,7 +407,8 @@ function tiimeNetBalanceAt(account,untilDate=today()){
   return Number(account.netOpening||0)+accountTransactions(account.id).filter(t=>t.date<=untilDate).reduce((sum,t)=>sum+tiimeCalc(account,Number(t.amount)).net,0);
 }
 function bankLogo(account){
-  const cls=account.id.startsWith('lbp')?'lbp':account.id.startsWith('fortuneo')?'fortuneo':account.id.startsWith('cic')?'cic':account.id.startsWith('bourso')?'bourso':'tiime';
+  const id=String(account.id||'');
+  const cls=id.startsWith('lbp')?'lbp':id.startsWith('fortuneo')?'fortuneo':id.startsWith('cic')?'cic':id.startsWith('bourso')?'bourso':id.startsWith('tiime')?'tiime':'generic';
   const icons={lbp:'https://commons.wikimedia.org/wiki/Special:FilePath/Logo_La_Banque_postale_2022.svg',fortuneo:'https://commons.wikimedia.org/wiki/Special:FilePath/Fortuneo.svg',cic:'https://commons.wikimedia.org/wiki/Special:FilePath/Cr%C3%A9dit_Industriel_et_Commercial_Logo.svg',bourso:'https://brandlogos.sgp1.digitaloceanspaces.com/svg/arcticons/boursobank.svg',tiime:'https://upload.wikimedia.org/wikipedia/commons/2/28/Tiime-logo-color.svg'};
   const src=icons[cls];
   return '<span class="bank-logo '+cls+'">'+(src?'<img src="'+src+'" alt="Logo '+escapeHtml(account.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span '+(src?'hidden':'')+'>'+escapeHtml(account.short||account.name.slice(0,2).toUpperCase())+'</span></span>';
@@ -376,14 +418,25 @@ function kindLabel(a){return a.kind==='pro'?'Professionnel':a.kind==='savings'?'
 function accountMarkup(a,compact=false){
   const balance=balanceAt(a.id);
   if(compact)return '<div class="account-row" data-account-open="'+a.id+'">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><div class="account-balance">'+euro(balance)+'<small>'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s)</small></div></div>';
-  const extra=a.kind==='pro'?'<div class="account-card-label">Net estimé après provisions : <strong>'+euro(tiimeNetBalance(a))+'</strong></div>':'<div class="account-card-label">'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s) enregistrée(s)</div>';
+  const extra=a.id==='tiime'&&a.kind==='pro'?'<div class="account-card-label">Net estimé après provisions : <strong>'+euro(tiimeNetBalance(a))+'</strong></div>':'<div class="account-card-label">'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s) enregistrée(s)</div>';
   return '<article class="account-card" data-account-open="'+a.id+'"><div class="account-card-top">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><button class="edit-account" data-edit-account="'+a.id+'" aria-label="Configurer '+escapeHtml(a.name)+'" title="Configurer le compte">···</button></div><div class="account-card-balance">'+euro(balance)+'</div>'+extra+'<div class="account-card-foot"><span>Solde actuel</span><button data-account-transactions="'+a.id+'">Historique →</button></div></article>';
 }
 function renderDashboard(){
-  const total=state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);
+  const total=totalAccountsBalance();
+  const lombard=lombardAmount();
+  const net=total-lombard;
   const bank=state.accounts.filter(a=>a.kind!=='pro').reduce((sum,a)=>sum+balanceAt(a.id),0);
-  const pro=accountById('tiime');
-  $('total-balance').textContent=euro(total);$('bank-balance').textContent=euro(bank);$('pro-balance').textContent=euro(pro?balanceAt(pro.id):0);
+  const pro=state.accounts.filter(a=>a.kind==='pro').reduce((sum,a)=>sum+balanceAt(a.id),0);
+  $('net-balance').textContent=euro(net);
+  $('total-balance').textContent=euro(total);
+  $('lombard-balance').textContent=euro(lombard);
+  $('bank-balance').textContent=euro(bank);
+  $('pro-balance').textContent=euro(pro);
+  $('net-balance').classList.toggle('negative',net<0);
+  $('net-detail').textContent=lombard>0?euro(total)+' − '+euro(lombard):'Aucune dette lombard enregistrée';
+  $('lombard-label').textContent=state.lombardCredit?.label||'Aucun crédit enregistré';
+  $('lombard-manage').textContent=state.lombardCredit?'Gérer':'Ajouter';
+  $('accounts-count-pill').textContent=state.accounts.length+' compte'+(state.accounts.length>1?'s':'');
   $('dashboard-accounts').innerHTML=state.accounts.map(a=>accountMarkup(a,true)).join('');
   const recent=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).slice(0,6);
   $('recent-transactions').innerHTML=recent.length?recent.map(t=>{const a=accountById(t.accountId)||{name:'Compte supprimé'};return '<div class="recent-row"><span class="movement-icon '+(t.amount>=0?'income':'expense')+'">'+(t.amount>=0?'↙':'↗')+'</span><div class="movement-main"><strong>'+escapeHtml(t.label)+'</strong><small>'+escapeHtml(a.name)+' · '+dateFormat(t.date)+'</small></div><span class="movement-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</span></div>';}).join(''):'<div class="empty-state">Aucune opération pour le moment.<br>Ajoutez une opération pour commencer.</div>';
@@ -412,19 +465,20 @@ function fillAccountSelects(){
 function renderTransactions(){
   const accountFilter=$('transaction-account-filter').value,typeFilter=$('transaction-type-filter').value,query=$('transaction-search').value.trim().toLocaleLowerCase('fr'),sort=$('transaction-sort')?.value||'date-asc';
   const account=accountById(accountFilter);
+  const tiimeView=account?.id==='tiime'&&account?.kind==='pro';
   const asOf=today();
   const currentBalance=balanceAt(accountFilter,asOf);
   const list=[...state.transactions].filter(t=>{const ac=accountById(t.accountId);return t.accountId===accountFilter&&(typeFilter==='all'||(typeFilter==='income'?t.amount>=0:t.amount<0))&&((t.label+' '+(ac?.name||'')).toLocaleLowerCase('fr').includes(query));});
   list.sort((a,b)=>{if(sort==='date-asc')return a.date.localeCompare(b.date)||a.createdAt-b.createdAt;if(sort==='date-desc')return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;if(sort==='label')return a.label.localeCompare(b.label,'fr');if(sort==='amount-asc')return Number(a.amount)-Number(b.amount);if(sort==='amount-desc')return Number(b.amount)-Number(a.amount);if(sort==='pointed')return Number(b.isPaid===true)-Number(a.isPaid===true)||transactionOrder(a,b);return transactionOrder(a,b);});
-  $('transaction-head').innerHTML='<tr><th>ORDRE</th><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th><th>COMPTE</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(accountFilter==='tiime'?'<th>MONTANT APRÈS PROVISIONS</th><th>SOLDE NET ESTIMÉ</th>':'')+'<th>ACTIONS</th></tr>';
-  const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="5"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(accountFilter==='tiime'?'<td>—</td><td class="table-balance"><strong>'+euro(tiimeNetBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
+  $('transaction-head').innerHTML='<tr><th>ORDRE</th><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th><th>COMPTE</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(tiimeView?'<th>MONTANT APRÈS PROVISIONS</th><th>SOLDE NET ESTIMÉ</th>':'')+'<th>ACTIONS</th></tr>';
+  const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="5"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(tiimeView?'<td>—</td><td class="table-balance"><strong>'+euro(tiimeNetBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
   $('transaction-rows').innerHTML=balanceRow+(list.length?list.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte supprimé',short:'?',kind:'bank'};
     const balance=balanceAfterTransaction(t);
     const calc=tiimeCalc(a,Number(t.amount));
     const net=tiimeNetBalance(a);
-    const accountRows=accountTransactions(t.accountId);const accountPosition=accountRows.findIndex(item=>item.id===t.id);return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td class="order-actions"><button type="button" data-move-transaction="'+t.id+'" data-direction="-1" '+(accountPosition<=0?'disabled':'')+' aria-label="Monter cette opération" title="Monter">↑</button><button type="button" data-move-transaction="'+t.id+'" data-direction="1" '+(accountPosition===accountRows.length-1?'disabled':'')+' aria-label="Descendre cette opération" title="Descendre">↓</button></td><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td><div class="table-account">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td class="table-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(accountFilter==='tiime'?'<td>'+euro(calc.net)+'</td><td class="table-balance">'+euro(net)+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="'+(accountFilter==='tiime'?10:8)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>');
+    const accountRows=accountTransactions(t.accountId);const accountPosition=accountRows.findIndex(item=>item.id===t.id);return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td class="order-actions"><button type="button" data-move-transaction="'+t.id+'" data-direction="-1" '+(accountPosition<=0?'disabled':'')+' aria-label="Monter cette opération" title="Monter">↑</button><button type="button" data-move-transaction="'+t.id+'" data-direction="1" '+(accountPosition===accountRows.length-1?'disabled':'')+' aria-label="Descendre cette opération" title="Descendre">↓</button></td><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td><div class="table-account">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td class="table-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(tiimeView?'<td>'+euro(calc.net)+'</td><td class="table-balance">'+euro(net)+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="'+(tiimeView?10:8)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>');
   $('transaction-footer').textContent=list.length+' opération(s) affichée(s) · Le solde à date exclut les opérations datées après aujourd’hui.';
 }
 function renderMonthlyHistory(){
@@ -832,11 +886,47 @@ function openTransaction(accountId=null,transaction=null){
   fillAccountSelects();$('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
   $('transaction-dialog').showModal();
 }
-function openAccountEditor(id){
-  const a=accountById(id);if(!a)return;
-  $('account-form').reset();$('edit-account-id').value=a.id;$('account-modal-title').textContent='Configurer le compte';
-  $('edit-account-name').value=a.name;$('edit-account-opening').value=Number(a.opening||0);
+function openAccountEditor(id=null){
+  const a=id?accountById(id):null;
+  if(id&&!a)return;
+  $('account-form').reset();
+  $('edit-account-id').value=a?.id||'';
+  $('account-modal-eyebrow').textContent=a?'PARAMÈTRES DU COMPTE':'NOUVEAU COMPTE';
+  $('account-modal-title').textContent=a?'Configurer le compte':'Ajouter un compte';
+  $('edit-account-name').value=a?.name||'';
+  $('edit-account-kind').value=a?.kind||'bank';
+  $('edit-account-opening').value=a?Number(a.opening||0):0;
   $('account-dialog').showModal();
+}
+function openLombardEditor(){
+  const credit=state.lombardCredit;
+  $('lombard-form').reset();
+  $('lombard-edit-label').value=credit?.label||'Crédit lombard';
+  $('lombard-edit-amount').value=credit?Number(credit.amount||0):'';
+  $('lombard-edit-rate').value=credit?.rate===null||credit?.rate===undefined?'':credit.rate;
+  $('lombard-edit-notes').value=credit?.notes||'';
+  $('lombard-delete').hidden=!credit;
+  $('lombard-dialog').showModal();
+}
+async function deleteLombardCredit(){
+  if(!state.lombardCredit)return;
+  if(!window.confirm('Supprimer le crédit lombard ? Les totaux seront recalculés.'))return;
+  const button=$('lombard-delete');
+  if(button)button.disabled=true;
+  cloudStatus('Suppression du crédit lombard…',true);
+  try{
+    await saveLombardCreditToAuth(null);
+    state.lombardCredit=null;
+    if($('lombard-dialog').open)$('lombard-dialog').close();
+    renderAll();
+    showToast('Crédit lombard supprimé.');
+    cloudStatus('Synchronisé en ligne',true);
+  }catch(error){
+    showToast('Suppression impossible : '+(error.message||'réessayez.'));
+    cloudStatus('Erreur de sauvegarde',false);
+  }finally{
+    if(button)button.disabled=false;
+  }
 }
 const MCP_TOKEN_ENDPOINT='https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-tokens';
 async function mcpTokenRequest(payload){
@@ -912,7 +1002,7 @@ function exportData(){
 }
 function downloadCsv(){
   const rows=[['Date','Opération','Compte','Montant','Solde à date','Montant après provisions','Solde net estimé']];
-  [...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{const a=accountById(t.accountId);rows.push([t.date,t.label,a?.name||'',t.amount,balanceAt(t.accountId,t.date),a?.kind==='pro'?tiimeCalc(a,t.amount).net:'',a?.kind==='pro'?tiimeNetBalance(a):'']);});
+  [...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{const a=accountById(t.accountId);rows.push([t.date,t.label,a?.name||'',t.amount,balanceAt(t.accountId,t.date),a?.id==='tiime'&&a?.kind==='pro'?tiimeCalc(a,t.amount).net:'',a?.id==='tiime'&&a?.kind==='pro'?tiimeNetBalance(a):'']);});
   const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='operations-'+today()+'.csv';a.click();URL.revokeObjectURL(url);showToast('Export CSV téléchargé.');
 }
@@ -958,12 +1048,25 @@ $('recurring-form').addEventListener('submit',event=>{
   $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.',true);
 });
 ['transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
+$('accounts-add').addEventListener('click',()=>openAccountEditor());
+$('dashboard-account-add').addEventListener('click',()=>openAccountEditor());
+$('lombard-manage').addEventListener('click',openLombardEditor);
 $('account-search').addEventListener('input',renderAccounts);
 $('account-kind-filter').addEventListener('change',renderAccounts);$('account-sort').addEventListener('change',renderAccounts);
 $('transaction-search').addEventListener('input',renderTransactions);$('transaction-account-filter').addEventListener('change',renderTransactions);$('transaction-type-filter').addEventListener('change',renderTransactions);$('transaction-sort').addEventListener('change',renderTransactions);
 ['recurring-search','recurring-account-filter','recurring-status-filter','recurring-sort'].forEach(id=>$(id).addEventListener(id==='recurring-search'?'input':'change',renderRecurring));
 ['history-month','history-account-filter','history-type-filter','history-sort'].forEach(id=>$(id).addEventListener('change',renderMonthlyHistory));$('history-search').addEventListener('input',renderMonthlyHistory);
-$('cloud-open').addEventListener('click',()=>{$('cloud-message').textContent=cloud.user?'Vous êtes connecté à votre espace privé.':'Connectez-vous ou créez votre compte pour activer la synchronisation.';$('cloud-logout').hidden=!cloud.user;showMcpSettings();$('cloud-dialog').showModal();});
+function openCloudDialog(mode='login'){
+  const dialog=$('cloud-dialog');
+  $('cloud-message').textContent=mode==='signup'?'Renseignez votre e-mail et un mot de passe d’au moins 8 caractères, puis cliquez sur « Créer un compte ».':cloud.user?'Vous êtes connecté à votre espace privé.':'Connectez-vous ou créez votre compte pour activer la synchronisation.';
+  $('cloud-logout').hidden=!cloud.user;
+  showMcpSettings();
+  if(!dialog.open)dialog.showModal();
+  setTimeout(()=>$('cloud-email').focus(),0);
+}
+$('cloud-open').addEventListener('click',()=>openCloudDialog());
+$('auth-login').addEventListener('click',()=>openCloudDialog('login'));
+$('auth-signup').addEventListener('click',()=>openCloudDialog('signup'));
 $('mcp-create-token').addEventListener('click',async()=>{
   const button=$('mcp-create-token');button.disabled=true;$('mcp-token-message').textContent='Création du jeton…';$('mcp-token-once-label').hidden=true;$('mcp-copy-token').hidden=true;
   try{
@@ -983,17 +1086,24 @@ $('cloud-form').addEventListener('submit',async event=>{
     const {data,error}=await cloudClient().auth.signInWithPassword({email:$('cloud-email').value.trim(),password:$('cloud-password').value});
     if(error)throw error;
     if(data.session){cloudMessage('Connexion réussie. Chargement de vos données…');$('cloud-dialog').close();}
-  }catch(error){cloudMessage(error.message||'Connexion impossible.');}
+  }catch(error){cloudMessage(frenchAuthError(error));}
 });
 $('cloud-signup').addEventListener('click',async()=>{
+  const email=$('cloud-email').value.trim();
+  const password=$('cloud-password').value;
+  if(!email){cloudMessage('Renseignez une adresse e-mail.');$('cloud-email').focus();return;}
+  if(password.length<8){cloudMessage('Le mot de passe doit contenir au moins 8 caractères.');$('cloud-password').focus();return;}
+  const button=$('cloud-signup');
+  button.disabled=true;
   cloudMessage('Création du compte…');
   try{
     const redirectUrl=new URL(window.location.href);redirectUrl.hash='';redirectUrl.search='';
-    const {data,error}=await cloudClient().auth.signUp({email:$('cloud-email').value.trim(),password:$('cloud-password').value,options:{emailRedirectTo:redirectUrl.toString()}});
+    const {data,error}=await cloudClient().auth.signUp({email,password,options:{emailRedirectTo:redirectUrl.toString()}});
     if(error)throw error;
     if(data.session){cloudMessage('Compte créé. Chargement des données…');$('cloud-dialog').close();}
     else cloudMessage('Compte créé. Consultez votre e-mail pour confirmer l’adresse, puis connectez-vous.');
-  }catch(error){cloudMessage(error.message||'Création du compte impossible.');}
+  }catch(error){cloudMessage(frenchAuthError(error));}
+  finally{button.disabled=false;}
 });
 $('cloud-logout').addEventListener('click',async()=>{
   try{const {error}=await cloudClient().auth.signOut();if(error)throw error;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');if($('cloud-dialog').open)$('cloud-dialog').close();lockApp('Déconnexion effectuée. Reconnectez-vous pour accéder à vos données.');}
@@ -1069,11 +1179,58 @@ $('transaction-form').addEventListener('submit',event=>{
   if(previous)state.transactions=state.transactions.map(t=>t.id===id?record:t);else state.transactions.push(record);
   $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.',true);
 });
+$('lombard-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  const amount=Number($('lombard-edit-amount').value);
+  const rateValue=$('lombard-edit-rate').value.trim();
+  const rate=rateValue===''?null:Number(rateValue);
+  if(!Number.isFinite(amount)||amount<0){showToast('Renseignez une dette lombard valide (zéro ou plus).');return;}
+  if(rate!==null&&(!Number.isFinite(rate)||rate<0||rate>100)){showToast('Le taux annuel doit être compris entre 0 et 100 %.');return;}
+  const credit={
+    label:$('lombard-edit-label').value.trim()||'Crédit lombard',
+    amount,
+    rate,
+    notes:$('lombard-edit-notes').value.trim()
+  };
+  const submitButton=event.target.querySelector('button[type="submit"]');
+  if(submitButton)submitButton.disabled=true;
+  cloudStatus('Enregistrement du crédit lombard…',true);
+  try{
+    const saved=await saveLombardCreditToAuth(credit);
+    state.lombardCredit=saved;
+    $('lombard-dialog').close();
+    renderAll();
+    showToast('Crédit lombard enregistré.');
+    cloudStatus('Synchronisé en ligne',true);
+  }catch(error){
+    showToast('Crédit lombard non enregistré : '+(error.message||'réessayez.'));
+    cloudStatus('Erreur de sauvegarde',false);
+  }finally{
+    if(submitButton)submitButton.disabled=false;
+  }
+});
+$('lombard-delete').addEventListener('click',deleteLombardCredit);
 $('account-form').addEventListener('submit',event=>{
-  event.preventDefault();const a=accountById($('edit-account-id').value);if(!a)return;
-  prepareUndo();
-  a.name=$('edit-account-name').value.trim();a.opening=Number($('edit-account-opening').value)||0;
-  $('account-dialog').close();renderAll();showToast('Paramètres du compte enregistrés.',true);
+  event.preventDefault();
+  const id=$('edit-account-id').value;
+  const existing=id?accountById(id):null;
+  const name=$('edit-account-name').value.trim();
+  const kind=$('edit-account-kind').value;
+  const opening=Number($('edit-account-opening').value)||0;
+  if(!name){showToast('Renseignez le nom du compte.');return;}
+  if(!['bank','savings','pro'].includes(kind)){showToast('Choisissez un type de compte valide.');return;}
+  if(existing){
+    prepareUndo();
+    existing.name=name;
+    existing.short=accountShort(name);
+    existing.kind=kind;
+    existing.opening=opening;
+  }else{
+    state.accounts.push({id:crypto.randomUUID(),name,short:accountShort(name),kind,opening,vatRate:20,socialRate:45,netOpening:0});
+  }
+  $('account-dialog').close();
+  renderAll();
+  showToast(existing?'Paramètres du compte enregistrés.':'Compte ajouté.',!!existing);
 });
 document.addEventListener('change',event=>{
   const paid=event.target.closest('[data-toggle-paid]');

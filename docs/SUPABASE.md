@@ -41,6 +41,13 @@ Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son n
 ### `crypto_holdings`
 Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos ne sont pas stockés en base : ils sont lus en direct via CoinGecko et seulement mis en cache côté navigateur. La colonne historique `status` reste en base pour compatibilité mais n’est plus utilisée par le client.
 
+### Crédit lombard — métadonnées Auth
+Le crédit lombard n’utilise pas de table PostgreSQL dédiée. Le client l’enregistre dans les métadonnées privées de l’utilisateur Auth (`user_metadata.lombardCredit`) avec `supabase.auth.updateUser`. Le montant est déduit des avoirs bruts dans la vue d’ensemble ; le crédit n’est pas une opération et ne modifie pas les soldes des comptes.
+
+Cette approche ne nécessite **aucune migration SQL** et aucune politique RLS supplémentaire. Les métadonnées sont rattachées au compte Auth et ne sont pas exposées aux autres utilisateurs par l’application. Elles ne doivent pas servir à des décisions d’autorisation : les permissions restent portées par les tables et les politiques RLS.
+
+Les comptes financiers personnalisés utilisent la table `accounts` existante : aucun changement de schéma n’est nécessaire pour en ajouter. Le client génère un identifiant et synchronise la ligne avec le `user_id` connecté.
+
 ## Sécurité
 
 - Les tables de données doivent avoir RLS activée et des politiques qui vérifient `user_id = auth.uid()`.
@@ -52,8 +59,8 @@ Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGe
 ## Installation d’un nouveau projet
 
 1. Créer le projet Supabase.
-2. Examiner puis exécuter `supabase/schema.sql` dans SQL Editor.
-3. Configurer Authentication → URL Configuration avec l’URL d’hébergement utilisée.
+2. Examiner puis exécuter `supabase/schema.sql` dans SQL Editor. Sur une base déjà initialisée, appliquer plutôt les migrations incrémentales nécessaires.
+3. Configurer Authentication → URL Configuration avec l’URL d’hébergement utilisée. Vérifier si la confirmation d’e-mail est activée : elle conditionne le message affiché après « Créer un compte ».
 4. Vérifier `supabase-config.js` pour qu’il pointe vers le bon projet avec une clé publishable, jamais une clé privilégiée.
 5. Si l’intégration MCP est utilisée, appliquer les migrations MCP et déployer les Edge Functions selon `docs/mcp-transactions.md`.
 6. Connecter un utilisateur test et vérifier les règles RLS avec deux utilisateurs distincts avant d’utiliser des données réelles.
@@ -94,6 +101,18 @@ Procédure :
 Sans cette migration, le reste de l’application continue de fonctionner : la page Crypto affiche un bandeau explicite et les positions ne sont pas sauvegardées.
 
 Pour un import initial de positions sans les mettre dans le dépôt, le parcours normal est le formulaire « Ajouter une position » de la page Crypto : il écrit directement dans la table avec le `user_id` de l’utilisateur connecté. Une reprise de données existantes peut aussi être faite par un administrateur avec un script SQL exécuté hors dépôt, sans jamais committer les montants réels.
+
+## Vérification du crédit lombard
+
+Aucune migration SQL n’est nécessaire. Pour vérifier le parcours :
+1. Se connecter avec un utilisateur test.
+2. Ouvrir la vue d’ensemble, puis « Ajouter » sur la carte « Crédit lombard ».
+3. Saisir un montant et enregistrer.
+4. Vérifier que le patrimoine net diminue du montant saisi.
+5. Recharger la page et confirmer que le crédit est toujours présent.
+6. Tester la suppression depuis la même fenêtre.
+
+La persistance dépend de Supabase Auth (`auth.updateUser`) et de la session active.
 
 ## Migration des jetons MCP
 
