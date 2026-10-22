@@ -19,7 +19,7 @@ Référence du projet vue dans la configuration publique : `gpzqvkkysolqksimiqac
 ## Tables repérées dans le schéma
 
 ### `accounts`
-Clé primaire composite `(user_id, id)`. Contient le nom, type, solde initial, taux indicatifs et solde net initial. Types acceptés en base : `bank`, `savings`, `pro`. Les sous-types d’affichage PEA, assurance vie et CTO sont stockés séparément dans les métadonnées Auth et utilisent `kind='savings'` (voir « Types de comptes et logos sans migration »). Le champ texte `short` contient les initiales ou, si l’utilisateur en a choisi un, le logo du compte sous forme de data URL.
+Clé primaire composite `(user_id, id)`. Contient le nom, type, solde initial, taux indicatifs et solde net initial. Types acceptés en base : `bank`, `savings`, `pro`. Les sous-types d’affichage PEA, assurance vie et CTO sont stockés séparément dans les métadonnées Auth et utilisent `kind='savings'` (voir « Types de comptes et logos sans migration »). Le champ texte `short` contient un jeton `bank:<identifiant>` qui référence la banque choisie dans le catalogue client (par exemple `bank:bnp`). Le client le convertit en propriété `bank` et affiche le logo correspondant ; aucune URL d’image n’est stockée dans cette colonne.
 
 ### `transactions`
 Contient l’utilisateur, le compte, date, libellé, montant, source, références de récurrence, horodatages. Les colonnes nécessaires au pointage et au tri sont :
@@ -39,7 +39,7 @@ Journal des insertions, mises à jour et suppressions des entités prises en cha
 Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son nom, un compte par défaut éventuel, la date d’utilisation et la révocation. Le jeton brut n’est renvoyé qu’au moment de sa création.
 
 ### `crypto_holdings`
-Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos CoinGecko sont lus en direct via l’API publique et seulement mis en cache côté navigateur. Un logo personnalisé facultatif est stocké dans la colonne texte existante `status` sous forme de data URL ; sans logo, le client écrit `Détenu` pour respecter la contrainte. Aucune colonne supplémentaire n’est nécessaire.
+Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos CoinGecko sont lus en direct via l’API publique et seulement mis en cache côté navigateur. Aucun logo personnalisé n’est enregistré : le client écrit `Détenu` dans la colonne texte historique `status` pour respecter la contrainte existante. Aucune colonne supplémentaire n’est nécessaire.
 
 ### Crédit lombard — métadonnées Auth
 Le crédit lombard n’utilise pas de table PostgreSQL dédiée. Le client l’enregistre dans les métadonnées privées de l’utilisateur Auth (`user_metadata.lombardCredit`) avec `supabase.auth.updateUser`. Le montant est déduit des avoirs bruts dans la vue d’ensemble ; le crédit n’est pas une opération et ne modifie pas les soldes des comptes.
@@ -52,9 +52,10 @@ Les comptes financiers personnalisés utilisent la table `accounts` existante : 
 
 - Les types PEA, assurance vie et CTO ne modifient pas la contrainte `accounts.kind`. En base, ils restent `kind='savings'`. Le client conserve le sous-type dans `state.accounts[].accountType` et l’enregistre dans `user_metadata.accountTypes` via `auth.updateUser`, sous la forme `{ "identifiant-du-compte": "pea" | "av" | "cto" }`.
 - La synchronisation envoie la table complète des surcharges après les upserts/suppressions de comptes. Quand un compte redevient un livret standard, change de type de base ou est supprimé, son identifiant disparaît de la table. Le drapeau `cloud.accountTypesDirty` permet de retenter l’écriture si elle échoue.
-- Le logo d’un compte est stocké sous forme de data URL dans `accounts.short`. Sans logo, ce champ contient les initiales. Le logo d’une crypto est stocké de la même façon dans `crypto_holdings.status`. Les images sont redimensionnées côté navigateur en 96 × 96 avant envoi.
+- Le logo d’un compte n’est plus une image envoyée par l’utilisateur. Le formulaire propose un catalogue de banques et le logo est choisi automatiquement. La banque est stockée dans `accounts.short` sous la forme `bank:<identifiant>` (`bank:lbp`, `bank:bnp`, etc.) ; le client la convertit en propriété `bank`. Les logos connus sont des fichiers locaux du dépôt et les autres établissements utilisent un monogramme. Aucune data URL n’est écrite dans `accounts.short`.
+- Le logo d’une crypto vient uniquement de CoinGecko. Le client écrit `Détenu` dans `crypto_holdings.status` pour respecter la contrainte ; cette colonne n’est plus utilisée pour un logo personnalisé.
 - Aucune migration SQL, colonne ou politique RLS supplémentaire n’est nécessaire. Les métadonnées Auth restent privées et ne doivent pas être utilisées pour des décisions d’autorisation.
-- Un sous-type ou un logo n’est visible sur un autre appareil qu’après la synchronisation réussie. Si `auth.updateUser` échoue, le compte peut être sauvegardé avec son type de base mais le sous-type précis peut être perdu au rechargement. L’application signale l’échec et retente lors d’une synchronisation ultérieure.
+- Un sous-type ou une banque choisie n’est visible sur un autre appareil qu’après la synchronisation réussie. Si `auth.updateUser` échoue, le compte peut être sauvegardé avec son type de base mais le sous-type précis peut être perdu au rechargement. L’application signale l’échec et retente lors d’une synchronisation ultérieure.
 
 ## Suppression d’un compte
 
@@ -131,15 +132,15 @@ La persistance dépend de Supabase Auth (`auth.updateUser`) et de la session act
 ## Vérification des types de comptes, logos et suppressions
 
 Aucune migration SQL n’est requise. Pour vérifier avec un utilisateur test :
-1. Se connecter et créer un compte de type PEA, assurance vie ou CTO, avec un petit logo PNG/JPEG/WebP/GIF.
-2. Vérifier que le type et le logo apparaissent dans la liste et après un rechargement de la page.
-3. Dans Supabase, vérifier que `public.accounts.short` contient une data URL `data:image/...` pour ce compte et que `kind` vaut `savings`.
+1. Se connecter et créer un compte de type PEA, assurance vie ou CTO en choisissant une banque dans la liste.
+2. Vérifier que le type et le logo automatique apparaissent dans la liste et après un rechargement de la page.
+3. Dans Supabase, vérifier que `public.accounts.short` contient `bank:<identifiant>` (par exemple `bank:bnp`) et que `kind` vaut `savings`.
 4. Vérifier dans le compte Auth que `user_metadata.accountTypes` contient l’identifiant du compte avec la valeur `pea`, `av` ou `cto`.
-5. Ajouter une position crypto avec un logo personnalisé et vérifier que `public.crypto_holdings.status` contient la data URL.
+5. Ajouter une position crypto et vérifier que son logo CoinGecko s’affiche sans sélection de fichier ; `public.crypto_holdings.status` doit contenir `Détenu`.
 6. Créer un compte de test avec une opération et une récurrence, puis le supprimer depuis le site. Vérifier la disparition du compte et des lignes liées dans Supabase.
 7. Tenter de supprimer le dernier compte : l’opération doit être bloquée avec un message explicite.
 
-Ne pas exécuter ces vérifications avec des données financières réelles. Les logos volumineux sont refusés au-delà de 4 Mo avant redimensionnement.
+Ne pas exécuter ces vérifications avec des données financières réelles.
 
 ## Migration des jetons MCP
 

@@ -23,17 +23,17 @@ Application web personnelle en français pour suivre des comptes, opérations et
 - Fortuneo livret Plus
 - CIC Montpont-Ménestrol
 - CIC Montévrain
-- Boursobank
-- Livret Boursobank Boursoplus
-- Livret Boursobank BoursoFirst
+- BoursoBank
+- Livret BoursoBank Boursoplus
+- Livret BoursoBank BoursoFirst
 - Compte professionnel Tiime
 
-Les noms sont des valeurs initiales du code ; les données personnelles des utilisateurs ne doivent pas être ajoutées au dépôt. Chaque utilisateur peut ensuite ajouter ses propres comptes depuis le bouton « Ajouter » du tableau de bord ou depuis « Mes comptes », puis modifier leur nom, leur type, leur logo et leur solde de départ. Un compte peut aussi être supprimé après confirmation ; le dernier compte ne peut pas être supprimé afin d’éviter le réensemencement des comptes par défaut.
+Les noms sont des valeurs initiales du code ; les données personnelles des utilisateurs ne doivent pas être ajoutées au dépôt. Chaque utilisateur peut ensuite ajouter ses propres comptes depuis le bouton « Ajouter » du tableau de bord ou depuis « Mes comptes », puis modifier leur nom, leur type, leur banque et leur solde de départ. Le logo est choisi automatiquement à partir de la banque sélectionnée. Un compte peut aussi être supprimé après confirmation ; le dernier compte ne peut pas être supprimé afin d’éviter le réensemencement des comptes par défaut.
 
 ## Fonctionnalités
 
 - Tableau de bord avec soldes cumulés, patrimoine net et dernières opérations.
-- Création de comptes financiers personnalisés (courant, épargne, PEA, assurance vie, CTO ou professionnel), avec logo facultatif.
+- Création de comptes financiers personnalisés (courant, épargne, PEA, assurance vie, CTO ou professionnel), avec sélection de la banque et logo automatique.
 - Modification et suppression d’un compte, avec confirmation et avertissement sur les opérations/récurrences liées.
 - Gestion d’un crédit lombard déduit des avoirs bruts pour calculer le patrimoine net.
 - Ajout, modification, suppression et annulation de certaines opérations.
@@ -41,7 +41,7 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Recherche, filtres et tris dans les écrans concernés.
 - Historique mensuel : choix du mois, recherche, filtre par compte/type, tri, total des entrées, sorties et net.
 - Pointage des opérations et ordre manuel.
-- Page crypto avec positions (investi, quantité), logos CoinGecko ou logo personnalisé, recherche, filtre gain/perte, tris, prix réels en euros via CoinGecko, valeur actuelle, gain/perte et performance.
+- Page crypto avec positions (investi, quantité), logos CoinGecko automatiques, recherche, filtre gain/perte, tris, prix réels en euros via CoinGecko, valeur actuelle, gain/perte et performance.
 - Export JSON et export CSV des opérations.
 - Paramètres de compte et estimation indicative de trésorerie du compte professionnel.
 - Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
@@ -90,9 +90,9 @@ Avant de modifier une base réelle, lisez [docs/SUPABASE.md](./docs/SUPABASE.md)
 
 La page « Crypto » affiche les positions de l’utilisateur connecté et calcule leur valeur avec les prix du marché en euros fournis par l’API publique CoinGecko. Les prix et les logos sont actualisés au chargement, toutes les 60 secondes lorsque l’onglet est visible, et via le bouton « Actualiser les prix ». Le dernier prix et les derniers logos reçus sont conservés dans le navigateur pour éviter un écran vide en cas de coupure réseau ; une position sans prix n’est pas inventée et reste exclue des totaux. La liste peut être filtrée par recherche et par situation (en gain ou en perte), et triée par ordre manuel, nom, investi, quantité, valeur actuelle, gain/perte ou performance. Les totaux affichés correspondent aux positions filtrées.
 
-Les positions sont des données personnelles : elles ne sont pas codées en dur dans le dépôt. Chaque utilisateur connecté ajoute ses positions depuis la page Crypto : il recherche la crypto par son nom ou son symbole (l’identifiant CoinGecko et le nom sont remplis automatiquement), puis saisit le montant investi et la quantité détenue. Il peut aussi choisir un logo personnalisé : l’image est redimensionnée dans le navigateur puis enregistrée avec la position. Les lignes sont stockées dans la table `public.crypto_holdings` (RLS par utilisateur) et synchronisées automatiquement. Sur une base existante, exécutez [`202610220001_crypto_holdings.sql`](./supabase/migrations/202610220001_crypto_holdings.sql) dans le SQL Editor. Un commit ne crée pas la table et n’applique pas la migration : vérifiez toujours le projet Supabase ciblé.
+Les positions sont des données personnelles : elles ne sont pas codées en dur dans le dépôt. Chaque utilisateur connecté ajoute ses positions depuis la page Crypto : il recherche la crypto par son nom ou son symbole (l’identifiant CoinGecko et le nom sont remplis automatiquement), puis saisit le montant investi et la quantité détenue. Le logo est récupéré automatiquement avec les données CoinGecko ; aucun fichier image n’est demandé. Les lignes sont stockées dans la table `public.crypto_holdings` (RLS par utilisateur) et synchronisées automatiquement. Sur une base existante, exécutez [`202610220001_crypto_holdings.sql`](./supabase/migrations/202610220001_crypto_holdings.sql) dans le SQL Editor. Un commit ne crée pas la table et n’applique pas la migration : vérifiez toujours le projet Supabase ciblé.
 
-Le logo personnalisé d’une crypto est stocké dans la colonne texte existante `crypto_holdings.status` sous forme de data URL. La colonne `status` n’a plus d’autre usage dans l’application. Aucune migration supplémentaire n’est nécessaire pour les logos.
+La colonne texte historique `crypto_holdings.status` n’est plus utilisée pour un logo. Le client y écrit `Détenu` pour respecter la contrainte existante ; les éventuelles anciennes data URLs sont ignorées puis remplacées à la prochaine synchronisation de la position.
 
 ## Crédit lombard et patrimoine net
 
@@ -108,7 +108,9 @@ Les types proposés sont : compte courant, livret/épargne, PEA, assurance vie, 
 
 La table `accounts` conserve ses valeurs de `kind` `bank`, `savings` et `pro`. Les sous-types PEA, assurance vie et CTO sont enregistrés dans les métadonnées privées du compte Auth (`user_metadata.accountTypes`, sous la forme `{ "identifiant-du-compte": "pea" | "av" | "cto" }`) via `auth.updateUser`. Cette approche évite une migration SQL et conserve la synchronisation entre appareils. Si l’écriture des métadonnées échoue, l’application le signale et retente lors d’une synchronisation ultérieure ; le type précis peut alors être perdu après rechargement tant que la synchronisation n’a pas abouti.
 
-Le logo d’un compte est stocké dans la colonne texte existante `accounts.short` sous forme de data URL ; sans logo, `short` contient les initiales. Le logo d’une crypto utilise `crypto_holdings.status`. Les images sont redimensionnées dans le navigateur (96 × 96, WebP ou PNG) avant enregistrement. Aucune migration SQL n’est nécessaire pour ces logos.
+Le logo n’est plus ajouté manuellement : le formulaire de compte propose une liste de banques (La Banque Postale, BNP Paribas, Crédit Agricole, Société Générale, Crédit Mutuel, CIC, Banque Populaire, Caisse d’Épargne, LCL, BoursoBank, Fortuneo, Hello bank!, Monabanq, BforBank, Revolut, N26, Wise, Trade Republic, Bourse Direct, Tiime, etc.). Le logo correspondant s’affiche automatiquement dans l’aperçu et dans l’application ; les établissements sans logo local utilisent un monogramme coloré.
+
+La banque choisie est enregistrée dans la colonne texte existante `accounts.short` sous la forme `bank:<identifiant>` (par exemple `bank:bnp`). Le client reconstruit la banque et les initiales à la lecture. Les anciennes valeurs de `short` contenant des initiales ou une data URL restent lisibles : la banque est déduite de l’identifiant du compte lorsqu’il est connu, sinon le compte utilise le monogramme « Autre / initiales » jusqu’à la prochaine modification. Aucune migration SQL n’est nécessaire. Les logos sont des fichiers locaux dans `assets/banks/`.
 
 La suppression d’un compte demande une confirmation explicite et indique le nombre d’opérations et de récurrences liées. Les opérations et récurrences sont supprimées localement puis le compte est supprimé dans Supabase ; les clés étrangères `on delete cascade` suppriment les lignes liées côté serveur. Le dernier compte ne peut pas être supprimé. Un jeton MCP qui utiliserait ce compte comme compte par défaut n’est pas modifié automatiquement : vérifiez ou recréez ce jeton si nécessaire.
 

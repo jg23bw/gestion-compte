@@ -1,16 +1,43 @@
 const STORAGE_KEY = 'gestion-comptes-v1';
 const GENERATED_MONTHS_KEY = 'gestion-comptes-generated-months-v1';
 const generationInProgress = new Set();
+// Catalogue des établissements proposés dans le formulaire de compte. Les logos
+// locaux sont utilisés en priorité ; les banques sans logo utilisent un monogramme
+// coloré. Le choix de la banque est enregistré dans `accounts.short` sous la forme
+// `bank:<identifiant>` afin de ne pas nécessiter de migration SQL.
+const BANK_CATALOG = [
+  {id:'banque-populaire',name:'Banque Populaire',logo:'assets/banks/banque-populaire.svg',color:'#0066b3',initials:'BP'},
+  {id:'bforbank',name:'BforBank',color:'#111a2c',initials:'BF'},
+  {id:'bnp',name:'BNP Paribas',logo:'assets/banks/bnp.svg',color:'#00915a',initials:'BNP'},
+  {id:'bourso',name:'BoursoBank',logo:'assets/banks/bourso.svg',color:'#7e56c9',initials:'B'},
+  {id:'bourse-direct',name:'Bourse Direct',color:'#0b3d91',initials:'BD'},
+  {id:'caisse-epargne',name:"Caisse d'Épargne",color:'#e2001a',initials:'CE'},
+  {id:'cic',name:'CIC',logo:'assets/banks/cic.svg',color:'#315bb2',initials:'CIC'},
+  {id:'credit-agricole',name:'Crédit Agricole',logo:'assets/banks/credit-agricole.svg',color:'#006a4e',initials:'CA'},
+  {id:'credit-mutuel',name:'Crédit Mutuel',logo:'assets/banks/credit-mutuel.svg',color:'#003b7a',initials:'CM'},
+  {id:'fortuneo',name:'Fortuneo',logo:'assets/banks/fortuneo.svg',color:'#1b9464',initials:'F'},
+  {id:'hello-bank',name:'Hello bank!',logo:'assets/banks/hello-bank.svg',color:'#00a3e0',initials:'HB'},
+  {id:'lbp',name:'La Banque Postale',logo:'assets/banks/lbp.svg',color:'#0066b3',initials:'LBP'},
+  {id:'lcl',name:'LCL',logo:'assets/banks/lcl.png',color:'#003b7a',initials:'LCL'},
+  {id:'monabanq',name:'Monabanq',logo:'assets/banks/monabanq.png',color:'#e30613',initials:'M'},
+  {id:'n26',name:'N26',logo:'assets/banks/n26.svg',color:'#111a2c',initials:'N26'},
+  {id:'revolut',name:'Revolut',logo:'assets/banks/revolut.svg',color:'#111a2c',initials:'R'},
+  {id:'societe-generale',name:'Société Générale',logo:'assets/banks/societe-generale.svg',color:'#e50a2b',initials:'SG'},
+  {id:'tiime',name:'Tiime',logo:'assets/banks/tiime.svg',color:'#bd7b26',initials:'T'},
+  {id:'trade-republic',name:'Trade Republic',logo:'assets/banks/trade-republic.svg',color:'#111a2c',initials:'TR'},
+  {id:'wise',name:'Wise',logo:'assets/banks/wise.svg',color:'#2f7d32',initials:'W'},
+  {id:'other',name:'Autre / initiales',color:'#5b6f99',initials:''}
+];
 const DEFAULT_ACCOUNTS = [
-  {id:'lbp',name:'La Banque Postale',short:'LB',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'fortuneo',name:'Fortuneo',short:'F',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'fortuneo-plus',name:'Fortuneo livret Plus',short:'F+',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'cic-montpont',name:'CIC Montpont-Ménestrol',short:'CIC',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'cic-montevrayn',name:'CIC Montévrain',short:'CIC',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'bourso',name:'Boursobank',short:'B',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'bourso-plus',name:'Livret Boursobank Boursoplus',short:'B+',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'bourso-first',name:'Livret Boursobank BoursoFirst',short:'BF',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
-  {id:'tiime',name:'Compte professionnel Tiime',short:'T',kind:'pro',opening:0,vatRate:20,socialRate:45,netOpening:0}
+  {id:'lbp',name:'La Banque Postale',short:'LB',bank:'lbp',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'fortuneo',name:'Fortuneo',short:'F',bank:'fortuneo',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'fortuneo-plus',name:'Fortuneo livret Plus',short:'F+',bank:'fortuneo',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'cic-montpont',name:'CIC Montpont-Ménestrol',short:'CIC',bank:'cic',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'cic-montevrayn',name:'CIC Montévrain',short:'CIC',bank:'cic',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'bourso',name:'BoursoBank',short:'B',bank:'bourso',kind:'bank',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'bourso-plus',name:'Livret BoursoBank Boursoplus',short:'B+',bank:'bourso',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'bourso-first',name:'Livret BoursoBank BoursoFirst',short:'BF',bank:'bourso',kind:'savings',opening:0,vatRate:20,socialRate:45,netOpening:0},
+  {id:'tiime',name:'Compte professionnel Tiime',short:'T',bank:'tiime',kind:'pro',opening:0,vatRate:20,socialRate:45,netOpening:0}
 ];
 
 // Les modèles de récurrence sont des données personnelles : ils ne doivent pas être codés en dur dans le dépôt public.
@@ -32,10 +59,6 @@ const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getM
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
 let toastTimer;
 let undoPoint=null;
-let accountLogoDraft='';
-let cryptoLogoDraft='';
-let accountLogoRequest=0;
-let cryptoLogoRequest=0;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
 function prepareUndo(){undoPoint={state:cloneData(state),pendingDeletes:[...cloud.pendingDeletes],pendingTemplateDeletes:[...cloud.pendingTemplateDeletes],generatedMonths:localStorage.getItem(GENERATED_MONTHS_KEY)};}
 function undoLastAction(){
@@ -82,9 +105,36 @@ function cloudClient(){
   cloud.client=window.supabase.createClient(config.url,config.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   return cloud.client;
 }
-function isLogoValue(value){
-  const text=String(value||'');
-  return /^data:image\//i.test(text)||/^https?:\/\//i.test(text);
+function bankByKey(value){
+  const key=String(value||'').toLowerCase();
+  return BANK_CATALOG.find(bank=>bank.id===key)||BANK_CATALOG[BANK_CATALOG.length-1];
+}
+function isBankKey(value){
+  const key=String(value||'').toLowerCase();
+  return BANK_CATALOG.some(bank=>bank.id===key);
+}
+function bankKeyFromId(id){
+  const value=String(id||'').toLowerCase();
+  if(value.startsWith('lbp'))return 'lbp';
+  if(value.startsWith('fortuneo'))return 'fortuneo';
+  if(value.startsWith('cic'))return 'cic';
+  if(value.startsWith('bourso'))return 'bourso';
+  if(value.startsWith('tiime'))return 'tiime';
+  return 'other';
+}
+function bankKeyForAccount(account){
+  const key=String(account?.bank||'').toLowerCase();
+  if(isBankKey(key))return key;
+  return bankKeyFromId(account?.id);
+}
+function bankLogo(account={}){
+  const bank=bankByKey(bankKeyForAccount(account));
+  const src=bank.logo||'';
+  const initials=bank.initials||accountShort(account.name||'Compte');
+  const background=src?'#fff':bank.color+'18';
+  return '<span class="bank-logo'+(src?' has-logo':'')+'" style="background:'+background+';color:'+bank.color+'" data-bank="'+escapeHtml(bank.id)+'">'+
+    (src?'<img src="'+escapeHtml(src)+'" alt="Logo '+escapeHtml(bank.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+
+    '<span '+(src?'hidden':'')+'>'+escapeHtml(initials)+'</span></span>';
 }
 function isAccountType(value){
   return ['bank','savings','pro','pea','av','cto'].includes(String(value||''));
@@ -115,57 +165,22 @@ async function saveAccountTypesToAuth(overrides=accountTypeOverrides()){
     if(cloud.session)cloud.session.user=data.user;
   }
 }
-function readLogoImage(file,onReady){
-  if(!file)return;
-  if(!String(file.type||'').startsWith('image/')||file.type==='image/svg+xml'){
-    showToast('Choisissez une image PNG, JPEG, WebP ou GIF.');
-    return;
-  }
-  if(file.size>4*1024*1024){showToast('Image trop volumineuse (4 Mo maximum).');return;}
-  const reader=new FileReader();
-  reader.onerror=()=>showToast('Impossible de lire cette image.');
-  reader.onload=()=>{
-    const image=new Image();
-    image.onerror=()=>showToast('Impossible de lire cette image.');
-    image.onload=()=>{
-      if(!image.width||!image.height){showToast('Image invalide.');return;}
-      const size=96;
-      const canvas=document.createElement('canvas');
-      canvas.width=size;canvas.height=size;
-      const context=canvas.getContext('2d');
-      if(!context){showToast('Impossible de préparer le logo.');return;}
-      const ratio=Math.min(size/image.width,size/image.height);
-      const width=Math.max(1,Math.round(image.width*ratio));
-      const height=Math.max(1,Math.round(image.height*ratio));
-      context.clearRect(0,0,size,size);
-      context.imageSmoothingEnabled=true;
-      context.imageSmoothingQuality='high';
-      context.drawImage(image,(size-width)/2,(size-height)/2,width,height);
-      let dataUrl='';
-      try{dataUrl=canvas.toDataURL('image/webp',0.82);}catch{}
-      if(!dataUrl.startsWith('data:image/'))dataUrl=canvas.toDataURL('image/png');
-      onReady(dataUrl);
-    };
-    image.src=reader.result;
-  };
-  reader.readAsDataURL(file);
-}
-function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:a.logo||a.short||'',kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
+function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:'bank:'+bankKeyForAccount(a),kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
 function fromCloudAccount(a,accountTypes={}){
-  const rawShort=a.short||'';
-  const logo=isLogoValue(rawShort)?rawShort:'';
+  const rawShort=String(a.short||'');
+  const token=/^bank:([a-z0-9-]+)$/i.exec(rawShort);
+  const bank=token&&isBankKey(token[1])?token[1].toLowerCase():bankKeyFromId(a.id);
   const kind=a.kind||'bank';
   const override=accountTypes?.[a.id];
-  return {id:a.id,name:a.name,short:logo?accountShort(a.name):rawShort,kind,accountType:isAccountSubtype(override)?override:kind,logo,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};
+  return {id:a.id,name:a.name,short:accountShort(a.name),bank,kind,accountType:isAccountSubtype(override)?override:kind,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};
 }
 function toCloudTransaction(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,transaction_date:t.date,label:t.label,amount:Number(t.amount),is_paid:t.isPaid===true,sort_order:Number.isFinite(Number(t.sortOrder))?Number(t.sortOrder):null,source:t.recurringTemplateId?'recurring':'manual',recurring_template_id:t.recurringTemplateId||null,generated_month:t.recurringKey?t.date.slice(0,7):null,recurring_key:t.recurringKey||null,created_at:new Date(Number(t.createdAt)||Date.now()).toISOString(),updated_at:new Date().toISOString()};}
 function fromCloudTransaction(t){return {id:t.id,accountId:t.account_id,date:t.transaction_date,amount:Number(t.amount),label:t.label,isPaid:t.is_paid===true,sortOrder:Number.isFinite(Number(t.sort_order))&&t.sort_order!==null?Number(t.sort_order):undefined,createdAt:Date.parse(t.created_at)||Date.now(),recurringKey:t.recurring_key||undefined,recurringTemplateId:t.recurring_template_id||undefined};}
 function toCloudTemplate(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,day_of_month:Number(t.day)||1,frequency:t.frequency,months:t.months||[],start_month:t.startMonth||null,end_month:t.endMonth||null,once_date:t.date||null,label:t.label,amount:t.amount===''||t.amount===undefined?null:t.amount,enabled:t.enabled!==false};}
 function fromCloudTemplate(t){return {id:t.id,accountId:t.account_id,day:Number(t.day_of_month)||1,frequency:t.frequency,months:t.months||[],startMonth:t.start_month||undefined,endMonth:t.end_month||undefined,date:t.once_date||undefined,label:t.label,amount:t.amount===null?null:Number(t.amount),enabled:t.enabled};}
-function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,status:h.logo||'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
+function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,status:'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
 function fromCloudCryptoHolding(h){
-  const rawStatus=h.status||'';
-  return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,logo:isLogoValue(rawStatus)?rawStatus:'',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};
+  return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};
 }
 function isMissingCryptoTable(error){
   const code=error?.code||'',message=error?.message||'';
@@ -458,7 +473,7 @@ function loadState(){
   try{
     const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
     if(saved && Array.isArray(saved.accounts) && Array.isArray(saved.transactions)){
-      const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';return merged;});
+      const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';merged.bank=bankKeyForAccount(merged);return merged;});
       const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):[];
       DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
       return {accounts,transactions:saved.transactions,recurringTemplates,lombardCredit:saved.lombardCredit||null};
@@ -512,15 +527,6 @@ function kindLabel(a){
   const type=effectiveAccountType(a);
   return type==='pro'?'Professionnel':type==='pea'?'PEA':type==='av'?'Assurance vie':type==='cto'?'CTO':type==='savings'?'Épargne':'Compte courant';
 }
-function bankLogo(account){
-  const id=String(account.id||'');
-  const cls=id.startsWith('lbp')?'lbp':id.startsWith('fortuneo')?'fortuneo':id.startsWith('cic')?'cic':id.startsWith('bourso')?'bourso':id.startsWith('tiime')?'tiime':'generic';
-  const icons={lbp:'https://commons.wikimedia.org/wiki/Special:FilePath/Logo_La_Banque_postale_2022.svg',fortuneo:'https://commons.wikimedia.org/wiki/Special:FilePath/Fortuneo.svg',cic:'https://commons.wikimedia.org/wiki/Special:FilePath/Cr%C3%A9dit_Industriel_et_Commercial_Logo.svg',bourso:'https://brandlogos.sgp1.digitaloceanspaces.com/svg/arcticons/boursobank.svg',tiime:'https://upload.wikimedia.org/wikipedia/commons/2/28/Tiime-logo-color.svg'};
-  const custom=account.logo||(isLogoValue(account.short)?account.short:'');
-  const src=custom||icons[cls];
-  const initials=isLogoValue(account.short)?accountShort(account.name):(account.short||account.name.slice(0,2).toUpperCase());
-  return '<span class="bank-logo '+cls+'">'+(src?'<img src="'+escapeHtml(src)+'" alt="Logo '+escapeHtml(account.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+'<span '+(src?'hidden':'')+'>'+escapeHtml(initials)+'</span></span>';
-}
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function accountMarkup(a,compact=false){
   const balance=balanceAt(a.id);
@@ -551,7 +557,7 @@ function renderDashboard(){
 }
 function renderAccounts(){
   const query=$('account-search').value.trim().toLocaleLowerCase('fr'),kind=$('account-kind-filter')?.value||'all',sort=$('account-sort')?.value||'name-asc';
-  const accounts=state.accounts.filter(a=>(a.name+' '+a.short+' '+kindLabel(a)).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||effectiveAccountType(a)===kind));
+  const accounts=state.accounts.filter(a=>(a.name+' '+a.short+' '+bankByKey(bankKeyForAccount(a)).name+' '+kindLabel(a)).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||effectiveAccountType(a)===kind));
   accounts.sort((a,b)=>{if(sort==='name-desc')return b.name.localeCompare(a.name,'fr');if(sort==='balance-desc')return balanceAt(b.id)-balanceAt(a.id);if(sort==='balance-asc')return balanceAt(a.id)-balanceAt(b.id);if(sort==='kind')return kindLabel(a).localeCompare(kindLabel(b),'fr')||a.name.localeCompare(b.name,'fr');return a.name.localeCompare(b.name,'fr');});
   $('all-accounts').innerHTML=accounts.length?accounts.map(a=>accountMarkup(a)).join(''):'<div class="empty-state">Aucun compte ne correspond aux filtres.</div>';
   $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes';
@@ -746,7 +752,6 @@ function cryptoPrice(holding){
   return Number.isFinite(value)&&value>0?value:null;
 }
 function cryptoImage(holding){
-  if(holding?.logo)return holding.logo;
   const value=cryptoPrices.images?.[holding.coingeckoId];
   return typeof value==='string'?value:'';
 }
@@ -904,42 +909,22 @@ function closeCryptoCoinResults(){
   const input=$('crypto-coin-search');
   if(input)input.setAttribute('aria-expanded','false');
 }
-function updateCryptoLogoPreview(){
-  const symbol=$('crypto-edit-symbol').value||'?';
-  const name=$('crypto-edit-name').value||symbol;
-  const coingeckoId=$('crypto-edit-coingecko').value;
-  const fallback=cryptoPrices.images?.[coingeckoId]||'';
-  const image=cryptoLogoDraft||fallback;
-  $('crypto-logo-preview').innerHTML=cryptoLogoMarkup(image,symbol,'is-small');
-  $('crypto-logo-clear').hidden=!cryptoLogoDraft;
-  const selected=$('crypto-coin-selected');
-  if(coingeckoId){
-    const label=cryptoCoinLabel({name,symbol});
-    selected.innerHTML=cryptoLogoMarkup(image,symbol,'is-small')+'<span>Sélection : '+escapeHtml(label)+'</span>';
-    selected.classList.add('is-selected');
-  }
-}
 function setCryptoCoin(coin){
   const symbol=String(coin.symbol||'').toUpperCase();
   const name=coin.name||symbol;
   const image=coin.large||coin.thumb||coin.image||cryptoPrices.images?.[coin.id]||'';
-  const previousId=$('crypto-edit-coingecko').value;
   if(coin.id&&image)cryptoPrices.images[coin.id]=image;
-  if(previousId&&previousId!==coin.id){
-    cryptoLogoRequest++;
-    cryptoLogoDraft='';
-  }
   $('crypto-edit-coingecko').value=coin.id;
   $('crypto-edit-symbol').value=symbol;
   $('crypto-edit-name').value=name;
   const label=cryptoCoinLabel({name,symbol});
   $('crypto-coin-search').value=label;
   closeCryptoCoinResults();
-  updateCryptoLogoPreview();
+  const selected=$('crypto-coin-selected');
+  selected.innerHTML=cryptoLogoMarkup(image,symbol,'is-small')+'<span>Sélection : '+escapeHtml(label)+'</span>';
+  selected.classList.add('is-selected');
 }
 function clearCryptoCoin(clearSearch=false){
-  cryptoLogoRequest++;
-  cryptoLogoDraft='';
   $('crypto-edit-coingecko').value='';
   $('crypto-edit-symbol').value='';
   $('crypto-edit-name').value='';
@@ -947,7 +932,6 @@ function clearCryptoCoin(clearSearch=false){
   const selected=$('crypto-coin-selected');
   selected.textContent='Aucune crypto sélectionnée.';
   selected.classList.remove('is-selected');
-  updateCryptoLogoPreview();
 }
 async function searchCryptoCoins(query){
   if(cryptoSearch.controller)cryptoSearch.controller.abort();
@@ -978,14 +962,9 @@ function openCryptoEditor(id=null){
   if(id&&!holding)return;
   $('crypto-form').reset();
   closeCryptoCoinResults();
-  cryptoLogoRequest++;
-  cryptoLogoDraft='';
   $('crypto-edit-id').value=holding?.id||'';
   if(holding)setCryptoCoin({id:holding.coingeckoId,name:holding.name,symbol:holding.symbol});
   else clearCryptoCoin(true);
-  cryptoLogoDraft=holding?.logo||'';
-  $('crypto-logo-file').value='';
-  updateCryptoLogoPreview();
   $('crypto-edit-invested').value=holding?Number(holding.invested||0):'';
   $('crypto-edit-quantity').value=holding?String(holding.quantity??''):'';
   $('crypto-modal-title').textContent=holding?'Modifier la position':'Ajouter une position';
@@ -1020,29 +999,30 @@ function openTransaction(accountId=null,transaction=null){
   fillAccountSelects();$('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
   $('transaction-dialog').showModal();
 }
-function updateAccountLogoPreview(){
-  const id=$('edit-account-id').value;
+function fillBankOptions(selected='other'){
+  const select=$('edit-account-bank');
+  if(!select)return;
+  select.innerHTML=BANK_CATALOG.map(bank=>'<option value="'+bank.id+'">'+escapeHtml(bank.name)+'</option>').join('');
+  select.value=isBankKey(selected)?selected:'other';
+}
+function updateAccountBankPreview(){
   const name=$('edit-account-name').value.trim()||'Compte';
-  const kind=$('edit-account-kind').value||'bank';
-  const account={id,name,short:accountShort(name),kind,accountType:kind,logo:accountLogoDraft};
-  $('account-logo-preview').innerHTML=bankLogo(account);
-  $('account-logo-clear').hidden=!accountLogoDraft;
+  const bank=$('edit-account-bank').value||'other';
+  $('account-bank-preview').innerHTML=bankLogo({name,bank});
 }
 function openAccountEditor(id=null){
   const a=id?accountById(id):null;
   if(id&&!a)return;
   $('account-form').reset();
-  accountLogoRequest++;
-  accountLogoDraft=a?.logo||(a&&isLogoValue(a.short)?a.short:'');
   $('edit-account-id').value=a?.id||'';
   $('account-modal-eyebrow').textContent=a?'PARAMÈTRES DU COMPTE':'NOUVEAU COMPTE';
   $('account-modal-title').textContent=a?'Configurer le compte':'Ajouter un compte';
   $('edit-account-name').value=a?.name||'';
   $('edit-account-kind').value=a?effectiveAccountType(a):'bank';
+  fillBankOptions(a?bankKeyForAccount(a):'other');
   $('edit-account-opening').value=a?Number(a.opening||0):0;
-  $('account-logo-file').value='';
   $('account-delete').hidden=!a;
-  updateAccountLogoPreview();
+  updateAccountBankPreview();
   $('account-dialog').showModal();
 }
 function deleteAccount(){
@@ -1335,31 +1315,13 @@ $('crypto-form').addEventListener('submit',event=>{
     showToast('Vérifiez le montant investi et la quantité détenue.');
     return;
   }
-  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,logo:cryptoLogoDraft||'',invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+  const record={...(existing||{}),id:id||crypto.randomUUID(),symbol,name,coingeckoId,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.cryptoHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.cryptoHoldings=state.cryptoHoldings.map(h=>h.id===id?record:h);
   else state.cryptoHoldings=[...(state.cryptoHoldings||[]),record];
   $('crypto-dialog').close();
   renderAll();
   showToast(existing?'Position modifiée.':'Position ajoutée.');
   if(coingeckoId&&cryptoPrices.values[coingeckoId]===undefined)loadCryptoPrices();
-});
-$('crypto-logo-choose').addEventListener('click',()=>$('crypto-logo-file').click());
-$('crypto-logo-file').addEventListener('change',event=>{
-  const file=event.target.files?.[0];
-  if(!file)return;
-  event.target.value='';
-  const request=++cryptoLogoRequest;
-  readLogoImage(file,dataUrl=>{
-    if(request!==cryptoLogoRequest)return;
-    cryptoLogoDraft=dataUrl;
-    updateCryptoLogoPreview();
-  });
-});
-$('crypto-logo-clear').addEventListener('click',()=>{
-  cryptoLogoRequest++;
-  cryptoLogoDraft='';
-  $('crypto-logo-file').value='';
-  updateCryptoLogoPreview();
 });
 $('export-btn').addEventListener('click',()=>{
   const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
@@ -1415,19 +1377,21 @@ $('account-form').addEventListener('submit',event=>{
   const name=$('edit-account-name').value.trim();
   const accountType=$('edit-account-kind').value;
   const kind=['pea','av','cto'].includes(accountType)?'savings':accountType;
+  const bank=$('edit-account-bank').value;
   const opening=Number($('edit-account-opening').value)||0;
   if(!name){showToast('Renseignez le nom du compte.');return;}
   if(!['bank','savings','pro','pea','av','cto'].includes(accountType)){showToast('Choisissez un type de compte valide.');return;}
+  if(!isBankKey(bank)){showToast('Choisissez une banque dans la liste.');return;}
   if(existing){
     prepareUndo();
     existing.name=name;
     existing.short=accountShort(name);
+    existing.bank=bank;
     existing.kind=kind;
     existing.accountType=accountType;
     existing.opening=opening;
-    existing.logo=accountLogoDraft;
   }else{
-    state.accounts.push({id:crypto.randomUUID(),name,short:accountShort(name),kind,accountType,opening,vatRate:20,socialRate:45,netOpening:0,logo:accountLogoDraft});
+    state.accounts.push({id:crypto.randomUUID(),name,short:accountShort(name),bank,kind,accountType,opening,vatRate:20,socialRate:45,netOpening:0});
   }
   cloud.accountTypesDirty=true;
   $('account-dialog').close();
@@ -1435,26 +1399,8 @@ $('account-form').addEventListener('submit',event=>{
   showToast(existing?'Paramètres du compte enregistrés.':'Compte ajouté.',!!existing);
 });
 $('account-delete').addEventListener('click',deleteAccount);
-$('account-logo-choose').addEventListener('click',()=>$('account-logo-file').click());
-$('account-logo-file').addEventListener('change',event=>{
-  const file=event.target.files?.[0];
-  if(!file)return;
-  event.target.value='';
-  const request=++accountLogoRequest;
-  readLogoImage(file,dataUrl=>{
-    if(request!==accountLogoRequest)return;
-    accountLogoDraft=dataUrl;
-    updateAccountLogoPreview();
-  });
-});
-$('account-logo-clear').addEventListener('click',()=>{
-  accountLogoRequest++;
-  accountLogoDraft='';
-  $('account-logo-file').value='';
-  updateAccountLogoPreview();
-});
-$('edit-account-name').addEventListener('input',updateAccountLogoPreview);
-$('edit-account-kind').addEventListener('change',updateAccountLogoPreview);
+$('edit-account-name').addEventListener('input',updateAccountBankPreview);
+$('edit-account-bank').addEventListener('change',updateAccountBankPreview);
 document.addEventListener('change',event=>{
   const paid=event.target.closest('[data-toggle-paid]');
   if(!paid)return;
