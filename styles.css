@@ -783,3 +783,6 @@ tbody tr:hover td{background:#fafbff}
 .projection-phase-retirement .projection-bars .projection-nominal,
 .projection-phase-retirement .projection-bars .projection-real{background-image:none!important}
 .projection-phase-label{font-weight:700}
+
+/* Les indicateurs de valeur sont uniquement les carrés bleus et orange ; aucun point vert parasite. */
+.projection-legend-nominal:before,.projection-legend-real:before{display:none!important}
