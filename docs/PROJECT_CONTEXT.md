@@ -248,3 +248,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Quand un cours CoinGecko est disponible, la valeur retenue est quantité × prix en euros. Si le cours est indisponible, le montant investi sert d’estimation provisoire afin que la position ne disparaisse pas du total.
 - Les totaux « Banque » et « Professionnel » restent limités aux comptes correspondants : les cryptos ne sont pas attribuées artificiellement à un compte bancaire.
 - Le tableau de bord se rafraîchit lorsque la récupération des prix crypto se termine. Aucun test navigateur n’a été exécuté.
+
+
+## Écrans patrimoine ajoutés
+
+- Vues `FIRE`, `Comparaisons` et `Lombard` ajoutées à la navigation sans retirer les écrans existants.
+- Vue FIRE : hypothèses modifiables de rente, taux de retrait, épargne et rendement ; projection illustrative basée sur le patrimoine net suivi dans l’application.
+- Comparaisons : seuils financiers statiques et explicitement indicatifs, non présentés comme un percentile officiel calculé.
+- Lombard : simulation BTC sur les achats communiqués (60 000 € à 70 100 $/BTC financés par le crédit ; 69 800 € à 85 100 $/BTC en personnel), prix BTC et EUR/USD modifiables, dette restante estimée à partir de 101 000 € empruntés moins 39 000 € remboursés. Les calculs excluent intérêts, frais et fiscalité.
