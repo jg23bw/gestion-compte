@@ -823,3 +823,22 @@ tbody tr:hover td{background:#fafbff}
 .projection-row .projection-cashflow{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.45;}
 .projection-row>strong{min-width:0;max-width:100%;overflow-wrap:anywhere;text-align:right;font-size:clamp(.68rem,.9vw,.9rem);}
 @media(max-width:800px){.projection-chart{padding:0 8px 18px;gap:10px}.projection-row{grid-template-columns:40px minmax(0,1fr) minmax(72px,.38fr)!important;gap:6px!important;padding:8px 4px}.projection-row>strong{min-width:0;font-size:.68rem}.projection-row>strong small{font-size:.62rem}.projection-row .projection-cashflow{font-size:.65rem;}}
+
+/* Graphique FIRE et détail annuel des revenus nets */
+.fire-graph-wrap{width:100%;min-width:0;box-sizing:border-box;padding:8px 20px 18px;overflow:hidden}
+.fire-graph{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
+.fire-graph-axis{stroke:var(--border-color,#415775);stroke-width:1.5}
+.fire-graph-nominal,.fire-graph-real{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.fire-graph-nominal{stroke:#4779f5}.fire-graph-real{stroke:#f4a340}
+.fire-graph text{font-size:16px;fill:var(--text-muted,#8490a3)}
+.fire-year-list{display:grid;gap:10px;padding:0 16px 20px;min-width:0}
+.fire-year-row{min-width:0;padding:14px 16px;border:1px solid var(--border-color,#d9e1e9);border-left:4px solid #12a66a;border-radius:12px;background:rgba(18,166,106,.045);box-sizing:border-box}
+.fire-year-retirement{border-left-color:#e33b3b;background:rgba(227,59,59,.055)}
+.fire-year-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;min-width:0}
+.fire-year-heading>div,.fire-year-capital{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fire-year-heading strong{font-size:1rem}.fire-year-heading small{color:var(--text-muted,#8490a3);font-size:.85rem}
+.fire-year-capital{text-align:right;overflow-wrap:anywhere}
+.fire-monthly-net{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding:12px 16px;border-radius:10px;background:rgba(227,59,59,.11)}
+.fire-monthly-net span{font-weight:650;font-size:.9rem}.fire-monthly-net strong{font-size:clamp(1.35rem,2.8vw,2rem);line-height:1.2;font-variant-numeric:tabular-nums}
+.fire-year-detail{margin:9px 0 0;color:var(--text-muted,#8490a3);font-size:.85rem;line-height:1.5}
+@media(max-width:600px){.fire-graph-wrap{padding:6px 8px 14px}.fire-graph text{font-size:19px}.fire-year-list{padding:0 8px 16px}.fire-year-row{padding:12px}.fire-year-heading{gap:8px}.fire-year-capital{font-size:.85rem}.fire-monthly-net{align-items:flex-start;flex-direction:column;gap:6px;padding:12px}.fire-monthly-net strong{font-size:1.6rem}}
