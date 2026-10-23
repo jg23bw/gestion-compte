@@ -1705,6 +1705,9 @@ function renderWealthViews(){
  const scenarioEl=$('fire-scenarios');if(scenarioEl)scenarioEl.innerHTML='<table class="fire-scenario-table"><thead><tr><th>Scénario</th><th>Âge FIRE</th><th>Épuisement</th><th>Capital final nominal</th><th>Capital final réel</th></tr></thead><tbody>'+scenarioRows+'</tbody></table><h3 class="fire-milestones-title">Capital restant à 80, 90 et 95 ans</h3><table class="fire-scenario-table"><thead><tr><th>Âge</th>'+scenarios.map(sc=>'<th>'+sc.name+' nominal</th><th>'+sc.name+' réel</th>').join('')+'</tr></thead><tbody>'+milestoneRows+'</tbody></table>';
  $('fire-real-return').textContent=(realAnnualRate*100).toFixed(2)+' %';
  $('fire-net-need').textContent=euro(financialNeed);
+ const annualNet=retirementNetFirstYear||0;
+ $('fire-net-annual').textContent=fireAge!==null?euro(annualNet):'—';
+ $('fire-net-monthly').textContent=fireAge!==null?euro(annualNet/12):'—';
 
  const taxRegime=$('fire-tax-regime'),customLabel=$('fire-custom-tax-label');
  if(taxRegime&&customLabel)customLabel.hidden=taxRegime.value!=='custom';
