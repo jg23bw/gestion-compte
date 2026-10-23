@@ -1919,7 +1919,7 @@ themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.da
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 $('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
 
-['fire-age','fire-end-age','fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','fire-gain-share','fire-custom-tax','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews)); $('fire-tax-regime')?.addEventListener('change',renderWealthViews);
+['fire-age','fire-end-age','fire-rent','fire-passive-income','fire-withdrawal','fire-saving','fire-return','fire-inflation','fire-gain-share','fire-custom-tax','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews)); $('fire-tax-regime')?.addEventListener('change',renderWealthViews);
 
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
