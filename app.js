@@ -1669,7 +1669,7 @@ function renderWealthViews(){
      series.push({age:outputAge,year,month:step,value:balance,real,phase,gross:gross*12,tax:tax*12,net:net*12});
    }
  }
- $('fire-year').textContent=financialNeed===0?'Déjà couvert':fireAge!==null?'À '+fireAge+' ans':'Non atteint';
+ $('fire-year').textContent=financialNeed===0?'Déjà couvert':fireAge!==null?'À '+Math.ceil(fireAge)+' ans':'Non atteint';
  $('fire-summary').textContent=financialNeed===0?'Les revenus passifs saisis couvrent déjà l’objectif mensuel.':fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+Math.ceil(fireAge-currentAge))+' · revenu financier nécessaire : '+euro(financialNeed)+'/mois, après '+euro(passiveIncome)+' de revenus passifs.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=euro(target);$('fire-gap').textContent=euro(gap);$('fire-progress').textContent=target>0?Math.min(100,current/target*100).toFixed(1)+' %':'100 %';
  const maxValue=Math.max(1,...series.map(p=>p.value));
