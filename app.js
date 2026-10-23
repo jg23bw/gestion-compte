@@ -221,7 +221,7 @@ function bankLogo(account={}){
   const src=bank.logo||'';
   const initials=bank.initials||accountShort(account.name||'Compte');
   const background=src?'#fff':bank.color+'18';
-  return '<span class="bank-logo'+(src?' has-logo':'')+'" style="background:'+background+';color:'+bank.color+'" data-bank="'+escapeHtml(bank.id)+'">'+
+  return '<span class="bank-logo bank-'+escapeHtml(bank.id)+(src?' has-logo':'')+'" style="--bank-accent:'+bank.color+';background:'+background+';color:'+bank.color+'" data-bank="'+escapeHtml(bank.id)+'" title="'+escapeHtml(bank.name)+'">'+
     (src?'<img src="'+escapeHtml(src)+'" alt="Logo '+escapeHtml(bank.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+
     '<span '+(src?'hidden':'')+'>'+escapeHtml(initials)+'</span></span>';
 }
