@@ -748,3 +748,15 @@ tbody tr:hover td{background:#fafbff}
 .projection-age{white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}
 .projection-outcome{padding:14px 16px;margin:8px 22px 18px;border-radius:12px;background:rgba(83,109,255,.08);font-size:.9rem;font-weight:650}
 @media(max-width:800px){.fire-projection-note{padding:0 16px 18px}.projection-age{font-size:.7rem}.projection-row{grid-template-columns:48px minmax(30px,1fr) minmax(92px,auto)!important;gap:7px!important}.projection-outcome{margin-left:16px;margin-right:16px}}
+
+/* FIRE: distinguish accumulation and retirement at a glance */
+.projection-legend{display:flex;flex-wrap:wrap;gap:8px;padding:16px 22px 12px;align-items:center}
+.projection-legend span{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;color:var(--text-muted,#8290a6)}
+.projection-legend-accumulation:before,.projection-legend-retirement:before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px}
+.projection-legend-accumulation:before{background:#159d87}
+.projection-legend-retirement:before{background:#ed655f}
+.projection-row{padding:5px 10px;border-left:3px solid transparent;border-radius:8px}
+.projection-phase-accumulation{background:rgba(21,157,135,.055);border-left-color:#159d87}
+.projection-phase-retirement{background:rgba(237,101,95,.065);border-left-color:#ed655f}
+.projection-phase-label{display:block;margin-top:2px;font-size:.65rem;font-weight:600;line-height:1.2;color:var(--text-muted,#8290a6)}
+@media(max-width:800px){.projection-legend{padding:12px 16px 10px;gap:7px}.projection-legend span{font-size:.7rem}.projection-phase-label{font-size:.6rem}}
