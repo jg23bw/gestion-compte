@@ -1609,7 +1609,7 @@ function renderWealthViews(){
  let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
  while(balance<target&&years<60){balance=balance*(1+rate)+saving*12;years++;series.push({year:new Date().getFullYear()+years,value:balance});if(balance<0)break}
  $('fire-year').textContent=Number.isFinite(target)?(current>=target?'Atteint':years>=60?'Hors horizon':String(new Date().getFullYear()+years)):'—';
- $('fire-summary').textContent=Number.isFinite(target)?'Objectif '+euro(target)+' · '+(years>=60?'plus de 60 ans':years+' an(s) estimé(s)):'Saisissez un taux de retrait positif.';
+ $('fire-summary').textContent=Number.isFinite(target)?'Objectif '+euro(target)+' · '+(years>=60?'plus de 60 ans':years+' an(s) estimé(s)'):'Saisissez un taux de retrait positif.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=Number.isFinite(target)?euro(target):'—';$('fire-gap').textContent=Number.isFinite(target)?euro(gap):'—';$('fire-progress').textContent=Number.isFinite(target)?(target>0?Math.min(100,current/target*100):100).toFixed(1)+' %':'—';
  $('fire-chart').innerHTML=series.slice(0,31).map(p=>'<div class="projection-row"><span>'+p.year+'</span><div><i style="width:'+Math.min(100,target>0?p.value/target*100:0)+'%"></i></div><strong>'+euro(p.value)+'</strong></div>').join('');
  const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
