@@ -78,6 +78,58 @@ const STOCK_MARKETS={
   NSE:{label:'NSE Inde',currency:'INR'},BSE:{label:'BSE Inde',currency:'INR'},KRX:{label:'Bourse de Corée',currency:'KRW'},TPE:{label:'Bourse de Taïwan',currency:'TWD'},SGX:{label:'Singapore Exchange',currency:'SGD'},JSE:{label:'Bourse de Johannesburg',currency:'ZAR'},BVMF:{label:'B3 Brésil',currency:'BRL'},BMV:{label:'Bourse du Mexique',currency:'MXN'},BCBA:{label:'Bourse de Buenos Aires',currency:'ARS'},BKK:{label:'Bourse de Thaïlande',currency:'THB'},QSE:{label:'Bourse du Qatar',currency:'QAR'},PSE:{label:'Bourse des Philippines',currency:'PHP'},MSM:{label:'Bourse de Mascate',currency:'OMR'},KASE:{label:'Bourse du Kazakhstan',currency:'KZT'},BVB:{label:'Bourse de Bucarest',currency:'RON'},
   OTC:{label:'OTC',currency:'USD'},NASDAQ:{label:'NASDAQ',currency:'USD'},NYSE:{label:'NYSE',currency:'USD'},AMEX:{label:'NYSE American',currency:'USD'},BATS:{label:'Cboe BZX',currency:'USD'},US:{label:'États-Unis',currency:'USD'}
 };
+// Catalogue local ISIN : facilite la sélection quand la recherche par symbole ne retrouve pas l'instrument.
+// Les identifiants de cotation suivent le format renvoyé par StockAnalysis ; un cours peut rester indisponible selon la place.
+const STOCK_ISIN_CATALOG = [
+  {isin:'IE00B5BMR087',symbol:'SXR8',name:'iShares Core S&P 500 UCITS ETF USD (Acc)',priceId:'ETR-SXR8',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00B4L5Y983',symbol:'EUNL',name:'iShares Core MSCI World UCITS ETF USD (Acc)',priceId:'ETR-EUNL',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00BK5BQT80',symbol:'VWCE',name:'Vanguard FTSE All-World UCITS ETF USD (Acc)',priceId:'ETR-VWCE',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00B3XXRP09',symbol:'VUAA',name:'Vanguard S&P 500 UCITS ETF USD (Acc)',priceId:'ETR-VUAA',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00BKM4GZ66',symbol:'IS3N',name:'iShares Core MSCI EM IMI UCITS ETF (Acc)',priceId:'ETR-IS3N',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00B53SZB19',symbol:'CNDX',name:'iShares NASDAQ 100 UCITS ETF USD (Acc)',priceId:'ETR-CNDX',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00B4L5Y983',symbol:'IWDA',name:'iShares Core MSCI World UCITS ETF USD (Acc)',priceId:'AMS-IWDA',market:'Euronext Amsterdam',currency:'EUR',kind:'e'},
+  {isin:'IE00B3RBWM25',symbol:'VWRL',name:'Vanguard FTSE All-World UCITS ETF USD (Dist)',priceId:'AMS-VWRL',market:'Euronext Amsterdam',currency:'EUR',kind:'e'},
+  {isin:'IE00B1XNHC34',symbol:'INRG',name:'iShares Global Clean Energy UCITS ETF',priceId:'LON-INRG',market:'London Stock Exchange',currency:'GBX',kind:'e'},
+  {isin:'IE00B4K48X80',symbol:'IEEM',name:'iShares MSCI Emerging Markets UCITS ETF',priceId:'LON-IEEM',market:'London Stock Exchange',currency:'GBX',kind:'e'},
+  {isin:'LU1681043599',symbol:'CW8',name:'Amundi MSCI World UCITS ETF (Acc)',priceId:'EPA-CW8',market:'Euronext Paris',currency:'EUR',kind:'e'},
+  {isin:'FR0013412285',symbol:'PE500',name:'Amundi PEA S&P 500 UCITS ETF',priceId:'EPA-PE500',market:'Euronext Paris',currency:'EUR',kind:'e'},
+  {isin:'FR0011871110',symbol:'PUST',name:'Amundi PEA Nasdaq-100 UCITS ETF',priceId:'EPA-PUST',market:'Euronext Paris',currency:'EUR',kind:'e'},
+  {isin:'LU1681038243',symbol:'ANX',name:'Amundi Nasdaq-100 UCITS ETF',priceId:'EPA-ANX',market:'Euronext Paris',currency:'EUR',kind:'e'},
+  {isin:'LU1681045370',symbol:'AEEM',name:'Amundi MSCI Emerging Markets UCITS ETF',priceId:'EPA-AEEM',market:'Euronext Paris',currency:'EUR',kind:'e'},
+  {isin:'LU0908500753',symbol:'MEUD',name:'Amundi STOXX Europe 600 UCITS ETF',priceId:'EPA-MEUD',market:'Euronext Paris',currency:'EUR',kind:'e'},
+  {isin:'IE00B4K48X80',symbol:'EIMI',name:'iShares Core MSCI EM IMI UCITS ETF',priceId:'LON-EIMI',market:'London Stock Exchange',currency:'GBX',kind:'e'},
+  {isin:'IE00B4L5YX21',symbol:'IUSN',name:'iShares MSCI World Small Cap UCITS ETF',priceId:'ETR-IUSN',market:'Xetra',currency:'EUR',kind:'e'},
+  {isin:'IE00B4L5Y983',symbol:'SWDA',name:'iShares Core MSCI World UCITS ETF USD (Acc)',priceId:'LON-SWDA',market:'London Stock Exchange',currency:'GBX',kind:'e'},
+  {isin:'IE00B6R52259',symbol:'CNDX',name:'iShares NASDAQ 100 UCITS ETF USD (Acc)',priceId:'LON-CNDX',market:'London Stock Exchange',currency:'GBX',kind:'e'},
+  {isin:'IE00B0M62Q58',symbol:'IUSA',name:'iShares Core S&P 500 UCITS ETF USD (Dist)',priceId:'LON-IUSA',market:'London Stock Exchange',currency:'GBX',kind:'e'},
+  {isin:'IE00B5BMR087',symbol:'CSPX',name:'iShares Core S&P 500 UCITS ETF USD (Acc)',priceId:'AMS-CSPX',market:'Euronext Amsterdam',currency:'EUR',kind:'e'},
+  {isin:'US0378331005',symbol:'AAPL',name:'Apple Inc.',priceId:'NASDAQ-AAPL',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'US5949181045',symbol:'MSFT',name:'Microsoft Corporation',priceId:'NASDAQ-MSFT',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'US67066G1040',symbol:'NVDA',name:'NVIDIA Corporation',priceId:'NASDAQ-NVDA',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'US0231351067',symbol:'AMZN',name:'Amazon.com, Inc.',priceId:'NASDAQ-AMZN',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'US02079K3059',symbol:'GOOGL',name:'Alphabet Inc. Class A',priceId:'NASDAQ-GOOGL',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'US30303M1027',symbol:'META',name:'Meta Platforms, Inc.',priceId:'NASDAQ-META',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'US88160R1014',symbol:'TSLA',name:'Tesla, Inc.',priceId:'NASDAQ-TSLA',market:'NASDAQ',currency:'USD',kind:'s'},
+  {isin:'NL0010273215',symbol:'ASML',name:'ASML Holding N.V.',priceId:'AMS-ASML',market:'Euronext Amsterdam',currency:'EUR',kind:'s'},
+  {isin:'FR0000121014',symbol:'MC',name:'LVMH',priceId:'EPA-MC',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'FR0000121972',symbol:'SU',name:'Schneider Electric SE',priceId:'EPA-SU',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'FR0000120321',symbol:'OR',name:"L'Oréal",priceId:'EPA-OR',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'FR0000120271',symbol:'TTE',name:'TotalEnergies SE',priceId:'EPA-TTE',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'FR0000120073',symbol:'AI',name:'Air Liquide',priceId:'EPA-AI',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'FR0000120628',symbol:'CS',name:'AXA',priceId:'EPA-CS',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'FR0000120578',symbol:'SAN',name:'Sanofi',priceId:'EPA-SAN',market:'Euronext Paris',currency:'EUR',kind:'s'},
+  {isin:'DE0007164600',symbol:'SAP',name:'SAP SE',priceId:'ETR-SAP',market:'Xetra',currency:'EUR',kind:'s'},
+  {isin:'US46625H1005',symbol:'JPM',name:'JPMorgan Chase & Co.',priceId:'NYSE-JPM',market:'NYSE',currency:'USD',kind:'s'},
+  {isin:'US4781601046',symbol:'JNJ',name:'Johnson & Johnson',priceId:'NYSE-JNJ',market:'NYSE',currency:'USD',kind:'s'},
+  {isin:'US7427181091',symbol:'PG',name:'Procter & Gamble',priceId:'NYSE-PG',market:'NYSE',currency:'USD',kind:'s'},
+  {isin:'US78462F1030',symbol:'SPY',name:'SPDR S&P 500 ETF Trust',priceId:'NYSE-SPY',market:'NYSE',currency:'USD',kind:'e'},
+  {isin:'US46090E1038',symbol:'QQQ',name:'Invesco QQQ Trust',priceId:'NASDAQ-QQQ',market:'NASDAQ',currency:'USD',kind:'e'}
+];
+function stockCatalogResults(query){
+  const q=String(query||'').trim().toUpperCase();
+  if(!q)return [];
+  return STOCK_ISIN_CATALOG.filter(item=>item.isin===q||item.symbol===q||item.name.toUpperCase().includes(q)).map(item=>({id:item.priceId,priceId:item.priceId,isin:item.isin,s:item.symbol,n:item.name,st:item.kind,market:item.market,currency:item.currency}));
+}
 const stockSearch={timer:null,seq:0,results:[]};
 const stockPrices={values:{},updatedAt:0,error:'',loading:false};
 const stockFx={rates:{EUR:1},updatedAt:0,error:'',loading:false};
@@ -203,6 +255,7 @@ function normalizeStockHoldings(value){
     const id=String(raw.id||'').trim();
     const accountId=String(raw.accountId||'').trim();
     const priceId=String(raw.priceId||raw.stockanalysisId||'').trim();
+    const isin=String(raw.isin||'').trim().toUpperCase().slice(0,12);
     const symbol=String(raw.symbol||'').trim().toUpperCase().slice(0,24);
     if(!id||seen.has(id)||!accountId||!priceId||!symbol)continue;
     const invested=Number(raw.invested),quantity=Number(raw.quantity);
@@ -210,7 +263,7 @@ function normalizeStockHoldings(value){
     const market=STOCK_MARKETS[String(priceId).split('-')[0].toUpperCase()]||STOCK_MARKETS.US;
     seen.add(id);
     result.push({
-      id,accountId,priceId,symbol,
+      id,accountId,priceId,symbol,isin,
       name:String(raw.name||symbol).trim().slice(0,160)||symbol,
       market:String(raw.market||market.label).trim().slice(0,80)||market.label,
       currency:normalizeStockCurrency(raw.currency||market.currency),
@@ -624,6 +677,9 @@ function balanceAt(accountId,untilDate=null){
 }
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
+function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
+function totalStockValue(){return state.accounts.reduce((sum,a)=>sum+stockValueForAccount(a.id),0);}
+function accountOverviewBalance(accountId){return balanceAt(accountId)+stockValueForAccount(accountId);}
 function balanceAfterTransaction(transaction){
   const a=accountById(transaction.accountId);if(!a)return 0;
   let balance=Number(a.opening||0);
@@ -655,18 +711,18 @@ function kindLabel(a){
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function accountMarkup(a,compact=false){
-  const balance=balanceAt(a.id);
+  const balance=accountOverviewBalance(a.id);
   const pledged=!!accountPledgeFor(a.id);
   if(compact)return '<div class="account-row'+(pledged?' is-pledged':'')+'" data-account-open="'+a.id+'">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+pledgeBadgeMarkup(a.id)+'</small></div><div class="account-balance">'+euro(balance)+'<small>'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s)</small></div></div>';
   const extra=a.id==='tiime'&&a.kind==='pro'?'<div class="account-card-label">Net estimé après provisions : <strong>'+euro(tiimeNetBalance(a))+'</strong></div>':'<div class="account-card-label">'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s) enregistrée(s)</div>';
   return '<article class="account-card'+(pledged?' is-pledged':'')+'" data-account-open="'+a.id+'"><div class="account-card-top">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+pledgeBadgeMarkup(a.id)+'</small></div><button class="edit-account" data-edit-account="'+a.id+'" aria-label="Configurer '+escapeHtml(a.name)+'" title="Configurer le compte">···</button></div><div class="account-card-balance">'+euro(balance)+'</div>'+extra+pledgeNoteMarkup(a.id)+'<div class="account-card-foot"><span>Solde actuel</span><button data-account-transactions="'+a.id+'">Historique →</button></div></article>';
 }
 function renderDashboard(){
-  const total=totalAccountsBalance();
+  const total=totalAccountsBalance()+totalStockValue();
   const lombard=lombardAmount();
   const net=total-lombard;
-  const bank=state.accounts.filter(a=>a.kind!=='pro').reduce((sum,a)=>sum+balanceAt(a.id),0);
-  const pro=state.accounts.filter(a=>a.kind==='pro').reduce((sum,a)=>sum+balanceAt(a.id),0);
+  const bank=state.accounts.filter(a=>effectiveAccountType(a)!=='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
+  const pro=state.accounts.filter(a=>effectiveAccountType(a)==='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
   $('net-balance').textContent=euro(net);
   $('total-balance').textContent=euro(total);
   $('lombard-balance').textContent=euro(lombard);
@@ -685,7 +741,7 @@ function renderDashboard(){
 function renderAccounts(){
   const query=$('account-search').value.trim().toLocaleLowerCase('fr'),kind=$('account-kind-filter')?.value||'all',sort=$('account-sort')?.value||'name-asc';
   const accounts=state.accounts.filter(a=>(a.name+' '+a.short+' '+bankByKey(bankKeyForAccount(a)).name+' '+kindLabel(a)).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||effectiveAccountType(a)===kind));
-  accounts.sort((a,b)=>{if(sort==='name-desc')return b.name.localeCompare(a.name,'fr');if(sort==='balance-desc')return balanceAt(b.id)-balanceAt(a.id);if(sort==='balance-asc')return balanceAt(a.id)-balanceAt(b.id);if(sort==='kind')return kindLabel(a).localeCompare(kindLabel(b),'fr')||a.name.localeCompare(b.name,'fr');return a.name.localeCompare(b.name,'fr');});
+  accounts.sort((a,b)=>{if(sort==='name-desc')return b.name.localeCompare(a.name,'fr');if(sort==='balance-desc')return accountOverviewBalance(b.id)-accountOverviewBalance(a.id);if(sort==='balance-asc')return accountOverviewBalance(a.id)-accountOverviewBalance(b.id);if(sort==='kind')return kindLabel(a).localeCompare(kindLabel(b),'fr')||a.name.localeCompare(b.name,'fr');return a.name.localeCompare(b.name,'fr');});
   $('all-accounts').innerHTML=accounts.length?accounts.map(a=>accountMarkup(a)).join(''):'<div class="empty-state">Aucun compte ne correspond aux filtres.</div>';
   const pledgedVisible=accounts.filter(a=>accountPledgeFor(a.id)).length;
   $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes'+(pledgedVisible?' · '+pledgedVisible+' nanti'+(pledgedVisible>1?'s':''):'');
@@ -1408,7 +1464,8 @@ function closeStockResults(){
   if(input)input.setAttribute('aria-expanded','false');
 }
 function setStockSelection(data){
-  const priceId=String(data.priceId||'').trim();
+  const priceId=String(data.priceId||data.id||'').trim();
+  const isin=String(data.isin||'').trim().toUpperCase();
   if(!priceId)return;
   const info=stockMarketInfo(priceId);
   const symbol=String(data.symbol||stockSymbolFromId(priceId)).toUpperCase();
@@ -1416,6 +1473,7 @@ function setStockSelection(data){
   const market=String(data.market||info.label).trim()||info.label;
   const currency=normalizeStockCurrency(data.currency||info.currency);
   $('stock-edit-priceid').value=priceId;
+  $('stock-edit-isin').value=isin;
   $('stock-edit-symbol').value=symbol;
   $('stock-edit-name').value=name;
   $('stock-edit-market').value=market;
@@ -1428,6 +1486,7 @@ function setStockSelection(data){
 }
 function clearStockSelection(clearSearch=false){
   $('stock-edit-priceid').value='';
+  $('stock-edit-isin').value='';
   $('stock-edit-symbol').value='';
   $('stock-edit-name').value='';
   $('stock-edit-market').value='';
@@ -1445,21 +1504,22 @@ async function searchStocks(query){
   container.innerHTML='<div class="stock-message">Recherche…</div>';
   $('stock-search').setAttribute('aria-expanded','true');
   try{
-    const data=await stockFunction('search',{query});
+    const localResults=stockCatalogResults(query);
+    const data=localResults.length?{data:localResults}:await stockFunction('search',{query});
     if(seq!==stockSearch.seq)return;
     const seen=new Set(),results=[];
     for(const item of Array.isArray(data?.data)?data.data:[]){
-      const id=String(item?.id||'').trim();
+      const id=String(item?.priceId||item?.id||'').trim();
       if(!id||seen.has(id)||!item?.n)continue;
       seen.add(id);
-      results.push(item);
+      results.push({...item,id,priceId:id});
       if(results.length>=10)break;
     }
     stockSearch.results=results;
     if(!results.length){container.innerHTML='<div class="stock-message">Aucune action trouvée.</div>';return;}
     container.innerHTML=results.map((item,index)=>{
       const symbol=stockResultSymbol(item);
-      const info=stockMarketInfo(item.id);
+      const info=item.market?{label:item.market,currency:item.currency||'EUR'}:stockMarketInfo(item.priceId||item.id);
       const type=item.st==='e'?'ETF':'Action';
       return '<button type="button" class="stock-option" role="option" data-stock-result-index="'+index+'">'+stockLogoMarkup(symbol,'is-small')+'<span class="stock-option-symbol">'+escapeHtml(symbol)+'</span><span class="stock-option-name">'+escapeHtml(item.n||'')+'</span><span class="stock-option-market">'+escapeHtml(info.label+' · '+info.currency+' · '+type)+'</span></button>';
     }).join('');
@@ -1881,7 +1941,7 @@ $('stock-search').addEventListener('keydown',event=>{
     if(stockSearch.results.length===1){
       const result=stockSearch.results[0];
       const info=stockMarketInfo(result.id);
-      setStockSelection({priceId:result.id,symbol:stockResultSymbol(result),name:result.n,market:info.label,currency:info.currency});
+      setStockSelection({priceId:result.priceId||result.id,isin:result.isin,symbol:stockResultSymbol(result),name:result.n,market:result.market||info.label,currency:result.currency||info.currency});
     }
   }else if(event.key==='Escape'){
     closeStockResults();
@@ -1914,7 +1974,8 @@ $('stock-form').addEventListener('submit',event=>{
   if(!accountById(accountId)){showToast('Choisissez un compte pour cette position.');return;}
   if(!priceId||!symbol){showToast('Sélectionnez une action ou un ETF dans la liste de recherche.');return;}
   if(!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
-  const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,symbol,name,market,currency,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+  if(isin&&!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){showToast('ISIN invalide : vérifiez les 12 caractères.',false);return;}
+   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.stockHoldings=state.stockHoldings.map(h=>h.id===id?record:h);
   else state.stockHoldings=[...(state.stockHoldings||[]),record];
   cloud.stockHoldingsDirty=true;
