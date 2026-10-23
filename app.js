@@ -1585,10 +1585,26 @@ function wealthSnapshot(){
   return {accounts,stocks,crypto,gross,debt,net:gross-debt,investments,liquid};
 }
 function pieMarkup(items){
- const total=items.reduce((s,x)=>s+Math.max(0,x.value),0)||1;let angle=0;
+ const positive=items.map(x=>({...x,value:Math.max(0,Number(x.value)||0)}));
+ const total=positive.reduce((sum,x)=>sum+x.value,0)||1;
+ let angle=0;
  const colors=['#f4c653','#35d6b0','#f36bb5','#63a5ff','#a58bff'];
- const stops=items.map((x,i)=>{const start=angle;angle+=Math.max(0,x.value)/total*360;return colors[i%colors.length]+' '+start+'deg '+angle+'deg'}).join(',');
- return '<div class="wealth-pie" style="background:conic-gradient('+stops+')"><div class="wealth-pie-hole"></div></div><div class="pie-legend">'+items.map((x,i)=>'<div><i style="background:'+colors[i%colors.length]+'"></i><span>'+x.label+'</span><strong>'+euro(x.value)+'</strong><small>'+Math.round(Math.max(0,x.value)/total*100)+'%</small></div>').join('')+'</div>';
+ const slices=positive.map((x,i)=>{const start=angle;angle+=x.value/total*360;return {label:x.label,value:x.value,index:i,start:start,end:angle,color:colors[i%colors.length],pct:Math.round(x.value/total*100)};});
+ const stops=slices.map(x=>x.color+' '+x.start+'deg '+x.end+'deg').join(',');
+ const data=encodeURIComponent(JSON.stringify(slices));
+ const legend=slices.map(x=>'<div data-pie-index="'+x.index+'"><i style="background:'+x.color+'"></i><span>'+x.label+'</span><strong>'+euro(x.value)+'</strong><small>'+x.pct+'%</small></div>').join('');
+ return '<div class="wealth-pie-wrap"><div class="wealth-pie" data-pie-items="'+data+'" style="background:conic-gradient('+stops+')"><div class="wealth-pie-hole"><span class="pie-hover-label">Patrimoine</span><strong class="pie-hover-value">'+euro(positive.reduce((sum,x)=>sum+x.value,0))+'</strong><small class="pie-hover-pct">Survoler une part</small></div></div></div><div class="pie-legend">'+legend+'</div>';
+}
+function activatePieHover(){
+ document.querySelectorAll('.wealth-pie').forEach(pie=>{
+  let items=[];try{items=JSON.parse(decodeURIComponent(pie.dataset.pieItems||'[]'));}catch(error){}
+  const show=index=>{const item=items[index];if(!item)return;pie.querySelector('.pie-hover-label').textContent=item.label;pie.querySelector('.pie-hover-value').textContent=euro(item.value);pie.querySelector('.pie-hover-pct').textContent=item.pct+' % du total';pie.querySelectorAll('.pie-legend>div').forEach(row=>row.classList.toggle('is-hovered',Number(row.dataset.pieIndex)===index));};
+  const clear=()=>{pie.querySelector('.pie-hover-label').textContent='Patrimoine';pie.querySelector('.pie-hover-value').textContent=euro(items.reduce((sum,x)=>sum+x.value,0));pie.querySelector('.pie-hover-pct').textContent='Survoler une part';pie.querySelectorAll('.pie-legend>div').forEach(row=>row.classList.remove('is-hovered'));};
+  pie.addEventListener('mousemove',event=>{const rect=pie.getBoundingClientRect(),dx=event.clientX-(rect.left+rect.width/2),dy=event.clientY-(rect.top+rect.height/2);if(Math.hypot(dx,dy)<rect.width*.29)return;const deg=(Math.atan2(dy,dx)*180/Math.PI+90+360)%360;const item=items.find(x=>deg>=x.start&&deg<x.end);if(item)show(item.index);});
+  pie.addEventListener('mouseleave',clear);
+  const legend=pie.parentElement.nextElementSibling;
+  if(legend)legend.querySelectorAll('[data-pie-index]').forEach(row=>{row.addEventListener('mouseenter',()=>show(Number(row.dataset.pieIndex)));row.addEventListener('mouseleave',clear);});
+ });
 }
 function renderWealthViews(){
  const w=wealthSnapshot();
@@ -1599,11 +1615,9 @@ function renderWealthViews(){
  $('compare-financial').textContent=financial>=1200000?'Au-dessus du repère top 1 %':financial>=400000?'Au-dessus du repère top 5 %':financial>=200000?'Au-dessus du repère top 10 %':'À comparer aux seuils';
  $('compare-world').textContent=financial>=450000?'Au-dessus du repère top 1 % mondial':financial>=120000?'Au-dessus du repère top 5 %':'À comparer aux seuils';
  renderBars('compare-financial-bars',fr,financial);renderBars('compare-world-bars',world,financial);
- const allocation=[{label:'PEA / Actions',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes bancaires & épargne',value:w.accounts}];
- $('comparison-allocation').innerHTML=pieMarkup(allocation);
- const allocationHtml=pieMarkup([{label:'Actions / ETF',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes & épargne',value:w.accounts}]);
+ const allocationHtml=pieMarkup([{label:'Actions / ETF',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes & épargne (hors pro)',value:w.liquid}]);
  if($('overview-pie-allocation'))$('overview-pie-allocation').innerHTML=allocationHtml;
- if($('overview-pie-assets'))$('overview-pie-assets').innerHTML=pieMarkup([{label:'Titres cotés',value:w.stocks},{label:'Crypto-actifs',value:w.crypto},{label:'Liquidités et comptes',value:w.accounts}]);
+ activatePieHover();
  const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100;
  const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
  let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
@@ -1824,6 +1838,15 @@ function downloadCsv(){
   const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='operations-'+today()+'.csv';a.click();URL.revokeObjectURL(url);showToast('Export CSV téléchargé.');
 }
+const themeButton=$('theme-toggle');
+function applyTheme(theme){
+ document.documentElement.dataset.theme=theme;
+ if(themeButton){const dark=theme==='dark';themeButton.textContent=dark?'☀':'☾';themeButton.title=dark?'Passer en mode clair':'Passer en mode sombre';themeButton.setAttribute('aria-label',themeButton.title);}
+ try{localStorage.setItem('gestion-comptes-theme',theme);}catch(error){}
+}
+let initialTheme='light';try{initialTheme=localStorage.getItem('gestion-comptes-theme')||'light';}catch(error){}
+applyTheme(initialTheme);
+themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 
 ['fire-rent','fire-withdrawal','fire-saving','fire-return','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
