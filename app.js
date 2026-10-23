@@ -1666,7 +1666,10 @@ function renderWealthViews(){
    if(step%12===0||step===monthlySteps){
      const outputAge=currentAge+step/12,year=currentYear+step/12;
      const real=balance/Math.pow(1+inflation,step/12);
-     series.push({age:outputAge,year,month:step,value:balance,real,phase,gross:gross*12,tax:tax*12,net:net*12});
+     const monthsRetired=fireAge===null?0:Math.max(0,step-(fireAge-currentAge)*12);
+     const annualGross=phase==='Retraits'?(fireCapital||balance)*withdrawal*Math.pow(1+inflation,monthsRetired/12):0;
+     const annualTax=annualGross*effectiveTax;
+     series.push({age:outputAge,year,month:step,value:balance,real,phase,gross:annualGross,tax:annualTax,net:annualGross-annualTax});
    }
  }
  $('fire-year').textContent=financialNeed===0?'Déjà couvert':fireAge!==null?'À '+Math.ceil(fireAge)+' ans':'Non atteint';
@@ -1675,7 +1678,7 @@ function renderWealthViews(){
  const maxValue=Math.max(1,...series.map(p=>p.value));
  $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-accumulation"><i></i> Accumulation · épargne mensuelle</span><span class="projection-legend-retirement"><i></i> Retraite · retraits</span><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants (inflation prise en compte)</span></div>'+series.map(p=>{
    const retired=p.phase==='Retraits';
-   const detail=retired?'Retrait brut annuel '+euro(p.gross)+' · impôts estimés '+euro(p.tax)+' · net annuel '+euro(p.net):'';
+   const detail=retired?'Retrait brut : '+euro(p.gross)+'/an · impôts estimés : '+euro(p.tax)+'/an · net : '+euro(p.net)+'/an ('+euro(p.net/12)+'/mois)':'';
    return '<div class="projection-row '+(retired?'projection-phase-retirement':'projection-phase-accumulation')+'"><span class="projection-age">'+p.age+' ans<small class="projection-phase-label">'+(retired?'Retraite':'Accumulation')+'</small></span><div class="projection-bars"><i class="projection-nominal" title="Patrimoine nominal" style="width:'+Math.min(100,p.value/maxValue*100)+'%"></i><i class="projection-real" title="Patrimoine en euros constants" style="width:'+Math.min(100,p.real/maxValue*100)+'%"></i><small class="projection-cashflow">'+detail+'</small></div><strong><span>'+euro(p.value)+'</span><small>'+euro(p.real)+' constants</small></strong></div>';
  }).join('')+'<p class="projection-outcome">'+(exhaustedAge!==null?'Capital épuisé vers '+exhaustedAge+' ans.':'Capital restant à '+endAge+' ans : '+euro(series[series.length-1].value)+' ('+euro(series[series.length-1].real)+' en euros constants).')+'</p>';
  // Trois scénarios de rendement, avec projection mensuelle et hypothèses identiques par ailleurs.
@@ -1705,9 +1708,6 @@ function renderWealthViews(){
  const scenarioEl=$('fire-scenarios');if(scenarioEl)scenarioEl.innerHTML='<table class="fire-scenario-table"><thead><tr><th>Scénario</th><th>Âge FIRE</th><th>Épuisement</th><th>Capital final nominal</th><th>Capital final réel</th></tr></thead><tbody>'+scenarioRows+'</tbody></table><h3 class="fire-milestones-title">Capital restant à 80, 90 et 95 ans</h3><table class="fire-scenario-table"><thead><tr><th>Âge</th>'+scenarios.map(sc=>'<th>'+sc.name+' nominal</th><th>'+sc.name+' réel</th>').join('')+'</tr></thead><tbody>'+milestoneRows+'</tbody></table>';
  $('fire-real-return').textContent=(realAnnualRate*100).toFixed(2)+' %';
  $('fire-net-need').textContent=euro(financialNeed);
- const annualNet=retirementNetFirstYear||0;
- $('fire-net-annual').textContent=fireAge!==null?euro(annualNet):'—';
- $('fire-net-monthly').textContent=fireAge!==null?euro(annualNet/12):'—';
 
  const taxRegime=$('fire-tax-regime'),customLabel=$('fire-custom-tax-label');
  if(taxRegime&&customLabel)customLabel.hidden=taxRegime.value!=='custom';
