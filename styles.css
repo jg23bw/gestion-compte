@@ -870,3 +870,12 @@ tbody tr:hover td{background:#fafbff}
 .fire-slider-control input[type="range"]:focus-visible{outline:2px solid #4779f5;outline-offset:4px;border-radius:8px}
 .fire-controls{gap:18px 22px}
 @media(max-width:600px){.fire-slider-control{gap:8px 10px}.fire-slider-control>span{font-size:.84rem}.fire-slider-control output{min-width:70px;padding:5px 7px;font-size:.9rem}.fire-slider-control input[type="range"]{height:36px}}
+
+/* Correctif contraste du tooltip FIRE : palette fixe, lisible en thèmes clair et sombre. */
+.fire-graph-tooltip{color:#172033!important;background:#fff!important;border:1px solid #aab7ca!important;box-shadow:0 10px 32px rgba(10,20,40,.28)!important;opacity:1!important}
+.fire-graph-tooltip,.fire-graph-tooltip *{color:#172033!important}
+.fire-graph-tooltip>strong{color:#101828!important;font-weight:800}
+.fire-graph-tooltip b{color:#111827!important;font-weight:800}
+.fire-graph-tooltip hr{border-top:1px solid #cbd5e1!important}
+.fire-graph-tooltip .tooltip-monthly{background:#fff0f0!important;border:1px solid #e9a4a4!important}
+.fire-graph-tooltip .tooltip-monthly,.fire-graph-tooltip .tooltip-monthly *{color:#8f1721!important}
