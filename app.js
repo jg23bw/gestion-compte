@@ -1620,28 +1620,38 @@ function renderWealthViews(){
  const currentAge=Math.max(18,Math.min(110,Math.round(Number($('fire-age')?.value)||41)));
  const endAge=Math.max(currentAge+1,Math.min(120,Math.round(Number($('fire-end-age')?.value)||95)));
  const r=Math.max(0,Number($('fire-rent')?.value)||0);
- const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||4)/100));
+ const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||3.25)/100));
  const saving=Math.max(0,Number($('fire-saving')?.value)||0);
- const rate=(Number($('fire-return')?.value)||0)/100;
- const inflation=Math.max(0,Number($('fire-inflation')?.value)||0)/100;
- const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
- let balance=current,fireAge=current>=target?currentAge:null,series=[{age:currentAge,year:currentYear,value:balance,phase:current>=target?'Retraits':'Accumulation'}];
+ const rate=Number($('fire-return')?.value||0)/100;
+ const inflation=Math.max(0,Number($('fire-inflation')?.value||0)/100);
+ const regime=$('fire-tax-regime')?.value||'pea';
+ const gainShare=Math.max(0,Math.min(1,(Number($('fire-gain-share')?.value)||0)/100));
+ const customTax=Math.max(0,Math.min(1,(Number($('fire-custom-tax')?.value)||0)/100));
+ const taxRate=regime==='pea'?0.186:regime==='cto'?0.314:customTax;
+ const effectiveTax=taxRate*gainShare;
+ const netFactor=Math.max(0.01,1-effectiveTax);
+ const target=withdrawal>0?r*12/(withdrawal*netFactor):Infinity;
+ const current=Math.max(0,w.net),gap=Math.max(0,target-current);
+ let balance=current,fireAge=current>=target?currentAge:null,fireCapital=current>=target?current:null;
+ let series=[{age:currentAge,year:currentYear,value:balance,phase:current>=target?'Retraits':'Accumulation',gross:0,tax:0,net:0}];
  let exhaustedAge=null;
  for(let age=currentAge+1;age<=endAge;age++){
-   let phase='Accumulation';
+   let phase='Accumulation',gross=0,tax=0,net=0;
    if(fireAge===null){
-     // L’épargne est versée pendant l’année, puis le capital produit son rendement.
-     // La retraite ne démarre qu’à l’année suivante si le seuil est atteint.
+     // Cotisations annuelles puis rendement nominal annuel.
      balance=Math.max(0,(balance+saving*12)*(1+rate));
-     if(balance>=target){fireAge=age;phase='Accumulation';}
+     if(balance>=target){fireAge=age;fireCapital=balance;}
    }else{
      phase='Retraits';
-     balance=Math.max(0,balance*(1+rate));
-     const annualWithdrawal=r*12*Math.pow(1+inflation,Math.max(0,age-fireAge));
-     balance=Math.max(0,balance-annualWithdrawal);
+     // Le taux de retrait s'applique au capital au début de la retraite ; le montant brut
+     // est ensuite indexé sur l'inflation. Les impôts sont calculés sur la part de gains.
+     gross=(fireCapital||balance)*withdrawal*Math.pow(1+inflation,Math.max(0,age-fireAge-1));
+     tax=gross*effectiveTax;
+     net=gross-tax;
+     balance=Math.max(0,balance*(1+rate)-gross);
      if(balance===0 && exhaustedAge===null) exhaustedAge=age;
    }
-   series.push({age,year:currentYear+age-currentAge,value:balance,phase});
+   series.push({age,year:currentYear+age-currentAge,value:balance,phase,gross,tax,net});
  }
  $('fire-year').textContent=fireAge!==null?'À '+fireAge+' ans':'Non atteint';
  $('fire-summary').textContent=fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+fireAge-currentAge)+' · projection jusqu’à '+endAge+' ans.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
@@ -1650,8 +1660,11 @@ function renderWealthViews(){
  $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-accumulation"><i></i> Accumulation · épargne</span><span class="projection-legend-retirement"><i></i> Retraite · retraits</span><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants (inflation prise en compte)</span></div>'+series.map(p=>{
    const real=p.value/Math.pow(1+inflation,Math.max(0,p.year-currentYear));
    const retired=p.phase==='Retraits';
-   return '<div class="projection-row '+(retired?'projection-phase-retirement':'projection-phase-accumulation')+'"><span class="projection-age">'+p.age+' ans<small class="projection-phase-label">'+(retired?'Retraite':'Accumulation')+'</small></span><div class="projection-bars"><i class="projection-nominal" title="Patrimoine nominal" style="width:'+Math.min(100,p.value/maxValue*100)+'%"></i><i class="projection-real" title="Patrimoine en euros constants" style="width:'+Math.min(100,real/maxValue*100)+'%"></i></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' constants</small></strong></div>';
+   const detail=retired?'Retrait brut '+euro(p.gross)+' · impôts/prélèvements '+euro(p.tax)+' · net perçu '+euro(p.net):'';
+   return '<div class="projection-row '+(retired?'projection-phase-retirement':'projection-phase-accumulation')+'"><span class="projection-age">'+p.age+' ans<small class="projection-phase-label">'+(retired?'Retraite':'Accumulation')+'</small></span><div class="projection-bars"><i class="projection-nominal" title="Patrimoine nominal" style="width:'+Math.min(100,p.value/maxValue*100)+'%"></i><i class="projection-real" title="Patrimoine en euros constants" style="width:'+Math.min(100,real/maxValue*100)+'%"></i><small class="projection-cashflow">'+detail+'</small></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' constants</small></strong></div>';
  }).join('')+'<p class="projection-outcome">'+(exhaustedAge!==null?'Capital épuisé vers '+exhaustedAge+' ans.':'Capital restant à '+endAge+' ans : '+euro(series[series.length-1].value)+'.')+'</p>';
+ const taxRegime=$('fire-tax-regime'),customLabel=$('fire-custom-tax-label');
+ if(taxRegime&&customLabel)customLabel.hidden=taxRegime.value!=='custom';
  const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
  const remaining=Math.max(0,principal-repaid),loanBtc=60000/(70100/fx),personalBtc=69800/(85100/fx),loanValue=loanBtc*btc/fx,personalValue=personalBtc*btc/fx;
  const loanGain=loanValue-60000,personalGain=personalValue-69800;
@@ -1876,7 +1889,7 @@ themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.da
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 $('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
 
-['fire-age','fire-end-age','fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
+['fire-age','fire-end-age','fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','fire-gain-share','fire-custom-tax','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews)); $('fire-tax-regime')?.addEventListener('change',renderWealthViews);
 
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
