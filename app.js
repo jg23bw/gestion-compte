@@ -1845,7 +1845,8 @@ function applyTheme(theme){
 let initialTheme='light';try{initialTheme=localStorage.getItem('gestion-comptes-theme')||'light';}catch(error){}
 applyTheme(initialTheme);
 themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
-document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));\n$('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
+document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
+$('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
 
 ['fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
 
