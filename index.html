@@ -217,7 +217,7 @@
       <input type="hidden" id="stock-edit-symbol">
       <input type="hidden" id="stock-edit-name">
       <p class="form-help">Choisissez l’action ou l’ETF dans la liste : le symbole, la place de cotation et la devise sont remplis automatiquement. Plusieurs places peuvent proposer le même nom, vérifiez la devise avant d’enregistrer. Le cours est récupéré chez StockAnalysis puis converti en euros.</p>
-      <div class="form-row"><label>Investi (€)<input id="stock-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="stock-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
+      <div class="form-row"><label><span id="stock-invested-label">Investi (€)</span><input id="stock-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="stock-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
       <div class="form-row"><label>Devise du cours<select id="stock-edit-currency" required></select></label><label>Place de cotation<input id="stock-edit-market" type="text" readonly placeholder="Choisie automatiquement"></label></div>
       <p class="form-help" id="stock-value-help">La valeur actuelle est calculée en euros à partir du dernier cours disponible et du taux de change de référence. Les cours peuvent être différés.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="stock-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
