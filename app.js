@@ -1616,14 +1616,14 @@ function renderWealthViews(){
  $('compare-world').textContent=financial>=450000?'Au-dessus du repère top 1 % mondial':financial>=120000?'Au-dessus du repère top 5 %':'À comparer aux seuils';
  renderBars('compare-financial-bars',fr,financial);renderBars('compare-world-bars',world,financial);
  // Aucun camembert d'allocation patrimoniale sur la vue d'ensemble.
- const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100;
+ const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100,inflation=Math.max(0,Number($('fire-inflation')?.value)||0)/100;
  const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
  let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
  while(balance<target&&years<60){balance=balance*(1+rate)+saving*12;years++;series.push({year:new Date().getFullYear()+years,value:balance});if(balance<0)break}
  $('fire-year').textContent=Number.isFinite(target)?(current>=target?'Atteint':years>=60?'Hors horizon':String(new Date().getFullYear()+years)):'—';
  $('fire-summary').textContent=Number.isFinite(target)?'Objectif '+euro(target)+' · '+(years>=60?'plus de 60 ans':years+' an(s) estimé(s)'):'Saisissez un taux de retrait positif.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=Number.isFinite(target)?euro(target):'—';$('fire-gap').textContent=Number.isFinite(target)?euro(gap):'—';$('fire-progress').textContent=Number.isFinite(target)?(target>0?Math.min(100,current/target*100):100).toFixed(1)+' %':'—';
- $('fire-chart').innerHTML=series.slice(0,31).map(p=>'<div class="projection-row"><span>'+p.year+'</span><div><i style="width:'+Math.min(100,target>0?p.value/target*100:0)+'%"></i></div><strong>'+euro(p.value)+'</strong></div>').join('');
+ $('fire-chart').innerHTML='<div class="projection-legend"><span>Valeur nominale</span><span>Valeur réelle (inflation '+(inflation*100).toLocaleString('fr-FR')+' %/an)</span></div>'+series.slice(0,31).map(p=>{const real=p.value/Math.pow(1+inflation,Math.max(0,p.year-new Date().getFullYear()));return '<div class="projection-row"><span>'+p.year+'</span><div class="projection-bars"><i class="projection-nominal" style="width:'+Math.min(100,target>0?p.value/target*100:0)+'%"></i><i class="projection-real" style="width:'+Math.min(100,target>0?real/target*100:0)+'%"></i></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' réels</small></strong></div>';}).join('');
  const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
  const remaining=Math.max(0,principal-repaid),loanBtc=60000/(70100/fx),personalBtc=69800/(85100/fx),loanValue=loanBtc*btc/fx,personalValue=personalBtc*btc/fx;
  const loanGain=loanValue-60000,personalGain=personalValue-69800;
@@ -1845,9 +1845,9 @@ function applyTheme(theme){
 let initialTheme='light';try{initialTheme=localStorage.getItem('gestion-comptes-theme')||'light';}catch(error){}
 applyTheme(initialTheme);
 themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
-document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
+document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));\n$('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
 
-['fire-rent','fire-withdrawal','fire-saving','fire-return','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
+['fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
 
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
@@ -1891,8 +1891,6 @@ $('recurring-form').addEventListener('submit',event=>{
 });
 ['transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
 $('accounts-add').addEventListener('click',()=>openAccountEditor());
-$('dashboard-account-add').addEventListener('click',()=>openAccountEditor());
-$('dashboard-add-account').addEventListener('click',()=>openAccountEditor());
 $('lombard-manage').addEventListener('click',openLombardEditor);
 $('account-search').addEventListener('input',renderAccounts);
 $('account-kind-filter').addEventListener('change',renderAccounts);$('account-sort').addEventListener('change',renderAccounts);
