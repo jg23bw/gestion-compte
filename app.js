@@ -1619,7 +1619,9 @@ function renderWealthViews(){
  const currentYear=new Date().getFullYear();
  const currentAge=Math.max(18,Math.min(110,Math.round(Number($('fire-age')?.value)||41)));
  const endAge=Math.max(currentAge+1,Math.min(120,Math.round(Number($('fire-end-age')?.value)||95)));
- const r=Math.max(0,Number($('fire-rent')?.value)||0);
+ const desiredIncome=Math.max(0,Number($('fire-rent')?.value)||0);
+ const passiveIncome=Math.max(0,Number($('fire-passive-income')?.value)||0);
+ const r=Math.max(0,desiredIncome-passiveIncome);
  const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||3.25)/100));
  const saving=Math.max(0,Number($('fire-saving')?.value)||0);
  const rate=Number($('fire-return')?.value||0)/100;
@@ -1628,7 +1630,7 @@ function renderWealthViews(){
  const gainShare=Math.max(0,Math.min(1,(Number($('fire-gain-share')?.value)||0)/100));
  const customTax=Math.max(0,Math.min(1,(Number($('fire-custom-tax')?.value)||0)/100));
  const taxRate=regime==='pea'?0.186:regime==='cto'?0.314:customTax;
- const effectiveTax=taxRate*gainShare;
+ const effectiveTax=regime==='custom'?customTax:taxRate*gainShare;
  const netFactor=Math.max(0.01,1-effectiveTax);
  const target=withdrawal>0?r*12/(withdrawal*netFactor):Infinity;
  const current=Math.max(0,w.net),gap=Math.max(0,target-current);
