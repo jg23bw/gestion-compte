@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=fire-projection-legend-2">
+  <link rel="stylesheet" href="styles.css?v=fire-projection-legend-3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=fire-projection-legend-2" defer></script>
+  <script src="app.js?v=fire-projection-legend-3" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -127,10 +127,10 @@
         <div class="fire-hero panel"><div><p class="eyebrow">HORIZON ESTIMÉ</p><div class="fire-year" id="fire-year">—</div><p id="fire-summary">Calcul selon vos hypothèses.</p></div><div class="fire-controls">
           <label>Âge actuel<input id="fire-age" type="number" min="18" max="110" step="1" value="41"></label>
           <label>Âge de fin de simulation<input id="fire-end-age" type="number" min="50" max="120" step="1" value="95"></label>
-          <label>Rente mensuelle souhaitée (€)<input id="fire-rent" type="number" min="0" step="100" value="2500"></label>
-          <label>Taux de retrait (%)<input id="fire-withdrawal" type="number" min="0.5" max="10" step="0.25" value="4"></label>
-          <label>Épargne mensuelle (€)<input id="fire-saving" type="number" min="0" step="100" value="3000"></label>
-          <label>Rendement annuel nominal (%)<input id="fire-return" type="number" min="-10" max="30" step="0.5" value="5"></label><label>Inflation annuelle (%)<input id="fire-inflation" type="number" min="0" max="15" step="0.5" value="2"></label>
+          <label>Rente mensuelle souhaitée (€)<input id="fire-rent" type="number" min="0" step="100" value="1500"></label>
+          <label>Taux de retrait (%)<input id="fire-withdrawal" type="number" min="0.5" max="10" step="0.25" value="3.25"></label>
+          <label>Épargne mensuelle (€)<input id="fire-saving" type="number" min="0" step="100" value="3800"></label>
+          <label>Rendement annuel nominal (%)<input id="fire-return" type="number" min="-10" max="30" step="0.5" value="8"></label><label>Inflation annuelle (%)<input id="fire-inflation" type="number" min="0" max="15" step="0.5" value="2"></label>
         </div></div>
         <div class="fire-metrics history-summary-grid"><article class="history-summary-card"><span>Patrimoine net suivi</span><strong id="fire-current">—</strong></article><article class="history-summary-card"><span>Capital cible</span><strong id="fire-target">—</strong></article><article class="history-summary-card"><span>Manque actuel</span><strong id="fire-gap">—</strong></article><article class="history-summary-card"><span>Progression</span><strong id="fire-progress">—</strong></article></div>
         <section class="panel"><div class="panel-heading"><div><h2>Projection du patrimoine</h2><p>La couleur de fond indique la phase ; les barres bleue et orange distinguent les deux valeurs.</p></div></div><div id="fire-chart" class="projection-chart"></div><p class="fire-projection-note">Projection indicative : fond vert = accumulation avec épargne mensuelle ; fond rouge = retraite avec retraits annuels indexés sur l’inflation. Barre bleue = patrimoine nominal ; barre orange = patrimoine en euros constants. Le rendement est supposé constant et ne tient pas compte des impôts, frais, variations de marché ni des revenus immobiliers non saisis.</p></section>
