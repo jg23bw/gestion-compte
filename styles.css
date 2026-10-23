@@ -765,3 +765,21 @@ tbody tr:hover td{background:#fafbff}
 .projection-phase-accumulation .projection-bars .projection-real{background:linear-gradient(90deg,#a4e8c5,#42ad79)!important}
 .projection-phase-retirement .projection-bars .projection-nominal{background:linear-gradient(90deg,#ff8a80,#d93636)!important}
 .projection-phase-retirement .projection-bars .projection-real{background:linear-gradient(90deg,#ffc0b8,#e86b63)!important}
+/* FIRE projection: phase color and value color encode two different things */
+.projection-legend{gap:10px 16px}
+.projection-legend span{display:inline-flex;align-items:center;gap:7px}
+.projection-legend-accumulation:before,.projection-legend-retirement:before{display:none!important}
+.projection-legend span i{display:inline-block;width:11px;height:11px;flex:0 0 11px;border-radius:3px}
+.projection-legend-accumulation i{background:#159d5b}
+.projection-legend-retirement i{background:#d93636}
+.projection-legend-nominal i{background:#4779ed}
+.projection-legend-real i{background:#f4a340}
+.projection-phase-accumulation{background:rgba(21,157,91,.055);border-left-color:#159d5b}
+.projection-phase-retirement{background:rgba(217,54,54,.055);border-left-color:#d93636}
+.projection-row .projection-bars .projection-nominal{background:#4779ed!important}
+.projection-row .projection-bars .projection-real{background:#f4a340!important}
+.projection-phase-accumulation .projection-bars .projection-nominal,
+.projection-phase-accumulation .projection-bars .projection-real,
+.projection-phase-retirement .projection-bars .projection-nominal,
+.projection-phase-retirement .projection-bars .projection-real{background-image:none!important}
+.projection-phase-label{font-weight:700}
