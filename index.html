@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css?v=isin-stock-overview-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=suravenir-annual-performance-1" defer></script>
+  <script src="app.js?v=wealth-views-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -37,6 +37,10 @@
       <button class="nav-item" data-view="crypto"><span class="nav-icon">₿</span> Crypto</button>
       <button class="nav-item" data-view="stocks"><span class="nav-icon">⇗</span> Actions</button>
       <button class="nav-item" data-view="recurring"><span class="nav-icon">⟳</span> Récurrences</button>
+      <div class="nav-label">PATRIMOINE</div>
+      <button class="nav-item" data-view="fire"><span class="nav-icon">↗</span> FIRE</button>
+      <button class="nav-item" data-view="comparisons"><span class="nav-icon">◎</span> Comparaisons</button>
+      <button class="nav-item" data-view="lombard"><span class="nav-icon">₿</span> Lombard</button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Données synchronisées</strong><p>Connectez-vous pour sauvegarder vos comptes et opérations dans votre base privée en ligne.</p><button class="secondary-button cloud-open" id="cloud-open">Connexion cloud</button></div>
         <div class="user-chip"><span class="avatar">J</span><span><strong>Mon espace</strong><small>Gestion personnelle</small></span><span class="more">···</span></div>
@@ -118,6 +122,43 @@
         <section class="panel table-panel"><div class="table-scroll"><table class="recurring-table"><thead><tr><th>ACTIF</th><th>COMPTE</th><th>DATE / FRÉQUENCE</th><th>LIBELLÉ</th><th>MONTANT (€)</th><th>ACTIONS</th></tr></thead><tbody id="recurring-rows"></tbody></table></div><div class="table-footer">Un montant vide signifie que l’opération sera ignorée jusqu’à ce que vous renseigniez son montant. Les dates annuelles et trimestrielles sont gérées automatiquement.</div></section>
       </section>
 
+
+      <section class="view" id="fire-view">
+        <div class="page-heading"><div><p class="eyebrow">INDÉPENDANCE FINANCIÈRE</p><h1>FIRE</h1><p class="subtitle">Estimez l’horizon d’indépendance à partir du patrimoine suivi dans l’application.</p></div></div>
+        <div class="fire-hero panel"><div><p class="eyebrow">HORIZON ESTIMÉ</p><div class="fire-year" id="fire-year">—</div><p id="fire-summary">Calcul selon vos hypothèses.</p></div><div class="fire-controls">
+          <label>Rente mensuelle souhaitée (€)<input id="fire-rent" type="number" min="0" step="100" value="2500"></label>
+          <label>Taux de retrait (%)<input id="fire-withdrawal" type="number" min="0.5" max="10" step="0.25" value="4"></label>
+          <label>Épargne mensuelle (€)<input id="fire-saving" type="number" min="0" step="100" value="3000"></label>
+          <label>Rendement annuel (%)<input id="fire-return" type="number" min="-10" max="30" step="0.5" value="5"></label>
+        </div></div>
+        <div class="fire-metrics history-summary-grid"><article class="history-summary-card"><span>Patrimoine net suivi</span><strong id="fire-current">—</strong></article><article class="history-summary-card"><span>Capital cible</span><strong id="fire-target">—</strong></article><article class="history-summary-card"><span>Manque actuel</span><strong id="fire-gap">—</strong></article><article class="history-summary-card"><span>Progression</span><strong id="fire-progress">—</strong></article></div>
+        <section class="panel"><div class="panel-heading"><div><h2>Projection du patrimoine</h2><p>Projection indicative avec versements mensuels et rendement constant.</p></div></div><div id="fire-chart" class="projection-chart"></div></section>
+      </section>
+      <section class="view" id="comparisons-view">
+        <div class="page-heading"><div><p class="eyebrow">MISE EN PERSPECTIVE</p><h1>Comparaisons</h1><p class="subtitle">Repères de patrimoine financier et de patrimoine net. Les références ci-dessous sont indicatives, pas une mesure officielle de votre percentile exact.</p></div></div>
+        <div class="comparison-note">Les comparaisons financières excluent l’immobilier et les dettes non suivies. Les seuils sont des repères statiques à actualiser avec les sources statistiques.</div>
+        <div class="comparison-grid">
+          <article class="panel"><p class="eyebrow">FRANCE · ACTIFS FINANCIERS</p><div class="comparison-big" id="compare-financial">—</div><p>Position indicative par rapport à des seuils de patrimoine financier.</p><div id="compare-financial-bars" class="comparison-bars"></div></article>
+          <article class="panel"><p class="eyebrow">MONDE · ACTIFS FINANCIERS</p><div class="comparison-big" id="compare-world">—</div><p>Repères globaux indicatifs, à ne pas confondre avec un classement vérifié.</p><div id="compare-world-bars" class="comparison-bars"></div></article>
+          <article class="panel comparison-wide"><p class="eyebrow">ALLOCATION FINANCIÈRE</p><div id="comparison-allocation" class="allocation-list"></div></article>
+        </div>
+      </section>
+      <section class="view" id="lombard-view">
+        <div class="page-heading"><div><p class="eyebrow">DETTE ET EXPOSITION BTC</p><h1>Lombard</h1><p class="subtitle">Séparez les BTC achetés avec le crédit de ceux achetés en fonds personnels.</p></div></div>
+        <div class="lombard-intro panel">Hypothèses fournies : 101 000 € empruntés initialement, 39 000 € remboursés, 60 000 € investis en BTC via le Lombard à 70 100 $/BTC et 69 800 € investis en BTC personnels à 85 100 $/BTC. Le prix BTC et le taux EUR/USD sont modifiables pour simuler.</div>
+        <div class="lombard-controls panel">
+          <label>Prix BTC actuel ($)<input id="lombard-btc-price" type="number" min="0" step="100" value="78000"></label>
+          <label>EUR / USD<input id="lombard-fx" type="number" min="0.1" step="0.01" value="1.08"></label>
+          <label>Capital emprunté initial (€)<input id="lombard-principal" type="number" min="0" step="1000" value="101000"></label>
+          <label>Remboursements déjà effectués (€)<input id="lombard-repaid" type="number" min="0" step="1000" value="39000"></label>
+        </div>
+        <div class="lombard-metrics history-summary-grid"><article class="history-summary-card"><span>Dette restante estimée</span><strong id="lombard-remaining">—</strong></article><article class="history-summary-card"><span>BTC achetés via Lombard</span><strong id="lombard-loan-btc">—</strong></article><article class="history-summary-card"><span>Valeur BTC Lombard</span><strong id="lombard-loan-value">—</strong></article><article class="history-summary-card"><span>Valeur BTC personnels</span><strong id="lombard-personal-value">—</strong></article></div>
+        <div class="comparison-grid">
+          <article class="panel"><p class="eyebrow">BTC FINANCÉS PAR LE CRÉDIT</p><div class="comparison-big" id="lombard-loan-gain">—</div><p id="lombard-loan-detail"></p></article>
+          <article class="panel"><p class="eyebrow">BTC ACHETÉS EN PERSONNEL</p><div class="comparison-big" id="lombard-personal-gain">—</div><p id="lombard-personal-detail"></p></article>
+          <article class="panel comparison-wide"><p class="eyebrow">SIMULATION DE REMBOURSEMENT</p><div id="lombard-scenarios" class="lombard-scenarios"></div><p class="muted">Calcul hors intérêts, fiscalité, frais et autres variations de portefeuille. Le remboursement de 39 000 € est déduit du capital initial pour estimer le solde.</p></article>
+        </div>
+      </section>
       <footer class="app-footer"><span>Gestion de comptes <span class="footer-dot">·</span> Version initiale</span><span>Données synchronisées avec votre compte privé</span></footer>
     </main>
   </div>
