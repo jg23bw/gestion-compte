@@ -425,3 +425,30 @@ tbody tr:hover td{background:#fafbff}
 .overview-pies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:18px 0 24px}
 .overview-pies>.panel{padding:22px}
 @media(max-width:800px){.overview-pies{grid-template-columns:1fr}}
+
+/* Interaction des camemberts */
+.wealth-pie-wrap{display:flex;justify-content:center}
+.wealth-pie{cursor:crosshair;transition:filter .15s,transform .15s}
+.wealth-pie:hover{filter:drop-shadow(0 5px 12px rgba(30,45,70,.18));transform:scale(1.015)}
+.wealth-pie-hole{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px;gap:4px}
+.pie-hover-label{font-size:10px;line-height:1.3;color:var(--text-muted,#8992a5);max-width:100%;overflow-wrap:anywhere}
+.pie-hover-value{font-size:clamp(12px,1.5vw,17px);line-height:1.2;color:var(--text-primary,#20283a);font-weight:800}
+.pie-hover-pct{font-size:9px;color:var(--text-muted,#8992a5)}
+.pie-legend>div{padding:5px 7px;border-radius:7px;transition:background .15s}
+.pie-legend>div.is-hovered{background:rgba(99,145,255,.14)}
+.theme-toggle{font-size:17px}
+:root[data-theme="dark"]{color-scheme:dark;--text-primary:#e6edf8;--text-muted:#9aaac2;--panel-bg:#17243a;--border-color:#2b3a53}
+:root[data-theme="dark"] body{background:#0d1524;color:#dce5f3}
+:root[data-theme="dark"] .main-content{color:#dce5f3}
+:root[data-theme="dark"] .topbar{border-color:#27354b}
+:root[data-theme="dark"] .breadcrumb strong,:root[data-theme="dark"] .page-heading h1,:root[data-theme="dark"] .panel-heading h2,:root[data-theme="dark"] .metric,:root[data-theme="dark"] .account-balance,:root[data-theme="dark"] .account-info strong,:root[data-theme="dark"] .movement-main strong,:root[data-theme="dark"] .pie-hover-value{color:#e6edf8}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .summary-card,:root[data-theme="dark"] .account-card,:root[data-theme="dark"] .search-box,:root[data-theme="dark"] .transaction-toolbar select,:root[data-theme="dark"] .secondary-button,:root[data-theme="dark"] .icon-button,:root[data-theme="dark"] .row-actions button{background:#17243a;color:#dce5f3;border-color:#2b3a53}
+:root[data-theme="dark"] .panel-heading p,:root[data-theme="dark"] .subtitle,:root[data-theme="dark"] .card-top,:root[data-theme="dark"] .muted,:root[data-theme="dark"] .panel p,:root[data-theme="dark"] .pie-legend span,:root[data-theme="dark"] .pie-legend small{color:#9aaac2}
+:root[data-theme="dark"] .wealth-pie-hole{background:#17243a}
+:root[data-theme="dark"] .account-row,:root[data-theme="dark"] .recent-row,:root[data-theme="dark"] td,:root[data-theme="dark"] th{border-color:#2b3a53}
+:root[data-theme="dark"] thead{background:#111d30}
+:root[data-theme="dark"] td{color:#b7c5d9}
+:root[data-theme="dark"] .transaction-label,:root[data-theme="dark"] .table-balance{color:#e0e8f4}
+:root[data-theme="dark"] .search-box input{color:#e0e8f4}
+:root[data-theme="dark"] .modal{background:#17243a;color:#dce5f3}
+:root[data-theme="dark"] .secondary-button{background:#1b2a42}
