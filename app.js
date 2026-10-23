@@ -769,8 +769,9 @@ function fillAccountSelects(){
   const stockFilter=$('stocks-account-filter');
   if(stockFilter){
     const selected=stockFilter.value;
-    stockFilter.innerHTML='<option value="all">Tous les comptes</option>'+allOpts;
-    stockFilter.value=selected==='all'||state.accounts.some(a=>a.id===selected)?selected:'all';
+    const investmentOpts=state.accounts.filter(isInvestmentAccount).map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+    stockFilter.innerHTML='<option value="all">Tous les comptes d’investissement</option>'+investmentOpts;
+    stockFilter.value=selected==='all'||state.accounts.some(a=>isInvestmentAccount(a)&&a.id===selected)?selected:'all';
   }
 }
 function renderTransactions(){
