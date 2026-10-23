@@ -1675,17 +1675,48 @@ function renderWealthViews(){
  $('fire-year').textContent=financialNeed===0?'Déjà couvert':fireAge!==null?'À '+Math.ceil(fireAge)+' ans':'Non atteint';
  $('fire-summary').textContent=financialNeed===0?'Les revenus passifs saisis couvrent déjà l’objectif mensuel.':fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+Math.ceil(fireAge-currentAge))+' · revenu financier nécessaire : '+euro(financialNeed)+'/mois, après '+euro(passiveIncome)+' de revenus passifs.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=euro(target);$('fire-gap').textContent=euro(gap);$('fire-progress').textContent=target>0?Math.min(100,current/target*100).toFixed(1)+' %':'100 %';
- const maxValue=Math.max(1,...series.map(p=>p.value));
- const chartWidth=1000,chartHeight=300,pad=18;
- const pointFor=(p,index,key)=>{const x=pad+(series.length<=1?0:index*(chartWidth-2*pad)/(series.length-1));const y=chartHeight-pad-(Math.min(maxValue,p[key])/maxValue)*(chartHeight-2*pad);return x.toFixed(1)+','+y.toFixed(1);};
- const nominalPoints=series.map((p,i)=>pointFor(p,i,'value')).join(' ');
- const realPoints=series.map((p,i)=>pointFor(p,i,'real')).join(' ');
- const xLabels=series.filter((p,i)=>i===0||i===series.length-1||p.age%5===0).map(p=>{const i=series.indexOf(p);const x=pad+(series.length<=1?0:i*(chartWidth-2*pad)/(series.length-1));return '<text x="'+x.toFixed(1)+'" y="'+(chartHeight-2)+'" text-anchor="middle">'+p.age+' ans</text>';}).join('');
- $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants</span></div><div class="fire-graph-wrap"><svg class="fire-graph" viewBox="0 0 '+chartWidth+' '+chartHeight+'" role="img" aria-label="Graphique de l’évolution du patrimoine nominal et en euros constants selon l’âge"><line x1="'+pad+'" y1="'+(chartHeight-pad)+'" x2="'+(chartWidth-pad)+'" y2="'+(chartHeight-pad)+'" class="fire-graph-axis"/><polyline points="'+nominalPoints+'" class="fire-graph-nominal"/><polyline points="'+realPoints+'" class="fire-graph-real"/>'+xLabels+'</svg></div><div class="fire-year-list">'+series.map(p=>{
+ const maxValue=Math.max(1,...series.map(p=>Math.max(p.value,p.real)));
+ const chartWidth=1000,chartHeight=360,left=100,right=24,top=24,bottom=42,plotW=chartWidth-left-right,plotH=chartHeight-top-bottom;
+ const yMax=Math.ceil(maxValue/100000)*100000;
+ const tickStep=Math.max(100000,Math.ceil((yMax/5)/100000)*100000);
+ const yTicks=[];for(let v=0;v<=yMax;v+=tickStep)yTicks.push(v);
+ const xAt=i=>left+(series.length<=1?0:i*plotW/(series.length-1));
+ const yAt=v=>top+plotH-(v/yMax)*plotH;
+ const fmtAxis=v=>v>=1000000?(v/1000000).toLocaleString('fr-FR',{maximumFractionDigits:1})+' M€':(v/1000).toLocaleString('fr-FR',{maximumFractionDigits:0})+' k€';
+ const nominalPoints=series.map((p,i)=>xAt(i).toFixed(1)+','+yAt(p.value).toFixed(1)).join(' ');
+ const realPoints=series.map((p,i)=>xAt(i).toFixed(1)+','+yAt(p.real).toFixed(1)).join(' ');
+ const yGrid=yTicks.map(v=>'<g><line x1="'+left+'" y1="'+yAt(v).toFixed(1)+'" x2="'+(chartWidth-right)+'" y2="'+yAt(v).toFixed(1)+'" class="fire-graph-grid"/><text x="'+(left-12)+'" y="'+(yAt(v)+5).toFixed(1)+'" text-anchor="end">'+fmtAxis(v)+'</text></g>').join('');
+ const xLabels=series.filter((p,i)=>i===0||i===series.length-1||p.age%5===0).map(p=>{const i=series.indexOf(p);return '<text x="'+xAt(i).toFixed(1)+'" y="'+(chartHeight-10)+'" text-anchor="middle">'+p.age+' ans</text>';}).join('');
+ const hitPoints=series.map((p,i)=>'<circle class="fire-graph-hit" data-index="'+i+'" cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(p.value).toFixed(1)+'" r="11" tabindex="0" role="button" aria-label="'+p.age+' ans, patrimoine '+euro(p.value)+'" />').join('');
+ $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants</span></div><div class="fire-graph-wrap"><svg class="fire-graph" viewBox="0 0 '+chartWidth+' '+chartHeight+'" role="group" aria-label="Graphique interactif du patrimoine par âge">'+yGrid+'<line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(chartWidth-right)+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><polyline points="'+nominalPoints+'" class="fire-graph-nominal"/><polyline points="'+realPoints+'" class="fire-graph-real"/>'+xLabels+hitPoints+'<line id="fire-crosshair" x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-crosshair" visibility="hidden"/><circle id="fire-hover-dot" cx="'+left+'" cy="'+top+'" r="6" class="fire-graph-hover-dot" visibility="hidden"/></svg><div id="fire-graph-tooltip" class="fire-graph-tooltip" role="status" hidden></div></div><div class="fire-year-list">'+series.map(p=>{
    const retired=p.phase==='Retraits';
-   const detail=retired?'<div class="fire-monthly-net"><span>Revenu net estimé par mois</span><strong>'+euro(p.net/12)+'</strong></div><p class="fire-year-detail">Retrait brut : '+euro(p.gross)+'/an · impôts estimés : '+euro(p.tax)+'/an · net annuel : '+euro(p.net)+'</p>':'';
+   const detail=retired?'<div class="fire-monthly-net"><span>Revenu net estimé par mois</span><strong>'+euro(p.net/12)+'</strong></div><p class="fire-year-detail">Retrait brut : '+euro(p.gross)+'/an · impôts estimés : '+euro(p.tax)+'/an · net annuel : '+euro(p.net)+'</p>':'<p class="fire-year-detail">Épargne mensuelle : '+euro(saving)+'</p>';
    return '<article class="fire-year-row '+(retired?'fire-year-retirement':'fire-year-accumulation')+'"><div class="fire-year-heading"><div><strong>'+p.age+' ans</strong><small>'+(retired?'Retraite':'Accumulation')+'</small></div><div class="fire-year-capital"><strong>'+euro(p.value)+'</strong><small>'+euro(p.real)+' en euros constants</small></div></div>'+detail+'</article>';
  }).join('')+'</div><p class="projection-outcome">'+(exhaustedAge!==null?'Capital épuisé vers '+exhaustedAge+' ans.':'Capital restant à '+endAge+' ans : '+euro(series[series.length-1].value)+' ('+euro(series[series.length-1].real)+' en euros constants).')+'</p>';
+ const graphSvg=$('fire-chart').querySelector('.fire-graph');
+ const graphWrap=$('fire-chart').querySelector('.fire-graph-wrap');
+ const graphTip=$('fire-graph-tooltip');
+ const crosshair=$('fire-crosshair');
+ const hoverDot=$('fire-hover-dot');
+ const showGraphPoint=(index)=>{
+   const p=series[index];if(!p)return;
+   const x=xAt(index),y=yAt(p.value);
+   crosshair.setAttribute('x1',x);crosshair.setAttribute('x2',x);crosshair.setAttribute('visibility','visible');
+   hoverDot.setAttribute('cx',x);hoverDot.setAttribute('cy',y);hoverDot.setAttribute('visibility','visible');
+   graphTip.innerHTML='<strong>'+p.age+' ans · '+(p.phase==='Retraits'?'Retraite':'Accumulation')+'</strong><div>Patrimoine nominal : <b>'+euro(p.value)+'</b></div><div>Patrimoine réel : <b>'+euro(p.real)+'</b></div>'+(p.phase==='Retraits'?'<hr><div>Retrait brut annuel : <b>'+euro(p.gross)+'</b></div><div>Impôts estimés : <b>'+euro(p.tax)+'</b></div><div>Revenu net annuel : <b>'+euro(p.net)+'</b></div><div class="tooltip-monthly">Net par mois : <b>'+euro(p.net/12)+'</b></div>':'<div>Épargne mensuelle : <b>'+euro(saving)+'</b></div>');
+   graphTip.hidden=false;
+   const rect=graphWrap.getBoundingClientRect();
+   const px=x/chartWidth*rect.width;
+   graphTip.style.left=Math.max(8,Math.min(rect.width-graphTip.offsetWidth-8,px-graphTip.offsetWidth/2))+'px';
+   graphTip.style.top='8px';
+ };
+ graphSvg.querySelectorAll('.fire-graph-hit').forEach(el=>{
+   const show=()=>showGraphPoint(Number(el.dataset.index));
+   el.addEventListener('mouseenter',show);el.addEventListener('focus',show);
+   el.addEventListener('click',show);
+   el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show();}});
+ });
+ graphSvg.addEventListener('mouseleave',()=>{if(!graphSvg.querySelector('.fire-graph-hit:focus')){graphTip.hidden=true;crosshair.setAttribute('visibility','hidden');hoverDot.setAttribute('visibility','hidden');}});
  // Trois scénarios de rendement, avec projection mensuelle et hypothèses identiques par ailleurs.
  const scenarios=[{name:'Prudent',rate:Math.max(-0.02,rate-0.03)},{name:'Central',rate},{name:'Favorable',rate:rate+0.02}];
  const scenarioRows=scenarios.map(sc=>{
