@@ -1628,24 +1628,29 @@ function renderWealthViews(){
  let balance=current,fireAge=current>=target?currentAge:null,series=[{age:currentAge,year:currentYear,value:balance,phase:current>=target?'Retraits':'Accumulation'}];
  let exhaustedAge=null;
  for(let age=currentAge+1;age<=endAge;age++){
-   balance=Math.max(0,balance*(1+rate));
-   if(fireAge===null && balance<target) balance+=saving*12;
-   if(fireAge===null && balance>=target) fireAge=age;
-   if(fireAge!==null && age>=fireAge){
+   let phase='Accumulation';
+   if(fireAge===null){
+     // L’épargne est versée pendant l’année, puis le capital produit son rendement.
+     // La retraite ne démarre qu’à l’année suivante si le seuil est atteint.
+     balance=Math.max(0,(balance+saving*12)*(1+rate));
+     if(balance>=target){fireAge=age;phase='Accumulation';}
+   }else{
+     phase='Retraits';
+     balance=Math.max(0,balance*(1+rate));
      const annualWithdrawal=r*12*Math.pow(1+inflation,Math.max(0,age-fireAge));
      balance=Math.max(0,balance-annualWithdrawal);
      if(balance===0 && exhaustedAge===null) exhaustedAge=age;
    }
-   series.push({age,year:currentYear+age-currentAge,value:balance,phase:fireAge!==null&&age>=fireAge?'Retraits':'Accumulation'});
+   series.push({age,year:currentYear+age-currentAge,value:balance,phase});
  }
  $('fire-year').textContent=fireAge!==null?'À '+fireAge+' ans':'Non atteint';
  $('fire-summary').textContent=fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+fireAge-currentAge)+' · projection jusqu’à '+endAge+' ans.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=Number.isFinite(target)?euro(target):'—';$('fire-gap').textContent=Number.isFinite(target)?euro(gap):'—';$('fire-progress').textContent=Number.isFinite(target)?(target>0?Math.min(100,current/target*100):100).toFixed(1)+' %':'—';
  const maxValue=Math.max(1,...series.map(p=>p.value));
- $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-accumulation">Phase d’accumulation · épargne mensuelle</span><span class="projection-legend-retirement">Phase de retraite · retraits</span><span>Barres : patrimoine nominal et réel</span></div>'+series.map(p=>{
+ $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-accumulation"><i></i> Accumulation · épargne</span><span class="projection-legend-retirement"><i></i> Retraite · retraits</span><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants</span></div>'+series.map(p=>{
    const real=p.value/Math.pow(1+inflation,Math.max(0,p.year-currentYear));
    const retired=p.phase==='Retraits';
-   return '<div class="projection-row '+(retired?'projection-phase-retirement':'projection-phase-accumulation')+'"><span class="projection-age">'+p.age+' ans<small class="projection-phase-label">'+(retired?'Retraite':'Épargne')+'</small></span><div class="projection-bars"><i class="projection-nominal" style="width:'+Math.min(100,p.value/maxValue*100)+'%"></i><i class="projection-real" style="width:'+Math.min(100,real/maxValue*100)+'%"></i></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' réels</small></strong></div>';
+   return '<div class="projection-row '+(retired?'projection-phase-retirement':'projection-phase-accumulation')+'"><span class="projection-age">'+p.age+' ans<small class="projection-phase-label">'+(retired?'Retraite':'Accumulation')+'</small></span><div class="projection-bars"><i class="projection-nominal" title="Patrimoine nominal" style="width:'+Math.min(100,p.value/maxValue*100)+'%"></i><i class="projection-real" title="Patrimoine en euros constants" style="width:'+Math.min(100,real/maxValue*100)+'%"></i></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' constants</small></strong></div>';
  }).join('')+'<p class="projection-outcome">'+(exhaustedAge!==null?'Capital épuisé vers '+exhaustedAge+' ans.':'Capital restant à '+endAge+' ans : '+euro(series[series.length-1].value)+'.')+'</p>';
  const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
  const remaining=Math.max(0,principal-repaid),loanBtc=60000/(70100/fx),personalBtc=69800/(85100/fx),loanValue=loanBtc*btc/fx,personalValue=personalBtc*btc/fx;
