@@ -1327,7 +1327,7 @@ async function refreshStockFx(currencies){
   }
 }
 async function loadStockPrices(){
-  const ids=[...new Set((state.stockHoldings||[]).map(h=>h.priceId).filter(Boolean))];
+  const ids=[...new Set((state.stockHoldings||[]).filter(h=>!isManualValueHolding(h)).map(h=>h.priceId).filter(Boolean))];
   if(!ids.length){
     stockPrices.error='';
     stockPrices.loading=false;
