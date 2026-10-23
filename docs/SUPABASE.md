@@ -47,9 +47,23 @@ Les positions actions/ETF et les nantissements n’utilisent pas de table Postgr
 - `user_metadata.stockHoldings` : tableau d’objets `{ id, accountId, priceId, symbol, name, market, currency, invested, quantity, sortOrder }` ;
 - `user_metadata.accountPledges` : objet `{ "identifiant-du-compte": { "note": "..." } }`, la présence de la clé indiquant un compte nanti.
 
-Les cours et les taux de change sont lus en direct (StockAnalysis et ExchangeRate-API) et seulement mis en cache côté navigateur. Une position sans cours n’est pas valorisée et reste exclue des totaux. Aucune migration SQL, colonne ou politique RLS supplémentaire n’est nécessaire. Ces métadonnées sont privées et rattachées au compte Auth, mais elles ne doivent pas servir à des décisions d’autorisation : les permissions des données métier restent portées par les tables et les politiques RLS.
+Les cours sont relayés par la fonction Edge `stock-data` ; les taux de change sont lus directement via ExchangeRate-API. Les deux sont seulement mis en cache côté navigateur. Une position sans cours n’est pas valorisée et reste exclue des totaux. Aucune migration SQL, colonne ou politique RLS supplémentaire n’est nécessaire. Ces métadonnées sont privées et rattachées au compte Auth, mais elles ne doivent pas servir à des décisions d’autorisation : les permissions des données métier restent portées par les tables et les politiques RLS.
 
 La taille des métadonnées Auth est limitée par Supabase ; ce stockage convient à un usage personnel, pas à un historique massif. Les positions actions ne sont pas des opérations et ne modifient pas les soldes des comptes.
+
+### Fonction Edge `stock-data`
+
+La fonction `supabase/functions/stock-data/index.ts` relaie les appels publics à StockAnalysis. Elle évite les blocages CORS rencontrés lorsque le navigateur appelle directement `stockanalysis.com` depuis GitHub Pages. Elle accepte uniquement `POST` avec les actions `search` (`{query}`) et `price` (`{id}`), vérifie la session Supabase via `auth/v1/user`, puis interroge les endpoints StockAnalysis. Elle ne lit ni n’écrit aucune table Supabase et ne nécessite aucune migration SQL.
+
+La fonction est déclarée avec `verify_jwt = false` dans `supabase/config.toml` afin de laisser passer le pré-vol CORS, puis effectue elle-même le contrôle du jeton Bearer. Un appel sans jeton valide répond `401`. Le navigateur utilise `supabase.functions.invoke` et la session existante ; aucune clé d’API StockAnalysis ni clé `service_role` n’est exposée côté client.
+
+Déploiement sur le projet Supabase lié :
+
+```sh
+supabase functions deploy stock-data
+```
+
+Vérifications déjà effectuées : pré-vol `OPTIONS` en `200` avec les en-têtes CORS, `POST` sans jeton en `401`, recherche `LVMH` et cours `AAPL`, `EPA-MC` et `LON-SHEL` en `200` depuis la session GitHub Pages.
 
 ### Crédit lombard — métadonnées Auth
 Le crédit lombard n’utilise pas de table PostgreSQL dédiée. Le client l’enregistre dans les métadonnées privées de l’utilisateur Auth (`user_metadata.lombardCredit`) avec `supabase.auth.updateUser`. Le montant est déduit des avoirs bruts dans la vue d’ensemble ; le crédit n’est pas une opération et ne modifie pas les soldes des comptes.
@@ -142,7 +156,7 @@ La persistance dépend de Supabase Auth (`auth.updateUser`) et de la session act
 
 ## Vérification des actions, ETF et nantissements
 
-Aucune migration SQL n’est nécessaire. Pour vérifier avec un utilisateur test :
+Aucune migration SQL n’est nécessaire. Vérifier d’abord que la fonction Edge `stock-data` est déployée et que la session Supabase est valide. Pour vérifier avec un utilisateur test :
 1. Se connecter et ouvrir « Actions ».
 2. Ajouter une position sur un compte IBKR ou PEA : rechercher un titre, vérifier la place et la devise, saisir le montant investi et la quantité.
 3. Vérifier que le prix, la valeur actuelle, le gain/perte et la performance s’affichent ; une position sans cours doit rester exclue des totaux.

@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.mcp-tokens]
 verify_jwt = false
+
+[functions.stock-data]
+verify_jwt = false

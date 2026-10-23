@@ -63,8 +63,7 @@ const cryptoSearch={timer:null,controller:null,results:[]};
 // une migration SQL supplémentaire pour les positions et le nantissement.
 const STOCK_PRICE_CACHE_KEY='gestion-comptes-stock-prices-v1';
 const STOCK_FX_CACHE_KEY='gestion-comptes-stock-fx-v1';
-const STOCK_SEARCH_ENDPOINT='https://stockanalysis.com/api/search';
-const STOCK_CHART_ENDPOINT='https://stockanalysis.com/api/charts/a/';
+const STOCK_FUNCTION_NAME='stock-data';
 const STOCK_FX_ENDPOINT='https://open.er-api.com/v6/latest/EUR';
 const STOCK_REFRESH_MS=5*60*1000;
 const STOCK_CURRENCIES=['EUR','USD','GBP','GBX','CHF','CAD','JPY','HKD','AUD','NZD','SEK','NOK','DKK','PLN','CZK','HUF','SGD','CNY','INR','BRL','MXN','ZAR','KRW','TWD','TRY','ILS','AED','THB','QAR','PHP','OMR','KZT','ARS','RON'];
@@ -79,7 +78,7 @@ const STOCK_MARKETS={
   NSE:{label:'NSE Inde',currency:'INR'},BSE:{label:'BSE Inde',currency:'INR'},KRX:{label:'Bourse de Corée',currency:'KRW'},TPE:{label:'Bourse de Taïwan',currency:'TWD'},SGX:{label:'Singapore Exchange',currency:'SGD'},JSE:{label:'Bourse de Johannesburg',currency:'ZAR'},BVMF:{label:'B3 Brésil',currency:'BRL'},BMV:{label:'Bourse du Mexique',currency:'MXN'},BCBA:{label:'Bourse de Buenos Aires',currency:'ARS'},BKK:{label:'Bourse de Thaïlande',currency:'THB'},QSE:{label:'Bourse du Qatar',currency:'QAR'},PSE:{label:'Bourse des Philippines',currency:'PHP'},MSM:{label:'Bourse de Mascate',currency:'OMR'},KASE:{label:'Bourse du Kazakhstan',currency:'KZT'},BVB:{label:'Bourse de Bucarest',currency:'RON'},
   OTC:{label:'OTC',currency:'USD'},NASDAQ:{label:'NASDAQ',currency:'USD'},NYSE:{label:'NYSE',currency:'USD'},AMEX:{label:'NYSE American',currency:'USD'},BATS:{label:'Cboe BZX',currency:'USD'},US:{label:'États-Unis',currency:'USD'}
 };
-const stockSearch={timer:null,controller:null,results:[]};
+const stockSearch={timer:null,seq:0,results:[]};
 const stockPrices={values:{},updatedAt:0,error:'',loading:false};
 const stockFx={rates:{EUR:1},updatedAt:0,error:'',loading:false};
 
@@ -1211,21 +1210,28 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:nativePrice===null||rate===null?null:nativePrice*rate};
 }
-async function fetchStockNativePrice(priceId){
-  let lastError=null;
-  for(const period of ['1D','1Y']){
+async function stockFunction(action,payload={}){
+  if(!cloud.client)throw new Error('connexion cloud requise pour les données boursières');
+  const {data,error}=await cloud.client.functions.invoke(STOCK_FUNCTION_NAME,{body:{action,...payload}});
+  if(error){
+    let message=error.message||'service boursier indisponible';
     try{
-      const response=await fetch(STOCK_CHART_ENDPOINT+encodeURIComponent(priceId)+'/'+period+'/l',{headers:{Accept:'application/json'},cache:'no-store'});
-      if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez plus tard':'réponse HTTP '+response.status);
-      const data=await response.json();
-      const rows=Array.isArray(data?.data)?data.data:[];
-      for(let index=rows.length-1;index>=0;index--){
-        const price=Number(rows[index]?.c);
-        if(Number.isFinite(price)&&price>0)return price;
+      if(error.context&&typeof error.context.json==='function'){
+        const body=await error.context.json();
+        if(body?.error)message=body.error;
       }
-    }catch(error){lastError=error;}
+    }catch(parseError){}
+    if(error instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(message))message='réseau indisponible';
+    throw new Error(message);
   }
-  throw lastError||new Error('aucun cours reçu');
+  if(data?.error)throw new Error(data.error);
+  return data;
+}
+async function fetchStockNativePrice(priceId){
+  const data=await stockFunction('price',{id:priceId});
+  const price=Number(data?.price);
+  if(!Number.isFinite(price)||price<=0)throw new Error('aucun cours reçu');
+  return price;
 }
 async function refreshStockFx(currencies){
   if(!currencies.length){
@@ -1272,7 +1278,7 @@ async function loadStockPrices(){
   const currencies=[...new Set((state.stockHoldings||[]).map(h=>normalizeStockCurrency(h.currency)).filter(code=>code!=='EUR'))];
   const fxTask=refreshStockFx(currencies);
   const values={};
-  let successCount=0;
+  let successCount=0,lastError=null;
   const queue=[...ids];
   const worker=async()=>{
     while(queue.length){
@@ -1280,7 +1286,7 @@ async function loadStockPrices(){
       try{
         const price=await fetchStockNativePrice(priceId);
         if(Number.isFinite(price)&&price>0){values[priceId]=price;successCount++;}
-      }catch(error){console.warn('Cours action indisponible pour '+priceId,error);}
+      }catch(error){lastError=error;console.warn('Cours action indisponible pour '+priceId,error);}
     }
   };
   try{
@@ -1290,7 +1296,7 @@ async function loadStockPrices(){
       stockPrices.updatedAt=Date.now();
       try{localStorage.setItem(STOCK_PRICE_CACHE_KEY,JSON.stringify({values:stockPrices.values,updatedAt:stockPrices.updatedAt}));}catch(error){}
     }else{
-      stockPrices.error='aucun cours reçu de StockAnalysis';
+      stockPrices.error=lastError?.message||'aucun cours reçu de StockAnalysis';
     }
   }finally{
     stockPrices.loading=false;
@@ -1394,7 +1400,7 @@ function renderStocks(){
 function currenciesNeedFx(holdings){return holdings.some(h=>normalizeStockCurrency(h.currency)!=='EUR');}
 function closeStockResults(){
   clearTimeout(stockSearch.timer);
-  if(stockSearch.controller){stockSearch.controller.abort();stockSearch.controller=null;}
+  stockSearch.seq++;
   stockSearch.results=[];
   const container=$('stock-search-results');
   if(container){container.hidden=true;container.innerHTML='';}
@@ -1432,18 +1438,15 @@ function clearStockSelection(clearSearch=false){
   selected.classList.remove('is-selected');
 }
 async function searchStocks(query){
-  if(stockSearch.controller)stockSearch.controller.abort();
-  const controller=new AbortController();
-  stockSearch.controller=controller;
+  const seq=++stockSearch.seq;
   const container=$('stock-search-results');
   stockSearch.results=[];
   container.hidden=false;
   container.innerHTML='<div class="stock-message">Recherche…</div>';
   $('stock-search').setAttribute('aria-expanded','true');
   try{
-    const response=await fetch(STOCK_SEARCH_ENDPOINT+'?q='+encodeURIComponent(query),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
-    if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
-    const data=await response.json();
+    const data=await stockFunction('search',{query});
+    if(seq!==stockSearch.seq)return;
     const seen=new Set(),results=[];
     for(const item of Array.isArray(data?.data)?data.data:[]){
       const id=String(item?.id||'').trim();
@@ -1461,7 +1464,7 @@ async function searchStocks(query){
       return '<button type="button" class="stock-option" role="option" data-stock-result-index="'+index+'">'+stockLogoMarkup(symbol,'is-small')+'<span class="stock-option-symbol">'+escapeHtml(symbol)+'</span><span class="stock-option-name">'+escapeHtml(item.n||'')+'</span><span class="stock-option-market">'+escapeHtml(info.label+' · '+info.currency+' · '+type)+'</span></button>';
     }).join('');
   }catch(error){
-    if(error.name==='AbortError')return;
+    if(seq!==stockSearch.seq)return;
     console.error('Stock search failed',error);
     container.hidden=false;
     const message=error instanceof TypeError?'réseau indisponible, réessayez.':(error.message||'réessayez.');
