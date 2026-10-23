@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css?v=isin-stock-overview-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=crypto-overview-total-1" defer></script>
+  <script src="app.js?v=crypto-overview-visible-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -59,6 +59,7 @@
           <article class="summary-card lombard-card"><div class="card-top"><span>Crédit lombard</span><span class="card-icon debt">−</span></div><div class="metric" id="lombard-balance">0,00 €</div><div class="card-foot"><span class="muted" id="lombard-label">Aucun crédit enregistré</span><button type="button" class="text-button" id="lombard-manage">Ajouter</button></div></article>
           <article class="summary-card"><div class="card-top"><span>Comptes personnels</span><span class="card-icon blue">▤</span></div><div class="metric" id="bank-balance">0,00 €</div><div class="card-foot"><span class="muted">Bancaires, épargne et investissement, hors professionnel</span><span class="tiny-dot blue-dot"></span></div></article>
           <article class="summary-card"><div class="card-top"><span>Comptes professionnels</span><span class="card-icon purple">↗</span></div><div class="metric" id="pro-balance">0,00 €</div><div class="card-foot"><span class="muted">Soldes avant provisions</span><span class="tiny-dot purple-dot"></span></div></article>
+          <article class="summary-card"><div class="card-top"><span>Cryptomonnaies</span><span class="card-icon purple">₿</span></div><div class="metric" id="crypto-balance">0,00 €</div><div class="card-foot"><span class="muted">Valorisation au cours estimé</span><button type="button" class="text-button" data-goto="crypto">Voir les cryptos →</button></div></article>
         </div>
 
         <div class="content-grid">
