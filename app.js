@@ -1616,14 +1616,36 @@ function renderWealthViews(){
  $('compare-world').textContent=financial>=450000?'Au-dessus du repère top 1 % mondial':financial>=120000?'Au-dessus du repère top 5 %':'À comparer aux seuils';
  renderBars('compare-financial-bars',fr,financial);renderBars('compare-world-bars',world,financial);
  // Aucun camembert d'allocation patrimoniale sur la vue d'ensemble.
- const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100,inflation=Math.max(0,Number($('fire-inflation')?.value)||0)/100;
+ const currentYear=new Date().getFullYear();
+ const currentAge=Math.max(18,Math.min(110,Math.round(Number($('fire-age')?.value)||41)));
+ const endAge=Math.max(currentAge+1,Math.min(120,Math.round(Number($('fire-end-age')?.value)||95)));
+ const r=Math.max(0,Number($('fire-rent')?.value)||0);
+ const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||4)/100));
+ const saving=Math.max(0,Number($('fire-saving')?.value)||0);
+ const rate=(Number($('fire-return')?.value)||0)/100;
+ const inflation=Math.max(0,Number($('fire-inflation')?.value)||0)/100;
  const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
- let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
- while(balance<target&&years<60){balance=balance*(1+rate)+saving*12;years++;series.push({year:new Date().getFullYear()+years,value:balance});if(balance<0)break}
- $('fire-year').textContent=Number.isFinite(target)?(current>=target?'Atteint':years>=60?'Hors horizon':String(new Date().getFullYear()+years)):'—';
- $('fire-summary').textContent=Number.isFinite(target)?'Objectif '+euro(target)+' · '+(years>=60?'plus de 60 ans':years+' an(s) estimé(s)'):'Saisissez un taux de retrait positif.';
+ let balance=current,fireAge=current>=target?currentAge:null,series=[{age:currentAge,year:currentYear,value:balance,phase:current>=target?'Retraits':'Accumulation'}];
+ let exhaustedAge=null;
+ for(let age=currentAge+1;age<=endAge;age++){
+   balance=Math.max(0,balance*(1+rate));
+   if(fireAge===null && balance<target) balance+=saving*12;
+   if(fireAge===null && balance>=target) fireAge=age;
+   if(fireAge!==null && age>=fireAge){
+     const annualWithdrawal=r*12*Math.pow(1+inflation,Math.max(0,age-fireAge));
+     balance=Math.max(0,balance-annualWithdrawal);
+     if(balance===0 && exhaustedAge===null) exhaustedAge=age;
+   }
+   series.push({age,year:currentYear+age-currentAge,value:balance,phase:fireAge!==null&&age>=fireAge?'Retraits':'Accumulation'});
+ }
+ $('fire-year').textContent=fireAge!==null?'À '+fireAge+' ans':'Non atteint';
+ $('fire-summary').textContent=fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+fireAge-currentAge)+' · projection jusqu’à '+endAge+' ans.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=Number.isFinite(target)?euro(target):'—';$('fire-gap').textContent=Number.isFinite(target)?euro(gap):'—';$('fire-progress').textContent=Number.isFinite(target)?(target>0?Math.min(100,current/target*100):100).toFixed(1)+' %':'—';
- $('fire-chart').innerHTML='<div class="projection-legend"><span>Valeur nominale</span><span>Valeur réelle (inflation '+(inflation*100).toLocaleString('fr-FR')+' %/an)</span></div>'+series.slice(0,31).map(p=>{const real=p.value/Math.pow(1+inflation,Math.max(0,p.year-new Date().getFullYear()));return '<div class="projection-row"><span>'+p.year+'</span><div class="projection-bars"><i class="projection-nominal" style="width:'+Math.min(100,target>0?p.value/target*100:0)+'%"></i><i class="projection-real" style="width:'+Math.min(100,target>0?real/target*100:0)+'%"></i></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' réels</small></strong></div>';}).join('');
+ const maxValue=Math.max(1,...series.map(p=>p.value));
+ $('fire-chart').innerHTML='<div class="projection-legend"><span>Patrimoine nominal</span><span>Patrimoine réel (euros constants)</span></div>'+series.map(p=>{
+   const real=p.value/Math.pow(1+inflation,Math.max(0,p.year-currentYear));
+   return '<div class="projection-row"><span class="projection-age">'+p.age+' ans</span><div class="projection-bars"><i class="projection-nominal" style="width:'+Math.min(100,p.value/maxValue*100)+'%"></i><i class="projection-real" style="width:'+Math.min(100,real/maxValue*100)+'%"></i></div><strong><span>'+euro(p.value)+'</span><small>'+euro(real)+' réels</small></strong></div>';
+ }).join('')+'<p class="projection-outcome">'+(exhaustedAge!==null?'Capital épuisé vers '+exhaustedAge+' ans.':'Capital restant à '+endAge+' ans : '+euro(series[series.length-1].value)+'.')+'</p>';
  const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
  const remaining=Math.max(0,principal-repaid),loanBtc=60000/(70100/fx),personalBtc=69800/(85100/fx),loanValue=loanBtc*btc/fx,personalValue=personalBtc*btc/fx;
  const loanGain=loanValue-60000,personalGain=personalValue-69800;
@@ -1848,7 +1870,7 @@ themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.da
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
 $('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
 
-['fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
+['fire-age','fire-end-age','fire-rent','fire-withdrawal','fire-saving','fire-return','fire-inflation','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
 
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
