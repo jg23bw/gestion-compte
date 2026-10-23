@@ -726,6 +726,7 @@ function renderDashboard(){
   const pro=state.accounts.filter(a=>effectiveAccountType(a)==='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
   $('net-balance').textContent=euro(net);
   $('total-balance').textContent=euro(total);
+  $('crypto-balance').textContent=euro(totalCryptoValue());
   $('lombard-balance').textContent=euro(lombard);
   $('bank-balance').textContent=euro(bank);
   $('pro-balance').textContent=euro(pro);
