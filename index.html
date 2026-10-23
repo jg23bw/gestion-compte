@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=nav-align-connection-2">
+  <link rel="stylesheet" href="styles.css?v=singular-mobile-3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=nav-align-connection-2" defer></script>
+  <script src="app.js?v=singular-mobile-3" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -30,17 +30,17 @@
         <span><strong>Comptes</strong><small>ESPACE PERSONNEL</small></span>
       </a>
       <div class="nav-label">ESPACE</div>
-      <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span> Vue d'ensemble</button>
-      <button class="nav-item" data-view="accounts"><span class="nav-icon" aria-hidden="true">▤</span> Mes comptes <span class="nav-count" id="account-count">9</span></button>
-      <button class="nav-item" data-view="transactions"><span class="nav-icon" aria-hidden="true">⇄</span> Opérations</button>
-      <button class="nav-item" data-view="history"><span class="nav-icon" aria-hidden="true">◷</span> Historique mensuel</button>
-      <button class="nav-item" data-view="crypto"><span class="nav-icon" aria-hidden="true">₿</span> Crypto</button>
-      <button class="nav-item" data-view="stocks"><span class="nav-icon" aria-hidden="true">↗</span> Actions</button>
-      <button class="nav-item" data-view="recurring"><span class="nav-icon" aria-hidden="true">⟳</span> Récurrences</button>
+      <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span> <span class="nav-label-text">Vue d’ensemble</span></button>
+      <button class="nav-item" data-view="accounts"><span class="nav-icon" aria-hidden="true">◫</span> <span class="nav-label-text">Mes comptes</span> <span class="nav-count" id="account-count">9</span></button>
+      <button class="nav-item" data-view="transactions"><span class="nav-icon" aria-hidden="true">⇄</span> <span class="nav-label-text">Opérations</span></button>
+      <button class="nav-item" data-view="history"><span class="nav-icon" aria-hidden="true">◷</span> <span class="nav-label-text">Historique des comptes</span></button>
+      <button class="nav-item" data-view="crypto"><span class="nav-icon" aria-hidden="true">₿</span> <span class="nav-label-text">Crypto</span></button>
+      <button class="nav-item" data-view="stocks"><span class="nav-icon" aria-hidden="true">↗</span> <span class="nav-label-text">Actions</span></button>
+      <button class="nav-item" data-view="recurring"><span class="nav-icon" aria-hidden="true">⟳</span> <span class="nav-label-text">Récurrences</span></button>
       <div class="nav-label">PATRIMOINE</div>
-      <button class="nav-item" data-view="fire"><span class="nav-icon" aria-hidden="true">✦</span> FIRE</button>
-      <button class="nav-item" data-view="comparisons"><span class="nav-icon" aria-hidden="true">⚖</span> Comparaisons</button>
-      <button class="nav-item" data-view="lombard"><span class="nav-icon" aria-hidden="true">◇</span> Lombard</button>
+      <button class="nav-item" data-view="fire"><span class="nav-icon" aria-hidden="true">✧</span> <span class="nav-label-text">FIRE</span></button>
+      <button class="nav-item" data-view="comparisons"><span class="nav-icon" aria-hidden="true">⫶</span> <span class="nav-label-text">Comparaisons</span></button>
+      <button class="nav-item" data-view="lombard"><span class="nav-icon" aria-hidden="true">◈</span> <span class="nav-label-text">Lombard</span></button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Données synchronisées</strong><p>Connectez-vous pour sauvegarder vos comptes et opérations dans votre base privée en ligne.</p><button class="secondary-button cloud-open" id="cloud-open">Connexion cloud</button></div>
         <div class="user-chip"><span class="avatar">J</span><span><strong>Mon espace</strong><small>Gestion personnelle</small></span><span class="more">···</span></div>
