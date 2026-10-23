@@ -126,7 +126,7 @@ const STOCK_ISIN_CATALOG = [
   {isin:'US78462F1030',symbol:'SPY',name:'SPDR S&P 500 ETF Trust',priceId:'NYSE-SPY',market:'NYSE',currency:'USD',kind:'e'},
   {isin:'US46090E1038',symbol:'QQQ',name:'Invesco QQQ Trust',priceId:'NASDAQ-QQQ',market:'NASDAQ',currency:'USD',kind:'e'}
 ];
-function isManualValueHolding(holding){return String(holding?.isin||'').toUpperCase()==='SUR000001737'||String(holding?.priceId||'').toUpperCase()==='SUR-SUR000001737';}
+function isManualValueHolding(holding){return Boolean(holding?.manualValue)||String(holding?.isin||'').toUpperCase()==='SUR000001737'||String(holding?.priceId||'').toUpperCase()==='SUR-SUR000001737';}
 function isInvestmentAccount(account){return ['pea','cto','av'].includes(effectiveAccountType(account));}
 function stockCatalogResults(query){
   const q=String(query||'').trim().toUpperCase();
@@ -262,7 +262,8 @@ function normalizeStockHoldings(value){
     const symbol=String(raw.symbol||'').trim().toUpperCase().slice(0,24);
     if(!id||seen.has(id)||!accountId||!priceId||!symbol)continue;
     const invested=Number(raw.invested),quantity=Number(raw.quantity);
-    if(!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0)continue;
+    if(!Number.isFinite(invested)||invested<0||(!Number.isFinite(quantity)&&!raw.manualValue))continue;
+    const manualValue=Boolean(raw.manualValue)||isin==='SUR000001737'||priceId.toUpperCase()==='SUR-SUR000001737';
     const market=STOCK_MARKETS[String(priceId).split('-')[0].toUpperCase()]||STOCK_MARKETS.US;
     seen.add(id);
     result.push({
@@ -270,7 +271,7 @@ function normalizeStockHoldings(value){
       name:String(raw.name||symbol).trim().slice(0,160)||symbol,
       market:String(raw.market||market.label).trim().slice(0,80)||market.label,
       currency:normalizeStockCurrency(raw.currency||market.currency),
-      invested,quantity,
+      invested,quantity:Number.isFinite(quantity)?quantity:0,manualValue,
       sortOrder:Number.isFinite(Number(raw.sortOrder))?Number(raw.sortOrder):0
     });
   }
@@ -1979,16 +1980,16 @@ $('stock-form').addEventListener('submit',event=>{
   const market=$('stock-edit-market').value.trim()||stockMarketInfo(priceId).label;
   const currency=normalizeStockCurrency($('stock-edit-currency').value);
   const invested=Number($('stock-edit-invested').value);
-  const manual=isManualValueHolding({isin,priceId});const quantity=manual?1:Number($('stock-edit-quantity').value);if(!accountById(accountId)||!isInvestmentAccount(accountById(accountId))){showToast('Choisissez un compte de type PEA, CTO ou assurance vie.');return;}if(!priceId||!symbol){showToast('Sélectionnez l’instrument dans la liste de recherche.');return;}if(!Number.isFinite(invested)||invested<0||(!manual&&(!Number.isFinite(quantity)||quantity<0))){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
+  const specialManual=isManualValueHolding({isin,priceId});const quantityText=$('stock-edit-quantity').value.trim();const manualValue=specialManual||quantityText==='';const quantity=manualValue?(specialManual?1:0):Number(quantityText);if(!accountById(accountId)||!isInvestmentAccount(accountById(accountId))){showToast('Choisissez un compte de type PEA, CTO ou assurance vie.');return;}if(!priceId||!symbol){showToast('Sélectionnez l’instrument dans la liste de recherche.');return;}if(!Number.isFinite(invested)||invested<0||(!manualValue&&(!Number.isFinite(quantity)||quantity<0))){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
   if(isin&&!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){showToast('ISIN invalide : vérifiez les 12 caractères.',false);return;}
-   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,manualValue,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.stockHoldings=state.stockHoldings.map(h=>h.id===id?record:h);
   else state.stockHoldings=[...(state.stockHoldings||[]),record];
   cloud.stockHoldingsDirty=true;
   $('stock-dialog').close();
   renderAll();
   showToast(existing?'Position actions modifiée.':'Position actions ajoutée.');
-  if(stockPrices.values[priceId]===undefined)loadStockPrices();
+  if(!manualValue&&stockPrices.values[priceId]===undefined)loadStockPrices();
 });
 $('export-btn').addEventListener('click',()=>{
   const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
