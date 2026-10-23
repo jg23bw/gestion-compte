@@ -126,7 +126,9 @@ const STOCK_ISIN_CATALOG = [
   {isin:'US78462F1030',symbol:'SPY',name:'SPDR S&P 500 ETF Trust',priceId:'NYSE-SPY',market:'NYSE',currency:'USD',kind:'e'},
   {isin:'US46090E1038',symbol:'QQQ',name:'Invesco QQQ Trust',priceId:'NASDAQ-QQQ',market:'NASDAQ',currency:'USD',kind:'e'}
 ];
+const SURAVENIR_ANNUAL_RATE=0.021; // Rendement 2025 publié pour Suravenir Rendement 2, utilisé comme hypothèse de projection.
 function isManualValueHolding(holding){return Boolean(holding?.manualValue)||String(holding?.isin||'').toUpperCase()==='SUR000001737'||String(holding?.priceId||'').toUpperCase()==='SUR-SUR000001737';}
+function manualHoldingValue(holding){const base=Number(holding?.invested)||0;const start=Date.parse((holding?.manualValueDate||today())+'T00:00:00Z');const elapsedDays=Math.max(0,(Date.now()-start)/86400000);return base*Math.pow(1+SURAVENIR_ANNUAL_RATE,elapsedDays/365.25);}
 function isInvestmentAccount(account){return ['pea','cto','av'].includes(effectiveAccountType(account));}
 function stockCatalogResults(query){
   const q=String(query||'').trim().toUpperCase();
@@ -272,6 +274,7 @@ function normalizeStockHoldings(value){
       market:String(raw.market||market.label).trim().slice(0,80)||market.label,
       currency:normalizeStockCurrency(raw.currency||market.currency),
       invested,quantity:Number.isFinite(quantity)?quantity:0,manualValue,
+      manualValueDate:raw.manualValueDate||today(),
       sortOrder:Number.isFinite(Number(raw.sortOrder))?Number(raw.sortOrder):0
     });
   }
@@ -681,7 +684,7 @@ function balanceAt(accountId,untilDate=null){
 }
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
-function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+Number(h.invested||0);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
+function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+manualHoldingValue(h);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
 function totalStockValue(){return state.accounts.reduce((sum,a)=>sum+stockValueForAccount(a.id),0);}
 function totalCryptoValue(){return (state.cryptoHoldings||[]).reduce((sum,h)=>{const price=cryptoPrice(h);return sum+(price!==null?Number(h.quantity||0)*price:Number(h.invested||0));},0);}
 function accountOverviewBalance(accountId){return balanceAt(accountId)+stockValueForAccount(accountId);}
@@ -1380,7 +1383,7 @@ function renderStocks(){
     const details=stockPriceDetails(h);
     const invested=Number(h.invested)||0;
     const quantity=Number(h.quantity)||0;
-    const manual=isManualValueHolding(h);const value=manual?invested:(details.price===null?null:quantity*details.price);const gain=value===null||manual?null:value-invested;
+    const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price===null?null:quantity*details.price);const gain=value===null?null:value-invested;
     const performance=gain===null||invested<=0?null:gain/invested*100;
     return [h.id,{...details,invested,quantity,value,gain,performance}];
   }));
@@ -1493,7 +1496,7 @@ function setStockSelection(data){
   selected.classList.add('is-selected');
   updateStockValueOnlyFields();
 }
-function updateStockValueOnlyFields(){const manual=isManualValueHolding({isin:$('stock-edit-isin')?.value,priceId:$('stock-edit-priceid')?.value});const input=$('stock-edit-quantity');const label=input?.closest('label');if(label)label.hidden=manual;if(input){input.required=!manual;input.disabled=manual;input.value=manual?'1':input.value;}const priceFields=$('stock-edit-currency')?.closest('.form-row');if(priceFields)priceFields.hidden=manual;const amountLabel=$('stock-invested-label');if(amountLabel)amountLabel.textContent=manual?'Montant détenu (€)':'Investi (€)';const help=$('stock-value-help');if(help)help.textContent=manual?'Support d’assurance vie à valorisation manuelle : indiquez le montant actuellement détenu. Aucune quantité ni cours de marché n’est nécessaire.':'La valeur actuelle est calculée en euros à partir du dernier cours disponible et du taux de change de référence. Les cours peuvent être différés.';}
+function updateStockValueOnlyFields(){const manual=isManualValueHolding({isin:$('stock-edit-isin')?.value,priceId:$('stock-edit-priceid')?.value});const input=$('stock-edit-quantity');const label=input?.closest('label');if(label)label.hidden=manual;if(input){input.required=!manual;input.disabled=manual;input.value=manual?'1':input.value;}const priceFields=$('stock-edit-currency')?.closest('.form-row');if(priceFields)priceFields.hidden=manual;const amountLabel=$('stock-invested-label');if(amountLabel)amountLabel.textContent=manual?'Montant détenu (€)':'Investi (€)';const help=$('stock-value-help');if(help)help.textContent=manual?'Saisissez le montant actuellement détenu. La valeur projetée évolue automatiquement au taux annuel indicatif de 2,10 % (taux 2025 publié pour Suravenir Rendement 2), à compter de la saisie.':'La valeur actuelle est calculée en euros à partir du dernier cours disponible et du taux de change de référence. Les cours peuvent être différés.';}
 function clearStockSelection(clearSearch=false){
   $('stock-edit-priceid').value='';
   $('stock-edit-isin').value='';
@@ -1982,7 +1985,7 @@ $('stock-form').addEventListener('submit',event=>{
   const invested=Number($('stock-edit-invested').value);
   const specialManual=isManualValueHolding({isin,priceId});const quantityText=$('stock-edit-quantity').value.trim();const manualValue=specialManual||quantityText==='';const quantity=manualValue?(specialManual?1:0):Number(quantityText);if(!accountById(accountId)||!isInvestmentAccount(accountById(accountId))){showToast('Choisissez un compte de type PEA, CTO ou assurance vie.');return;}if(!priceId||!symbol){showToast('Sélectionnez l’instrument dans la liste de recherche.');return;}if(!Number.isFinite(invested)||invested<0||(!manualValue&&(!Number.isFinite(quantity)||quantity<0))){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
   if(isin&&!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){showToast('ISIN invalide : vérifiez les 12 caractères.',false);return;}
-   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,manualValue,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,manualValue,manualValueDate:manualValue?(existing?.manualValue&&Number(existing.invested)===invested?(existing.manualValueDate||today()):today()):undefined,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.stockHoldings=state.stockHoldings.map(h=>h.id===id?record:h);
   else state.stockHoldings=[...(state.stockHoldings||[]),record];
   cloud.stockHoldingsDirty=true;
