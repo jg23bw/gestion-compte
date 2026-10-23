@@ -2,6 +2,9 @@
 
 **Dernière mise à jour documentaire : 2026-10-22.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
+
+> La vue d’ensemble affiche explicitement une carte « Cryptomonnaies » avec la valorisation totale en euros. Cette valeur est distincte des comptes personnels/professionnels, mais elle est incluse dans les avoirs bruts et le patrimoine net.
+
 ## 1. Résumé rapide
 
 - Dépôt : [jg23bw/gestion-compte](https://github.com/jg23bw/gestion-compte).
