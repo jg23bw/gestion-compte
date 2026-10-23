@@ -81,6 +81,7 @@ const STOCK_MARKETS={
 // Catalogue local ISIN : facilite la sélection quand la recherche par symbole ne retrouve pas l'instrument.
 // Les identifiants de cotation suivent le format renvoyé par StockAnalysis ; un cours peut rester indisponible selon la place.
 const STOCK_ISIN_CATALOG = [
+  {isin:'SUR000001737',symbol:'SUR000001737',name:'EUR SURAVENIR RENDEMENT 2 (fonds en euros – Fortuneo Vie)',priceId:'SUR-SUR000001737',market:'Assurance vie',currency:'EUR',kind:'s'},
   {isin:'IE00B5BMR087',symbol:'SXR8',name:'iShares Core S&P 500 UCITS ETF USD (Acc)',priceId:'ETR-SXR8',market:'Xetra',currency:'EUR',kind:'e'},
   {isin:'IE00B4L5Y983',symbol:'EUNL',name:'iShares Core MSCI World UCITS ETF USD (Acc)',priceId:'ETR-EUNL',market:'Xetra',currency:'EUR',kind:'e'},
   {isin:'IE00BK5BQT80',symbol:'VWCE',name:'Vanguard FTSE All-World UCITS ETF USD (Acc)',priceId:'ETR-VWCE',market:'Xetra',currency:'EUR',kind:'e'},
@@ -748,17 +749,26 @@ function renderAccounts(){
   const pledgedVisible=accounts.filter(a=>accountPledgeFor(a.id)).length;
   $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes'+(pledgedVisible?' · '+pledgedVisible+' nanti'+(pledgedVisible>1?'s':''):'');
 }
+function isOperationalAccount(account){return !['av','pea','cto'].includes(effectiveAccountType(account));}
 function fillAccountSelects(){
-  const opts=state.accounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+  const operationalAccounts=state.accounts.filter(isOperationalAccount);
+  const opts=operationalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+  const allOpts=state.accounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   $('transaction-account').innerHTML=opts;
   const current=$('transaction-account-filter').value;
   $('transaction-account-filter').innerHTML=opts;
-  $('transaction-account-filter').value=state.accounts.some(a=>a.id===current)?current:(state.accounts[0]?.id||'');
-  for(const id of ['history-account-filter','recurring-account-filter','stocks-account-filter']){
+  $('transaction-account-filter').value=operationalAccounts.some(a=>a.id===current)?current:(operationalAccounts[0]?.id||'');
+  for(const id of ['history-account-filter','recurring-account-filter']){
     const filter=$(id); if(!filter) continue;
     const selected=filter.value;
     filter.innerHTML='<option value="all">Tous les comptes</option>'+opts;
-    filter.value=selected==='all'||state.accounts.some(a=>a.id===selected)?selected:'all';
+    filter.value=selected==='all'||operationalAccounts.some(a=>a.id===selected)?selected:'all';
+  }
+  const stockFilter=$('stocks-account-filter');
+  if(stockFilter){
+    const selected=stockFilter.value;
+    stockFilter.innerHTML='<option value="all">Tous les comptes</option>'+allOpts;
+    stockFilter.value=selected==='all'||state.accounts.some(a=>a.id===selected)?selected:'all';
   }
 }
 function renderTransactions(){
