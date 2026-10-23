@@ -1357,6 +1357,8 @@ async function loadStockPrices(){
   }finally{
     stockPrices.loading=false;
     renderStocks();
+    renderDashboard();
+    renderAccounts();
   }
 }
 function renderStocks(){
@@ -1953,7 +1955,7 @@ $('stock-search-results').addEventListener('click',event=>{
   const result=stockSearch.results[Number(option.dataset.stockResultIndex)];
   if(!result)return;
   const info=stockMarketInfo(result.id);
-  setStockSelection({priceId:result.id,symbol:stockResultSymbol(result),name:result.n,market:info.label,currency:info.currency});
+  setStockSelection({priceId:result.priceId||result.id,isin:result.isin,symbol:stockResultSymbol(result),name:result.n,market:result.market||info.label,currency:result.currency||info.currency});
 });
 $('stock-dialog').addEventListener('close',closeStockResults);
 document.addEventListener('click',event=>{
@@ -1965,6 +1967,7 @@ $('stock-form').addEventListener('submit',event=>{
   const existing=id?(state.stockHoldings||[]).find(h=>h.id===id):null;
   const accountId=$('stock-edit-account').value;
   const priceId=$('stock-edit-priceid').value.trim();
+  const isin=$('stock-edit-isin').value.trim().toUpperCase();
   const symbol=$('stock-edit-symbol').value.trim().toUpperCase();
   const name=$('stock-edit-name').value.trim()||symbol;
   const market=$('stock-edit-market').value.trim()||stockMarketInfo(priceId).label;
