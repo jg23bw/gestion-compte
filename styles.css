@@ -760,3 +760,8 @@ tbody tr:hover td{background:#fafbff}
 .projection-phase-retirement{background:rgba(237,101,95,.065);border-left-color:#ed655f}
 .projection-phase-label{display:block;margin-top:2px;font-size:.65rem;font-weight:600;line-height:1.2;color:var(--text-muted,#8290a6)}
 @media(max-width:800px){.projection-legend{padding:12px 16px 10px;gap:7px}.projection-legend span{font-size:.7rem}.projection-phase-label{font-size:.6rem}}
+/* FIRE: the bars follow the phase color (green while saving, red in retirement) */
+.projection-phase-accumulation .projection-bars .projection-nominal{background:linear-gradient(90deg,#42c995,#159d5b)!important}
+.projection-phase-accumulation .projection-bars .projection-real{background:linear-gradient(90deg,#a4e8c5,#42ad79)!important}
+.projection-phase-retirement .projection-bars .projection-nominal{background:linear-gradient(90deg,#ff8a80,#d93636)!important}
+.projection-phase-retirement .projection-bars .projection-real{background:linear-gradient(90deg,#ffc0b8,#e86b63)!important}
