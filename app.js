@@ -58,11 +58,36 @@ const cryptoSearch={timer:null,controller:null,results:[]};
 // codées en dur dans le dépôt public. Elles sont stockées dans Supabase
 // (table crypto_holdings) et se gèrent depuis la page Crypto.
 
+// Les actions et ETF sont stockés dans les métadonnées privées du compte Auth
+// (comme les sous-types de comptes et le crédit lombard). Cette approche évite
+// une migration SQL supplémentaire pour les positions et le nantissement.
+const STOCK_PRICE_CACHE_KEY='gestion-comptes-stock-prices-v1';
+const STOCK_FX_CACHE_KEY='gestion-comptes-stock-fx-v1';
+const STOCK_SEARCH_ENDPOINT='https://stockanalysis.com/api/search';
+const STOCK_CHART_ENDPOINT='https://stockanalysis.com/api/charts/a/';
+const STOCK_FX_ENDPOINT='https://open.er-api.com/v6/latest/EUR';
+const STOCK_REFRESH_MS=5*60*1000;
+const STOCK_CURRENCIES=['EUR','USD','GBP','GBX','CHF','CAD','JPY','HKD','AUD','NZD','SEK','NOK','DKK','PLN','CZK','HUF','SGD','CNY','INR','BRL','MXN','ZAR','KRW','TWD','TRY','ILS','AED','THB','QAR','PHP','OMR','KZT','ARS','RON'];
+const STOCK_CURRENCY_LABELS={GBX:'GBX (pence)'};
+const STOCK_MARKETS={
+  EPA:{label:'Euronext Paris',currency:'EUR'},AMS:{label:'Euronext Amsterdam',currency:'EUR'},BRU:{label:'Euronext Bruxelles',currency:'EUR'},LIS:{label:'Euronext Lisbonne',currency:'EUR'},
+  ETR:{label:'Xetra',currency:'EUR'},FRA:{label:'Bourse de Francfort',currency:'EUR'},VIE:{label:'Bourse de Vienne',currency:'EUR'},BIT:{label:'Borsa Italiana',currency:'EUR'},MIL:{label:'Borsa Italiana',currency:'EUR'},BME:{label:'Bourse de Madrid',currency:'EUR'},MCE:{label:'Bourse de Madrid',currency:'EUR'},ATH:{label:'Bourse d’Athènes',currency:'EUR'},HEL:{label:'Bourse d’Helsinki',currency:'EUR'},
+  LON:{label:'London Stock Exchange',currency:'GBX'},SWX:{label:'SIX Swiss Exchange',currency:'CHF'},
+  TYO:{label:'Tokyo Stock Exchange',currency:'JPY'},HKG:{label:'Hong Kong Stock Exchange',currency:'HKD'},SHA:{label:'Shanghai Stock Exchange',currency:'CNY'},SHE:{label:'Shenzhen Stock Exchange',currency:'CNY'},
+  TSX:{label:'Toronto Stock Exchange',currency:'CAD'},CVE:{label:'TSX Venture',currency:'CAD'},NEO:{label:'Cboe Canada',currency:'CAD'},ASX:{label:'Australian Securities Exchange',currency:'AUD'},NZX:{label:'NZX',currency:'NZD'},
+  OSL:{label:'Bourse d’Oslo',currency:'NOK'},STO:{label:'Bourse de Stockholm',currency:'SEK'},CPH:{label:'Bourse de Copenhague',currency:'DKK'},WSE:{label:'Bourse de Varsovie',currency:'PLN'},PRG:{label:'Bourse de Prague',currency:'CZK'},PRA:{label:'Bourse de Prague',currency:'CZK'},BUD:{label:'Bourse de Budapest',currency:'HUF'},IST:{label:'Bourse d’Istanbul',currency:'TRY'},TLV:{label:'Bourse de Tel-Aviv',currency:'ILS'},BUL:{label:'Bourse de Sofia',currency:'EUR'},
+  NSE:{label:'NSE Inde',currency:'INR'},BSE:{label:'BSE Inde',currency:'INR'},KRX:{label:'Bourse de Corée',currency:'KRW'},TPE:{label:'Bourse de Taïwan',currency:'TWD'},SGX:{label:'Singapore Exchange',currency:'SGD'},JSE:{label:'Bourse de Johannesburg',currency:'ZAR'},BVMF:{label:'B3 Brésil',currency:'BRL'},BMV:{label:'Bourse du Mexique',currency:'MXN'},BCBA:{label:'Bourse de Buenos Aires',currency:'ARS'},BKK:{label:'Bourse de Thaïlande',currency:'THB'},QSE:{label:'Bourse du Qatar',currency:'QAR'},PSE:{label:'Bourse des Philippines',currency:'PHP'},MSM:{label:'Bourse de Mascate',currency:'OMR'},KASE:{label:'Bourse du Kazakhstan',currency:'KZT'},BVB:{label:'Bourse de Bucarest',currency:'RON'},
+  OTC:{label:'OTC',currency:'USD'},NASDAQ:{label:'NASDAQ',currency:'USD'},NYSE:{label:'NYSE',currency:'USD'},AMEX:{label:'NYSE American',currency:'USD'},BATS:{label:'Cboe BZX',currency:'USD'},US:{label:'États-Unis',currency:'USD'}
+};
+const stockSearch={timer:null,controller:null,results:[]};
+const stockPrices={values:{},updatedAt:0,error:'',loading:false};
+const stockFx={rates:{EUR:1},updatedAt:0,error:'',loading:false};
+
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
-let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
+let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -85,12 +110,14 @@ function undoLastAction(){
     (state.transactions||[]).forEach(t=>{if(!currentTransactionIds.has(t.id))cloud.pendingDeletes.delete(t.id);});
     (state.recurringTemplates||[]).forEach(t=>{if(!currentTemplateIds.has(t.id))cloud.pendingTemplateDeletes.delete(t.id);});
     cloud.accountTypesDirty=true;
+    cloud.accountPledgesDirty=true;
+    cloud.stockHoldingsDirty=true;
   }
   if(target.generatedMonths===null)localStorage.removeItem(GENERATED_MONTHS_KEY);else localStorage.setItem(GENERATED_MONTHS_KEY,target.generatedMonths);
   undoPoint=null;renderAll();showToast('Action annulée.');
 }
 
-const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),pendingAccountDeletes:new Set(),accountTypesDirty:false,authReady:false};
+const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),pendingAccountDeletes:new Set(),accountTypesDirty:false,accountPledgesDirty:false,stockHoldingsDirty:false,authReady:false};
 let cryptoTableReady=null;
 const cryptoPrices={values:{},images:{},updatedAt:0,error:'',loading:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
@@ -154,6 +181,46 @@ function normalizeAccountTypes(value){
   for(const [id,type] of Object.entries(value))if(isAccountSubtype(type))result[id]=type;
   return result;
 }
+function normalizeAccountPledges(value){
+  if(!value||typeof value!=='object'||Array.isArray(value))return {};
+  const result={};
+  for(const [id,entry] of Object.entries(value)){
+    if(!id)continue;
+    if(entry===true){result[id]={note:''};continue;}
+    if(!entry||typeof entry!=='object'||Array.isArray(entry))continue;
+    result[id]={note:String(entry.note||'').trim().slice(0,160)};
+  }
+  return result;
+}
+function normalizeStockCurrency(value){
+  const currency=String(value||'').trim().toUpperCase();
+  return STOCK_CURRENCIES.includes(currency)?currency:'EUR';
+}
+function normalizeStockHoldings(value){
+  if(!Array.isArray(value))return [];
+  const result=[],seen=new Set();
+  for(const raw of value){
+    if(!raw||typeof raw!=='object')continue;
+    const id=String(raw.id||'').trim();
+    const accountId=String(raw.accountId||'').trim();
+    const priceId=String(raw.priceId||raw.stockanalysisId||'').trim();
+    const symbol=String(raw.symbol||'').trim().toUpperCase().slice(0,24);
+    if(!id||seen.has(id)||!accountId||!priceId||!symbol)continue;
+    const invested=Number(raw.invested),quantity=Number(raw.quantity);
+    if(!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0)continue;
+    const market=STOCK_MARKETS[String(priceId).split('-')[0].toUpperCase()]||STOCK_MARKETS.US;
+    seen.add(id);
+    result.push({
+      id,accountId,priceId,symbol,
+      name:String(raw.name||symbol).trim().slice(0,160)||symbol,
+      market:String(raw.market||market.label).trim().slice(0,80)||market.label,
+      currency:normalizeStockCurrency(raw.currency||market.currency),
+      invested,quantity,
+      sortOrder:Number.isFinite(Number(raw.sortOrder))?Number(raw.sortOrder):0
+    });
+  }
+  return result;
+}
 function accountTypeOverrides(){
   const result={};
   for(const account of state.accounts||[]){
@@ -162,14 +229,30 @@ function accountTypeOverrides(){
   }
   return result;
 }
-async function saveAccountTypesToAuth(overrides=accountTypeOverrides()){
-  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer le type de compte.');
-  const {data,error}=await cloudClient().auth.updateUser({data:{accountTypes:overrides}});
+function accountPledgeOverrides(){
+  const result=normalizeAccountPledges(state.accountPledges);
+  for(const id of Object.keys(result))if(!accountById(id))delete result[id];
+  return result;
+}
+async function saveAccountMetadataToAuth(overrides=accountTypeOverrides(),pledges=accountPledgeOverrides()){
+  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer les paramètres des comptes.');
+  const {data,error}=await cloudClient().auth.updateUser({data:{accountTypes:overrides,accountPledges:pledges}});
   if(error)throw error;
   if(data?.user){
     cloud.user=data.user;
     if(cloud.session)cloud.session.user=data.user;
   }
+}
+async function saveStockHoldingsToAuth(holdings){
+  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer les positions actions.');
+  const normalized=normalizeStockHoldings(holdings);
+  const {data,error}=await cloudClient().auth.updateUser({data:{stockHoldings:normalized}});
+  if(error)throw error;
+  if(data?.user){
+    cloud.user=data.user;
+    if(cloud.session)cloud.session.user=data.user;
+  }
+  return normalized;
 }
 function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:'bank:'+bankKeyForAccount(a),kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
 function fromCloudAccount(a,accountTypes={}){
@@ -296,10 +379,21 @@ async function syncCloudState(){
         }
       }
     }
-    if(cloud.accountTypesDirty){
+    if(cloud.accountTypesDirty||cloud.accountPledgesDirty){
       const overrides=accountTypeOverrides();
-      await saveAccountTypesToAuth(overrides);
-      if(JSON.stringify(accountTypeOverrides())===JSON.stringify(overrides))cloud.accountTypesDirty=false;
+      const pledges=accountPledgeOverrides();
+      const snapshot=JSON.stringify({overrides,pledges});
+      await saveAccountMetadataToAuth(overrides,pledges);
+      if(JSON.stringify({overrides:accountTypeOverrides(),pledges:accountPledgeOverrides()})===snapshot){
+        cloud.accountTypesDirty=false;
+        cloud.accountPledgesDirty=false;
+      }
+    }
+    if(cloud.stockHoldingsDirty){
+      const payload=normalizeStockHoldings(state.stockHoldings);
+      const snapshot=JSON.stringify(payload);
+      await saveStockHoldingsToAuth(payload);
+      if(JSON.stringify(normalizeStockHoldings(state.stockHoldings))===snapshot)cloud.stockHoldingsDirty=false;
     }
     cloudStatus('Synchronisé en ligne',true);
     return true;
@@ -344,9 +438,12 @@ async function loadCloudState(user){
     let cryptoHoldings=[];
     if(cryptoTableReady&&remoteCrypto.length)cryptoHoldings=remoteCrypto;
 
-    // Le crédit lombard et les sous-types de comptes sont stockés dans les métadonnées privées du compte Auth.
+    // Le crédit lombard, les sous-types de comptes, le nantissement et les
+    // positions actions sont stockés dans les métadonnées privées du compte Auth.
     const remoteLombard=normalizeLombardCredit(user.user_metadata?.lombardCredit);
     const remoteAccountTypes=normalizeAccountTypes(user.user_metadata?.accountTypes);
+    const remoteAccountPledges=normalizeAccountPledges(user.user_metadata?.accountPledges);
+    const remoteStockHoldings=normalizeStockHoldings(user.user_metadata?.stockHoldings);
 
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
     let legacy=null;
@@ -357,20 +454,25 @@ async function loadCloudState(user){
     const remoteAccounts=(ar.data||[]).map(account=>fromCloudAccount(account,remoteAccountTypes));
     const remoteTransactions=(tr.data||[]).map(fromCloudTransaction);
     const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
-    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)>0;
+    const existingAccountIds=new Set(remoteAccounts.map(account=>account.id));
+    const loadedStockHoldings=remoteStockHoldings.filter(holding=>existingAccountIds.has(holding.accountId));
+    const loadedAccountPledges=Object.fromEntries(Object.entries(remoteAccountPledges).filter(([id])=>existingAccountIds.has(id)));
+    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)+loadedStockHoldings.length+Object.keys(loadedAccountPledges).length>0;
     const hasLegacy=!!legacy&&(legacy.accounts.length+legacy.transactions.length+(legacy.recurringTemplates||[]).length>0);
 
     let importLocal=false;
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
       const importedAccounts=legacy?(legacy.accounts||[]).map(account=>({...account,accountType:remoteAccountTypes[account.id]||account.accountType||account.kind})):[];
-      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,lombardCredit:remoteLombard};
+      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
-      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,lombardCredit:remoteLombard};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard};
     }
 
     cloud.accountTypesDirty=importLocal&&state.accounts.some(account=>isAccountSubtype(account.accountType)&&account.accountType!==account.kind);
+    cloud.accountPledgesDirty=false;
+    cloud.stockHoldingsDirty=false;
     normalizeTransactionOrder();
     cloud.isApplyingCloud=true;
     renderAll();
@@ -379,11 +481,14 @@ async function loadCloudState(user){
     if(!synced)throw new Error('La synchronisation Supabase a échoué. Les anciennes données locales ont été conservées.');
     if(!cloud.user||cloud.user.id!==user.id)return;
     loadCryptoPrices();
+    loadStockPrices();
 
     // Après confirmation de la sauvegarde cloud, supprimer le cache local historique.
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');
     cloud.accountTypesDirty=false;
+    cloud.accountPledgesDirty=false;
+    cloud.stockHoldingsDirty=false;
     cloud.authReady=true;
     $('auth-gate').hidden=true;
     $('app-shell').hidden=false;
@@ -395,7 +500,9 @@ async function loadCloudState(user){
     cloud.loadedUserId=null;
     cloud.authReady=false;
     cloud.accountTypesDirty=false;
-    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
+    cloud.accountPledgesDirty=false;
+    cloud.stockHoldingsDirty=false;
+    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
     $('app-shell').hidden=true;
     $('auth-gate').hidden=false;
     cloudStatus('Cloud indisponible',false);
@@ -415,8 +522,10 @@ function lockApp(message=''){
   clearTimeout(cloud.syncTimer);
   cloud.authReady=false;
   cloud.accountTypesDirty=false;
+  cloud.accountPledgesDirty=false;
+  cloud.stockHoldingsDirty=false;
   cloud.isApplyingCloud=true;
-  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
+  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
   cloud.isApplyingCloud=false;
   $('app-shell').hidden=true;
   $('auth-gate').hidden=false;
@@ -482,10 +591,10 @@ function loadState(){
       const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';merged.bank=bankKeyForAccount(merged);return merged;});
       const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):[];
       DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
-      return {accounts,transactions:saved.transactions,recurringTemplates,lombardCredit:saved.lombardCredit||null};
+      return {accounts,transactions:saved.transactions,recurringTemplates,stockHoldings:normalizeStockHoldings(saved.stockHoldings||[]),accountPledges:normalizeAccountPledges(saved.accountPledges||{}),lombardCredit:saved.lombardCredit||null};
     }
   }catch(e){console.warn('Données locales illisibles',e);}
-  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings:[],lombardCredit:null};
+  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
 }
 
 function accountById(id){return state.accounts.find(a=>a.id===id);}
@@ -493,6 +602,18 @@ function accountShort(name){
   const words=String(name||'').trim().split(/\s+/).filter(Boolean);
   if(words.length>1)return words.slice(0,3).map(w=>w[0]).join('').toUpperCase().slice(0,3);
   return String(name||'').trim().slice(0,2).toUpperCase();
+}
+function accountPledgeFor(id){return state.accountPledges?.[id]||null;}
+function pledgedAccountCount(){return Object.keys(state.accountPledges||{}).filter(id=>accountById(id)).length;}
+function pledgeBadgeMarkup(id){
+  const pledge=accountPledgeFor(id);
+  if(!pledge)return '';
+  const note=String(pledge.note||'').trim();
+  return '<span class="pledge-badge" title="'+escapeHtml(note||'Compte nanti')+'"><i aria-hidden="true"></i>Nanti</span>';
+}
+function pledgeNoteMarkup(id){
+  const note=String(accountPledgeFor(id)?.note||'').trim();
+  return note?'<div class="account-pledge-note" title="'+escapeHtml(note)+'">Nantissement : '+escapeHtml(note)+'</div>':'';
 }
 function transactionOrder(a,b){const ao=Number.isFinite(Number(a.sortOrder))&&a.sortOrder!==null?Number(a.sortOrder):null,bo=Number.isFinite(Number(b.sortOrder))&&b.sortOrder!==null?Number(b.sortOrder):null;if(ao!==null&&bo!==null&&ao!==bo)return ao-bo;if(ao!==null&&bo===null)return -1;if(ao===null&&bo!==null)return 1;return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;}
 function accountTransactions(accountId){return state.transactions.filter(t=>t.accountId===accountId).sort(transactionOrder);}
@@ -536,9 +657,10 @@ function kindLabel(a){
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function accountMarkup(a,compact=false){
   const balance=balanceAt(a.id);
-  if(compact)return '<div class="account-row" data-account-open="'+a.id+'">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><div class="account-balance">'+euro(balance)+'<small>'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s)</small></div></div>';
+  const pledged=!!accountPledgeFor(a.id);
+  if(compact)return '<div class="account-row'+(pledged?' is-pledged':'')+'" data-account-open="'+a.id+'">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+pledgeBadgeMarkup(a.id)+'</small></div><div class="account-balance">'+euro(balance)+'<small>'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s)</small></div></div>';
   const extra=a.id==='tiime'&&a.kind==='pro'?'<div class="account-card-label">Net estimé après provisions : <strong>'+euro(tiimeNetBalance(a))+'</strong></div>':'<div class="account-card-label">'+state.transactions.filter(t=>t.accountId===a.id).length+' opération(s) enregistrée(s)</div>';
-  return '<article class="account-card" data-account-open="'+a.id+'"><div class="account-card-top">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+'</small></div><button class="edit-account" data-edit-account="'+a.id+'" aria-label="Configurer '+escapeHtml(a.name)+'" title="Configurer le compte">···</button></div><div class="account-card-balance">'+euro(balance)+'</div>'+extra+'<div class="account-card-foot"><span>Solde actuel</span><button data-account-transactions="'+a.id+'">Historique →</button></div></article>';
+  return '<article class="account-card'+(pledged?' is-pledged':'')+'" data-account-open="'+a.id+'"><div class="account-card-top">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+pledgeBadgeMarkup(a.id)+'</small></div><button class="edit-account" data-edit-account="'+a.id+'" aria-label="Configurer '+escapeHtml(a.name)+'" title="Configurer le compte">···</button></div><div class="account-card-balance">'+euro(balance)+'</div>'+extra+pledgeNoteMarkup(a.id)+'<div class="account-card-foot"><span>Solde actuel</span><button data-account-transactions="'+a.id+'">Historique →</button></div></article>';
 }
 function renderDashboard(){
   const total=totalAccountsBalance();
@@ -555,7 +677,7 @@ function renderDashboard(){
   $('net-detail').textContent=lombard>0?euro(total)+' − '+euro(lombard):'Aucune dette lombard enregistrée';
   $('lombard-label').textContent=state.lombardCredit?.label||'Aucun crédit enregistré';
   $('lombard-manage').textContent=state.lombardCredit?'Gérer':'Ajouter';
-  $('accounts-count-pill').textContent=state.accounts.length+' compte'+(state.accounts.length>1?'s':'');
+  $('accounts-count-pill').textContent=state.accounts.length+' compte'+(state.accounts.length>1?'s':'')+(pledgedAccountCount()?' · '+pledgedAccountCount()+' nanti'+(pledgedAccountCount()>1?'s':''):'');
   $('dashboard-accounts').innerHTML=state.accounts.map(a=>accountMarkup(a,true)).join('');
   const recent=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).slice(0,6);
   $('recent-transactions').innerHTML=recent.length?recent.map(t=>{const a=accountById(t.accountId)||{name:'Compte supprimé'};return '<div class="recent-row"><span class="movement-icon '+(t.amount>=0?'income':'expense')+'">'+(t.amount>=0?'↙':'↗')+'</span><div class="movement-main"><strong>'+escapeHtml(t.label)+'</strong><small>'+escapeHtml(a.name)+' · '+dateFormat(t.date)+'</small></div><span class="movement-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</span></div>';}).join(''):'<div class="empty-state">Aucune opération pour le moment.<br>Ajoutez une opération pour commencer.</div>';
@@ -566,7 +688,8 @@ function renderAccounts(){
   const accounts=state.accounts.filter(a=>(a.name+' '+a.short+' '+bankByKey(bankKeyForAccount(a)).name+' '+kindLabel(a)).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||effectiveAccountType(a)===kind));
   accounts.sort((a,b)=>{if(sort==='name-desc')return b.name.localeCompare(a.name,'fr');if(sort==='balance-desc')return balanceAt(b.id)-balanceAt(a.id);if(sort==='balance-asc')return balanceAt(a.id)-balanceAt(b.id);if(sort==='kind')return kindLabel(a).localeCompare(kindLabel(b),'fr')||a.name.localeCompare(b.name,'fr');return a.name.localeCompare(b.name,'fr');});
   $('all-accounts').innerHTML=accounts.length?accounts.map(a=>accountMarkup(a)).join(''):'<div class="empty-state">Aucun compte ne correspond aux filtres.</div>';
-  $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes';
+  const pledgedVisible=accounts.filter(a=>accountPledgeFor(a.id)).length;
+  $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes'+(pledgedVisible?' · '+pledgedVisible+' nanti'+(pledgedVisible>1?'s':''):'');
 }
 function fillAccountSelects(){
   const opts=state.accounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
@@ -574,7 +697,7 @@ function fillAccountSelects(){
   const current=$('transaction-account-filter').value;
   $('transaction-account-filter').innerHTML=opts;
   $('transaction-account-filter').value=state.accounts.some(a=>a.id===current)?current:(state.accounts[0]?.id||'');
-  for(const id of ['history-account-filter','recurring-account-filter']){
+  for(const id of ['history-account-filter','recurring-account-filter','stocks-account-filter']){
     const filter=$(id); if(!filter) continue;
     const selected=filter.value;
     filter.innerHTML='<option value="all">Tous les comptes</option>'+opts;
@@ -986,15 +1109,405 @@ function deleteCryptoHolding(id){
   showToast('Position supprimée.');
 }
 
-function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();saveState();}
+/* --- Positions actions et ETF --- */
+function stockMarketInfo(priceId){
+  const raw=String(priceId||'').trim().toUpperCase();
+  const prefix=raw.includes('-')?raw.split('-')[0]:'US';
+  return STOCK_MARKETS[prefix]||{label:prefix==='US'?'États-Unis':prefix,currency:'USD'};
+}
+function stockSymbolFromId(priceId){
+  const raw=String(priceId||'').trim();
+  const parts=raw.split('-');
+  return (parts.length>1?parts.slice(1).join('-'):raw).toUpperCase().replace(/[^A-Z0-9.]/g,'').slice(0,24);
+}
+function stockResultSymbol(result){
+  const raw=String(result?.s||'').trim();
+  if(raw.includes('/'))return raw.split('/').pop().toUpperCase().replace(/[^A-Z0-9.]/g,'').slice(0,24);
+  const symbol=raw.toUpperCase().replace(/[^A-Z0-9.]/g,'').slice(0,24);
+  return symbol||stockSymbolFromId(result?.id||'');
+}
+function nativeMoney(value,currency){
+  const code=String(currency||'EUR').toUpperCase();
+  if(code==='GBX')return nativeMoney(Number(value)/100,'GBP');
+  try{return new Intl.NumberFormat('fr-FR',{style:'currency',currency:code,maximumFractionDigits:2}).format(Number(value)||0);}
+  catch(error){return numberFr(value,4)+' '+code;}
+}
+function stockLogoMarkup(symbol,extraClass=''){
+  const raw=String(symbol||'?').replace(/[^A-Z0-9.]/gi,'').toUpperCase()||'?';
+  const label=raw.slice(0,1);
+  const palette=[['#eef2ff','#4e63cf'],['#eaf8f1','#1b8963'],['#fff3e7','#ac7128'],['#f4efff','#7053c2'],['#eef8fb','#2c7f9d']];
+  let hash=0;for(const char of label)hash=(hash*31+char.charCodeAt(0))%palette.length;
+  const colors=palette[hash];
+  return '<span class="stock-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-hidden="true"><span>'+escapeHtml(label)+'</span></span>';
+}
+function stockAccountOptionLabel(account){return account.name+' · '+kindLabel(account);}
+function defaultStockAccountId(){
+  const filtered=$('stocks-account-filter')?.value;
+  if(filtered&&filtered!=='all'&&accountById(filtered))return filtered;
+  const preferred=state.accounts.find(a=>bankKeyForAccount(a)==='interactive-brokers')||state.accounts.find(a=>['pea','cto','av'].includes(effectiveAccountType(a)))||state.accounts[0];
+  return preferred?.id||'';
+}
+function fillStockAccountSelect(){
+  const select=$('stock-edit-account');
+  if(!select)return;
+  const selected=select.value;
+  select.replaceChildren();
+  state.accounts.forEach(account=>select.add(new Option(stockAccountOptionLabel(account),account.id)));
+  if(selected&&state.accounts.some(a=>a.id===selected))select.value=selected;
+  else select.value=defaultStockAccountId();
+}
+function fillStockCurrencyOptions(selected='EUR'){
+  const select=$('stock-edit-currency');
+  if(!select)return;
+  const currency=normalizeStockCurrency(selected);
+  select.innerHTML=STOCK_CURRENCIES.map(code=>'<option value="'+code+'">'+escapeHtml(STOCK_CURRENCY_LABELS[code]||code)+'</option>').join('');
+  if(!STOCK_CURRENCIES.includes(currency))select.add(new Option(currency,currency));
+  select.value=currency;
+}
+function hydrateStockPrices(){
+  try{
+    const savedPrices=JSON.parse(localStorage.getItem(STOCK_PRICE_CACHE_KEY));
+    if(savedPrices&&savedPrices.values&&typeof savedPrices.values==='object'){
+      const values={};
+      for(const [id,value] of Object.entries(savedPrices.values)){
+        const price=Number(value);
+        if(id&&Number.isFinite(price)&&price>0)values[id]=price;
+      }
+      stockPrices.values=values;
+      stockPrices.updatedAt=Number(savedPrices.updatedAt)||0;
+    }
+  }catch(error){console.warn('Cache des cours actions illisible',error);}
+  try{
+    const savedFx=JSON.parse(localStorage.getItem(STOCK_FX_CACHE_KEY));
+    if(savedFx&&savedFx.rates&&typeof savedFx.rates==='object'){
+      const rates={EUR:1};
+      for(const [code,value] of Object.entries(savedFx.rates)){
+        const rate=Number(value);
+        if(STOCK_CURRENCIES.includes(code)&&Number.isFinite(rate)&&rate>0)rates[code]=rate;
+      }
+      stockFx.rates=rates;
+      stockFx.updatedAt=Number(savedFx.updatedAt)||0;
+    }
+  }catch(error){console.warn('Cache des taux de change illisible',error);}
+}
+function stockNativePrice(holding){
+  const value=Number(stockPrices.values[holding.priceId]);
+  return Number.isFinite(value)&&value>0?value:null;
+}
+function stockFxRate(currency){
+  const code=normalizeStockCurrency(currency);
+  if(code==='EUR')return 1;
+  if(code==='GBX'){
+    const directRate=Number(stockFx.rates.GBX);
+    if(Number.isFinite(directRate)&&directRate>0)return directRate;
+    const gbpRate=stockFxRate('GBP');
+    return gbpRate===null?null:gbpRate/100;
+  }
+  const rate=Number(stockFx.rates[code]);
+  return Number.isFinite(rate)&&rate>0?rate:null;
+}
+function stockPriceDetails(holding){
+  const nativePrice=stockNativePrice(holding);
+  const rate=stockFxRate(holding.currency);
+  return {nativePrice,rate,price:nativePrice===null||rate===null?null:nativePrice*rate};
+}
+async function fetchStockNativePrice(priceId){
+  let lastError=null;
+  for(const period of ['1D','1Y']){
+    try{
+      const response=await fetch(STOCK_CHART_ENDPOINT+encodeURIComponent(priceId)+'/'+period+'/l',{headers:{Accept:'application/json'},cache:'no-store'});
+      if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez plus tard':'réponse HTTP '+response.status);
+      const data=await response.json();
+      const rows=Array.isArray(data?.data)?data.data:[];
+      for(let index=rows.length-1;index>=0;index--){
+        const price=Number(rows[index]?.c);
+        if(Number.isFinite(price)&&price>0)return price;
+      }
+    }catch(error){lastError=error;}
+  }
+  throw lastError||new Error('aucun cours reçu');
+}
+async function refreshStockFx(currencies){
+  if(!currencies.length){
+    stockFx.error='';
+    stockFx.loading=false;
+    return;
+  }
+  stockFx.loading=true;
+  stockFx.error='';
+  try{
+    const response=await fetch(STOCK_FX_ENDPOINT,{headers:{Accept:'application/json'},cache:'no-store'});
+    if(!response.ok)throw new Error('réponse HTTP '+response.status);
+    const data=await response.json();
+    if(data?.result!=='success'||!data?.rates)throw new Error('taux de change indisponibles');
+    const rates={};
+    for(const currency of currencies){
+      const apiCode=currency==='GBX'?'GBP':currency;
+      const perEuro=Number(data.rates[apiCode]);
+      if(Number.isFinite(perEuro)&&perEuro>0)rates[currency]=(1/perEuro)/(currency==='GBX'?100:1);
+    }
+    if(!Object.keys(rates).length)throw new Error('aucun taux EUR reçu');
+    stockFx.rates={...stockFx.rates,...rates};
+    stockFx.updatedAt=Date.now();
+    try{localStorage.setItem(STOCK_FX_CACHE_KEY,JSON.stringify({rates:stockFx.rates,updatedAt:stockFx.updatedAt}));}catch(error){}
+  }catch(error){
+    console.error('Stock FX fetch failed',error);
+    stockFx.error=error instanceof TypeError?'réseau indisponible':(error.message||'taux de change indisponible');
+  }finally{
+    stockFx.loading=false;
+  }
+}
+async function loadStockPrices(){
+  const ids=[...new Set((state.stockHoldings||[]).map(h=>h.priceId).filter(Boolean))];
+  if(!ids.length){
+    stockPrices.error='';
+    stockPrices.loading=false;
+    renderStocks();
+    return;
+  }
+  if(stockPrices.loading)return;
+  stockPrices.loading=true;
+  stockPrices.error='';
+  renderStocks();
+  const currencies=[...new Set((state.stockHoldings||[]).map(h=>normalizeStockCurrency(h.currency)).filter(code=>code!=='EUR'))];
+  const fxTask=refreshStockFx(currencies);
+  const values={};
+  let successCount=0;
+  const queue=[...ids];
+  const worker=async()=>{
+    while(queue.length){
+      const priceId=queue.shift();
+      try{
+        const price=await fetchStockNativePrice(priceId);
+        if(Number.isFinite(price)&&price>0){values[priceId]=price;successCount++;}
+      }catch(error){console.warn('Cours action indisponible pour '+priceId,error);}
+    }
+  };
+  try{
+    await Promise.all([fxTask,...Array.from({length:Math.min(5,queue.length)},()=>worker())]);
+    if(successCount){
+      stockPrices.values={...stockPrices.values,...values};
+      stockPrices.updatedAt=Date.now();
+      try{localStorage.setItem(STOCK_PRICE_CACHE_KEY,JSON.stringify({values:stockPrices.values,updatedAt:stockPrices.updatedAt}));}catch(error){}
+    }else{
+      stockPrices.error='aucun cours reçu de StockAnalysis';
+    }
+  }finally{
+    stockPrices.loading=false;
+    renderStocks();
+  }
+}
+function renderStocks(){
+  if(!$('stocks-rows'))return;
+  const allHoldings=[...(state.stockHoldings||[])];
+  const query=$('stocks-search')?.value.trim().toLocaleLowerCase('fr')||'';
+  const accountFilter=$('stocks-account-filter')?.value||'all';
+  const performanceFilter=$('stocks-performance-filter')?.value||'all';
+  const sort=$('stocks-sort')?.value||'manual';
+  const metrics=new Map(allHoldings.map(h=>{
+    const details=stockPriceDetails(h);
+    const invested=Number(h.invested)||0;
+    const quantity=Number(h.quantity)||0;
+    const value=details.price===null?null:quantity*details.price;
+    const gain=value===null?null:value-invested;
+    const performance=gain===null||invested<=0?null:gain/invested*100;
+    return [h.id,{...details,invested,quantity,value,gain,performance}];
+  }));
+  const symbolOf=holding=>String(holding.symbol||'');
+  let holdings=allHoldings.filter(h=>{
+    const account=accountById(h.accountId);
+    const m=metrics.get(h.id);
+    const searchable=(symbolOf(h)+' '+String(h.name||'')+' '+String(h.market||'')+' '+String(account?.name||'')).toLocaleLowerCase('fr');
+    if(!searchable.includes(query))return false;
+    if(accountFilter!=='all'&&h.accountId!==accountFilter)return false;
+    if(performanceFilter==='gain')return m.gain!==null&&m.gain>0;
+    if(performanceFilter==='loss')return m.gain!==null&&m.gain<0;
+    return true;
+  });
+  const compareDesc=(a,b,key)=>{
+    const av=a[key],bv=b[key];
+    if(av===null&&bv===null)return 0;
+    if(av===null)return 1;
+    if(bv===null)return -1;
+    return bv-av;
+  };
+  holdings.sort((a,b)=>{
+    const ma=metrics.get(a.id),mb=metrics.get(b.id);
+    const bySymbol=symbolOf(a).localeCompare(symbolOf(b),'fr');
+    if(sort==='name')return String(a.name||a.symbol||'').localeCompare(String(b.name||b.symbol||''),'fr')||bySymbol;
+    if(sort==='account')return (accountById(a.accountId)?.name||'').localeCompare(accountById(b.accountId)?.name||'','fr')||bySymbol;
+    if(sort==='invested-desc')return mb.invested-ma.invested||bySymbol;
+    if(sort==='quantity-desc')return mb.quantity-ma.quantity||bySymbol;
+    if(sort==='value-desc')return compareDesc(ma,mb,'value')||bySymbol;
+    if(sort==='gain-desc')return compareDesc(ma,mb,'gain')||bySymbol;
+    if(sort==='performance-desc')return compareDesc(ma,mb,'performance')||bySymbol;
+    return (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||bySymbol;
+  });
+  const priced=holdings.filter(h=>metrics.get(h.id).value!==null);
+  const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
+  const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
+  const currentValue=priced.reduce((sum,h)=>sum+metrics.get(h.id).value,0);
+  const gain=currentValue-investedPriced;
+  const performance=investedPriced>0?gain/investedPriced*100:0;
+
+  $('stocks-invested').textContent=euro(investedAll);
+  $('stocks-value').textContent=euro(currentValue);
+  const gainElement=$('stocks-gain');
+  gainElement.textContent=(gain>0?'+':'')+euro(gain);
+  gainElement.classList.toggle('positive',gain>0);
+  gainElement.classList.toggle('negative',gain<0);
+  const performanceElement=$('stocks-performance');
+  performanceElement.textContent=investedPriced>0?formatSignedPercent(performance):'—';
+  performanceElement.classList.toggle('positive',performance>0);
+  performanceElement.classList.toggle('negative',performance<0);
+
+  const priceStatus=$('stocks-price-status');
+  if(priceStatus){
+    if(!allHoldings.length){priceStatus.textContent='Aucune position actions ou ETF à valoriser.';priceStatus.classList.remove('is-error');}
+    else if(stockPrices.loading){priceStatus.textContent='Actualisation des cours…';priceStatus.classList.remove('is-error');}
+    else if(stockPrices.error){priceStatus.textContent='Cours indisponibles : '+stockPrices.error;priceStatus.classList.add('is-error');}
+    else if(stockFx.error){priceStatus.textContent='Taux de change indisponible : '+stockFx.error;priceStatus.classList.add('is-error');}
+    else if(stockPrices.updatedAt){
+      const fxLabel=currenciesNeedFx(holdings)?' · conversion ExchangeRate-API':'';
+      priceStatus.textContent='Cours actualisés à '+cryptoTimeLabel(stockPrices.updatedAt)+' · source StockAnalysis'+fxLabel;
+      priceStatus.classList.remove('is-error');
+    }
+    else{priceStatus.textContent='Cours pas encore chargés.';priceStatus.classList.remove('is-error');}
+  }
+
+  const filtered=query!==''||accountFilter!=='all'||performanceFilter!=='all';
+  $('stocks-rows').innerHTML=holdings.length?holdings.map(h=>{
+    const m=metrics.get(h.id);
+    const account=accountById(h.accountId)||{id:'',name:'Compte supprimé',kind:'bank'};
+    const market=String(h.market||stockMarketInfo(h.priceId).label);
+    const nativeLabel=m.nativePrice!==null&&normalizeStockCurrency(h.currency)!=='EUR'?'<small>'+escapeHtml(nativeMoney(m.nativePrice,h.currency))+'</small>':'';
+    return '<tr><td><div class="stock-title">'+stockLogoMarkup(h.symbol)+'<div class="stock-title-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small><span class="stock-meta"><span class="stock-meta-text">'+escapeHtml(account.name)+' · '+escapeHtml(market)+'</span>'+pledgeBadgeMarkup(account.id)+'</span></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="stock-quantity">'+numberFr(m.quantity)+'</td><td class="stock-price">'+(m.price===null?'—':euroPrecise(m.price))+nativeLabel+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="stock-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-stock="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-stock="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position actions ou ETF. Cliquez sur « Ajouter une action » pour commencer.')+'</div></td></tr>';
+
+  const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
+  let footer=holdings.length+' position(s) affichée(s)'+(filtered?' sur '+allHoldings.length:'')+' · cours StockAnalysis.com'+(currenciesNeedFx(holdings)?' · conversion en euros via ExchangeRate-API':'');
+  if(filtered)footer+=' · totaux calculés sur les positions affichées';
+  if(stockPrices.updatedAt)footer+=' · dernière actualisation à '+cryptoTimeLabel(stockPrices.updatedAt);
+  if(missing)footer+=' · '+missing+' position(s) sans cours : les totaux ne les incluent pas.';
+  $('stocks-footer').textContent=footer;
+}
+function currenciesNeedFx(holdings){return holdings.some(h=>normalizeStockCurrency(h.currency)!=='EUR');}
+function closeStockResults(){
+  clearTimeout(stockSearch.timer);
+  if(stockSearch.controller){stockSearch.controller.abort();stockSearch.controller=null;}
+  stockSearch.results=[];
+  const container=$('stock-search-results');
+  if(container){container.hidden=true;container.innerHTML='';}
+  const input=$('stock-search');
+  if(input)input.setAttribute('aria-expanded','false');
+}
+function setStockSelection(data){
+  const priceId=String(data.priceId||'').trim();
+  if(!priceId)return;
+  const info=stockMarketInfo(priceId);
+  const symbol=String(data.symbol||stockSymbolFromId(priceId)).toUpperCase();
+  const name=String(data.name||symbol).trim()||symbol;
+  const market=String(data.market||info.label).trim()||info.label;
+  const currency=normalizeStockCurrency(data.currency||info.currency);
+  $('stock-edit-priceid').value=priceId;
+  $('stock-edit-symbol').value=symbol;
+  $('stock-edit-name').value=name;
+  $('stock-edit-market').value=market;
+  fillStockCurrencyOptions(currency);
+  $('stock-search').value=symbol+' — '+name;
+  closeStockResults();
+  const selected=$('stock-selected');
+  selected.innerHTML=stockLogoMarkup(symbol,'is-small')+'<span>Sélection : '+escapeHtml(symbol+' — '+name)+' · '+escapeHtml(market)+' · '+escapeHtml(currency)+'</span>';
+  selected.classList.add('is-selected');
+}
+function clearStockSelection(clearSearch=false){
+  $('stock-edit-priceid').value='';
+  $('stock-edit-symbol').value='';
+  $('stock-edit-name').value='';
+  $('stock-edit-market').value='';
+  fillStockCurrencyOptions('EUR');
+  if(clearSearch)$('stock-search').value='';
+  const selected=$('stock-selected');
+  selected.textContent='Aucune action sélectionnée.';
+  selected.classList.remove('is-selected');
+}
+async function searchStocks(query){
+  if(stockSearch.controller)stockSearch.controller.abort();
+  const controller=new AbortController();
+  stockSearch.controller=controller;
+  const container=$('stock-search-results');
+  stockSearch.results=[];
+  container.hidden=false;
+  container.innerHTML='<div class="stock-message">Recherche…</div>';
+  $('stock-search').setAttribute('aria-expanded','true');
+  try{
+    const response=await fetch(STOCK_SEARCH_ENDPOINT+'?q='+encodeURIComponent(query),{signal:controller.signal,headers:{Accept:'application/json'},cache:'no-store'});
+    if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
+    const data=await response.json();
+    const seen=new Set(),results=[];
+    for(const item of Array.isArray(data?.data)?data.data:[]){
+      const id=String(item?.id||'').trim();
+      if(!id||seen.has(id)||!item?.n)continue;
+      seen.add(id);
+      results.push(item);
+      if(results.length>=10)break;
+    }
+    stockSearch.results=results;
+    if(!results.length){container.innerHTML='<div class="stock-message">Aucune action trouvée.</div>';return;}
+    container.innerHTML=results.map((item,index)=>{
+      const symbol=stockResultSymbol(item);
+      const info=stockMarketInfo(item.id);
+      const type=item.st==='e'?'ETF':'Action';
+      return '<button type="button" class="stock-option" role="option" data-stock-result-index="'+index+'">'+stockLogoMarkup(symbol,'is-small')+'<span class="stock-option-symbol">'+escapeHtml(symbol)+'</span><span class="stock-option-name">'+escapeHtml(item.n||'')+'</span><span class="stock-option-market">'+escapeHtml(info.label+' · '+info.currency+' · '+type)+'</span></button>';
+    }).join('');
+  }catch(error){
+    if(error.name==='AbortError')return;
+    console.error('Stock search failed',error);
+    container.hidden=false;
+    const message=error instanceof TypeError?'réseau indisponible, réessayez.':(error.message||'réessayez.');
+    container.innerHTML='<div class="stock-message">Recherche indisponible : '+escapeHtml(message)+'</div>';
+  }
+}
+function openStockEditor(id=null){
+  const holding=id?(state.stockHoldings||[]).find(h=>h.id===id):null;
+  if(id&&!holding)return;
+  $('stock-form').reset();
+  closeStockResults();
+  fillStockAccountSelect();
+  fillStockCurrencyOptions('EUR');
+  $('stock-edit-id').value=holding?.id||'';
+  if(holding){
+    setStockSelection(holding);
+    $('stock-edit-account').value=holding.accountId;
+    $('stock-edit-invested').value=Number(holding.invested||0);
+    $('stock-edit-quantity').value=String(holding.quantity??'');
+  }else{
+    clearStockSelection(true);
+    $('stock-edit-account').value=defaultStockAccountId();
+  }
+  $('stock-modal-title').textContent=holding?'Modifier la position':'Ajouter une action';
+  $('stock-dialog').showModal();
+}
+function deleteStockHolding(id){
+  const holding=(state.stockHoldings||[]).find(h=>h.id===id);
+  if(!holding)return;
+  if(!window.confirm('Supprimer la position « '+holding.symbol+' » ? Les totaux seront recalculés.'))return;
+  prepareUndo();
+  cloud.stockHoldingsDirty=true;
+  state.stockHoldings=state.stockHoldings.filter(h=>h.id!==id);
+  renderAll();
+  showToast('Position actions supprimée.',true);
+}
+function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();saveState();}
 function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.setAttribute('aria-label','Annuler la dernière action');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();try{undoLastAction();}catch(error){console.error('Undo failed',error);showToast('Impossible d’annuler cette action : '+(error.message||'erreur inconnue.'));}},{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},10000);}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',recurring:'Récurrences'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',recurring:'Récurrences'})[view]||view;
   if(view==='recurring')renderRecurring();
   if(view==='accounts')renderAccounts();if(view==='transactions')renderTransactions();if(view==='history')renderMonthlyHistory();
   if(view==='crypto'){renderCrypto();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();}
+  if(view==='stocks'){renderStocks();if(Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function openTransaction(accountId=null,transaction=null){
@@ -1016,6 +1529,12 @@ function updateAccountBankPreview(){
   const bank=$('edit-account-bank').value||'other';
   $('account-bank-preview').innerHTML=bankLogo({name,bank});
 }
+function updateAccountPledgeFields(){
+  const pledged=$('edit-account-pledged')?.checked===true;
+  const note=$('edit-account-pledge-note');
+  if(note)note.disabled=!pledged;
+  $('account-pledge-note-field')?.classList.toggle('is-disabled',!pledged);
+}
 function openAccountEditor(id=null){
   const a=id?accountById(id):null;
   if(id&&!a)return;
@@ -1027,6 +1546,10 @@ function openAccountEditor(id=null){
   $('edit-account-kind').value=a?effectiveAccountType(a):'bank';
   fillBankOptions(a?bankKeyForAccount(a):'other');
   $('edit-account-opening').value=a?Number(a.opening||0):0;
+  const pledge=a?accountPledgeFor(a.id):null;
+  $('edit-account-pledged').checked=!!pledge;
+  $('edit-account-pledge-note').value=pledge?.note||'';
+  updateAccountPledgeFields();
   $('account-delete').hidden=!a;
   updateAccountBankPreview();
   $('account-dialog').showModal();
@@ -1041,14 +1564,17 @@ function deleteAccount(){
   }
   const linkedTransactions=state.transactions.filter(t=>t.accountId===id);
   const linkedTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId===id);
+  const linkedStocks=(state.stockHoldings||[]).filter(t=>t.accountId===id);
   const linked=[];
   if(linkedTransactions.length)linked.push(linkedTransactions.length+' opération'+(linkedTransactions.length>1?'s':''));
   if(linkedTemplates.length)linked.push(linkedTemplates.length+' récurrence'+(linkedTemplates.length>1?'s':''));
+  if(linkedStocks.length)linked.push(linkedStocks.length+' position'+(linkedStocks.length>1?'s':'')+' d’actions');
   let message='Supprimer le compte « '+account.name+' » ?';
   if(linked.length){
-    const total=linkedTransactions.length+linkedTemplates.length;
-    message+='\n\n'+linked.join(' et ')+' '+(total>1?'liées':'liée')+' à ce compte '+(total>1?'seront aussi supprimées':'sera aussi supprimée')+'.';
+    const total=linkedTransactions.length+linkedTemplates.length+linkedStocks.length;
+    message+='\n\n'+linked.join(', ')+' '+(total>1?'liées':'liée')+' à ce compte '+(total>1?'seront aussi supprimées':'sera aussi supprimée')+'.';
   }
+  if(accountPledgeFor(id))message+='\n\nLe nantissement enregistré sur ce compte sera aussi supprimé.';
   message+='\n\nCette action est définitive.';
   if(!window.confirm(message))return;
   if(cloud.user)cloud.pendingAccountDeletes.add(id);
@@ -1057,7 +1583,11 @@ function deleteAccount(){
   state.accounts=state.accounts.filter(a=>a.id!==id);
   state.transactions=state.transactions.filter(t=>t.accountId!==id);
   state.recurringTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId!==id);
+  state.stockHoldings=(state.stockHoldings||[]).filter(t=>t.accountId!==id);
+  if(state.accountPledges?.[id]){const next={...state.accountPledges};delete next[id];state.accountPledges=next;}
   cloud.accountTypesDirty=true;
+  cloud.accountPledgesDirty=true;
+  cloud.stockHoldingsDirty=true;
   undoPoint=null;
   if($('account-dialog').open)$('account-dialog').close();
   renderAll();
@@ -1329,6 +1859,67 @@ $('crypto-form').addEventListener('submit',event=>{
   showToast(existing?'Position modifiée.':'Position ajoutée.');
   if(coingeckoId&&cryptoPrices.values[coingeckoId]===undefined)loadCryptoPrices();
 });
+$('stocks-add').addEventListener('click',()=>openStockEditor());
+$('stocks-refresh').addEventListener('click',loadStockPrices);
+['stocks-account-filter','stocks-performance-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',renderStocks));
+$('stocks-search').addEventListener('input',renderStocks);
+$('stock-search').addEventListener('input',event=>{
+  const query=event.target.value.trim();
+  clearStockSelection(false);
+  closeStockResults();
+  if(query.length<2)return;
+  stockSearch.timer=setTimeout(()=>searchStocks(query),350);
+});
+$('stock-search').addEventListener('keydown',event=>{
+  if(event.key==='Enter'){
+    event.preventDefault();
+    // Ne pas choisir automatiquement la première place quand plusieurs marchés
+    // proposent le même nom : l'utilisateur doit vérifier la devise et la place.
+    if(stockSearch.results.length===1){
+      const result=stockSearch.results[0];
+      const info=stockMarketInfo(result.id);
+      setStockSelection({priceId:result.id,symbol:stockResultSymbol(result),name:result.n,market:info.label,currency:info.currency});
+    }
+  }else if(event.key==='Escape'){
+    closeStockResults();
+  }
+});
+$('stock-search-results').addEventListener('click',event=>{
+  const option=event.target.closest('[data-stock-result-index]');
+  if(!option)return;
+  const result=stockSearch.results[Number(option.dataset.stockResultIndex)];
+  if(!result)return;
+  const info=stockMarketInfo(result.id);
+  setStockSelection({priceId:result.id,symbol:stockResultSymbol(result),name:result.n,market:info.label,currency:info.currency});
+});
+$('stock-dialog').addEventListener('close',closeStockResults);
+document.addEventListener('click',event=>{
+  if(!event.target.closest('#stock-search')&&!event.target.closest('#stock-search-results'))closeStockResults();
+});
+$('stock-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  const id=$('stock-edit-id').value;
+  const existing=id?(state.stockHoldings||[]).find(h=>h.id===id):null;
+  const accountId=$('stock-edit-account').value;
+  const priceId=$('stock-edit-priceid').value.trim();
+  const symbol=$('stock-edit-symbol').value.trim().toUpperCase();
+  const name=$('stock-edit-name').value.trim()||symbol;
+  const market=$('stock-edit-market').value.trim()||stockMarketInfo(priceId).label;
+  const currency=normalizeStockCurrency($('stock-edit-currency').value);
+  const invested=Number($('stock-edit-invested').value);
+  const quantity=Number($('stock-edit-quantity').value);
+  if(!accountById(accountId)){showToast('Choisissez un compte pour cette position.');return;}
+  if(!priceId||!symbol){showToast('Sélectionnez une action ou un ETF dans la liste de recherche.');return;}
+  if(!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
+  const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,symbol,name,market,currency,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
+  if(existing)state.stockHoldings=state.stockHoldings.map(h=>h.id===id?record:h);
+  else state.stockHoldings=[...(state.stockHoldings||[]),record];
+  cloud.stockHoldingsDirty=true;
+  $('stock-dialog').close();
+  renderAll();
+  showToast(existing?'Position actions modifiée.':'Position actions ajoutée.');
+  if(stockPrices.values[priceId]===undefined)loadStockPrices();
+});
 $('export-btn').addEventListener('click',()=>{
   const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
   choice?exportData():downloadCsv();
@@ -1380,6 +1971,7 @@ $('account-form').addEventListener('submit',event=>{
   event.preventDefault();
   const id=$('edit-account-id').value;
   const existing=id?accountById(id):null;
+  const accountId=existing?.id||crypto.randomUUID();
   const name=$('edit-account-name').value.trim();
   const accountType=$('edit-account-kind').value;
   const kind=['pea','av','cto'].includes(accountType)?'savings':accountType;
@@ -1397,9 +1989,16 @@ $('account-form').addEventListener('submit',event=>{
     existing.accountType=accountType;
     existing.opening=opening;
   }else{
-    state.accounts.push({id:crypto.randomUUID(),name,short:accountShort(name),bank,kind,accountType,opening,vatRate:20,socialRate:45,netOpening:0});
+    state.accounts.push({id:accountId,name,short:accountShort(name),bank,kind,accountType,opening,vatRate:20,socialRate:45,netOpening:0});
   }
+  const pledged=$('edit-account-pledged').checked;
+  const pledgeNote=$('edit-account-pledge-note').value.trim().slice(0,160);
+  const pledges={...state.accountPledges};
+  if(pledged)pledges[accountId]={note:pledgeNote};
+  else delete pledges[accountId];
+  state.accountPledges=pledges;
   cloud.accountTypesDirty=true;
+  cloud.accountPledgesDirty=true;
   $('account-dialog').close();
   renderAll();
   showToast(existing?'Paramètres du compte enregistrés.':'Compte ajouté.',!!existing);
@@ -1407,6 +2006,7 @@ $('account-form').addEventListener('submit',event=>{
 $('account-delete').addEventListener('click',deleteAccount);
 $('edit-account-name').addEventListener('input',updateAccountBankPreview);
 $('edit-account-bank').addEventListener('change',updateAccountBankPreview);
+$('edit-account-pledged').addEventListener('change',updateAccountPledgeFields);
 document.addEventListener('change',event=>{
   const paid=event.target.closest('[data-toggle-paid]');
   if(!paid)return;
@@ -1432,6 +2032,10 @@ document.addEventListener('click',event=>{
   if(editCrypto){openCryptoEditor(editCrypto.dataset.editCrypto);return;}
   const deleteCrypto=event.target.closest('[data-delete-crypto]');
   if(deleteCrypto){deleteCryptoHolding(deleteCrypto.dataset.deleteCrypto);return;}
+  const editStock=event.target.closest('[data-edit-stock]');
+  if(editStock){openStockEditor(editStock.dataset.editStock);return;}
+  const deleteStock=event.target.closest('[data-delete-stock]');
+  if(deleteStock){deleteStockHolding(deleteStock.dataset.deleteStock);return;}
   const editAccount=event.target.closest('[data-edit-account]');
   if(editAccount){event.stopPropagation();openAccountEditor(editAccount.dataset.editAccount);return;}
   const history=event.target.closest('[data-account-transactions]');
@@ -1440,10 +2044,15 @@ document.addEventListener('click',event=>{
   if(account){openAccountEditor(account.dataset.accountOpen);}
 });
 hydrateCryptoPrices();
+hydrateStockPrices();
 setInterval(()=>{
   if(!document.hidden&&(state.cryptoHoldings||[]).length)loadCryptoPrices();
 },CRYPTO_REFRESH_MS);
+setInterval(()=>{
+  if(!document.hidden&&(state.stockHoldings||[]).length)loadStockPrices();
+},STOCK_REFRESH_MS);
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&(state.cryptoHoldings||[]).length&&Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();
+  if(!document.hidden&&(state.stockHoldings||[]).length&&Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();
 });
 initCloud();

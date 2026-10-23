@@ -6,12 +6,12 @@
   <meta name="theme-color" content="#111b2e">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
-  <meta name="description" content="Espace privé pour gérer vos comptes, opérations et récurrences avec sauvegarde en ligne.">
+  <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=accounts-bank-logos-2">
+  <link rel="stylesheet" href="styles.css?v=stocks-pledges-2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=accounts-bank-logos-2" defer></script>
+  <script src="app.js?v=stocks-pledges-2" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -35,6 +35,7 @@
       <button class="nav-item" data-view="transactions"><span class="nav-icon">↕</span> Opérations</button>
       <button class="nav-item" data-view="history"><span class="nav-icon">▤</span> Historique mensuel</button>
       <button class="nav-item" data-view="crypto"><span class="nav-icon">₿</span> Crypto</button>
+      <button class="nav-item" data-view="stocks"><span class="nav-icon">⇗</span> Actions</button>
       <button class="nav-item" data-view="recurring"><span class="nav-icon">⟳</span> Récurrences</button>
       <div class="sidebar-bottom">
         <div class="privacy-card"><span class="privacy-icon">◈</span><strong>Données synchronisées</strong><p>Connectez-vous pour sauvegarder vos comptes et opérations dans votre base privée en ligne.</p><button class="secondary-button cloud-open" id="cloud-open">Connexion cloud</button></div>
@@ -101,6 +102,14 @@
         <section class="panel table-panel"><div class="table-scroll"><table class="crypto-table"><thead><tr><th>COIN</th><th>INVESTI</th><th>QUANTITÉ</th><th>PRIX ACTUEL</th><th>VALEUR ACTUELLE</th><th>GAIN/PERTE</th><th>%</th><th>ACTIONS</th></tr></thead><tbody id="crypto-rows"></tbody></table></div><div class="table-footer" id="crypto-footer">Prix en euros fournis par CoinGecko.</div></section>
       </section>
 
+      <section class="view" id="stocks-view">
+        <div class="page-heading"><div><p class="eyebrow">PORTEFEUILLE ACTIONS</p><h1>Actions</h1><p class="subtitle">Suivez vos actions et ETF chez IBKR, sur votre PEA ou tout autre compte, avec les cours convertis en euros.</p></div><button class="primary-button" id="stocks-add"><span>＋</span> Ajouter une action</button></div>
+        <div class="history-summary-grid stocks-summary-grid"><article class="history-summary-card"><span>Investi</span><strong id="stocks-invested">0,00 €</strong></article><article class="history-summary-card"><span>Valeur actuelle</span><strong id="stocks-value">0,00 €</strong></article><article class="history-summary-card"><span>Gain/Perte</span><strong id="stocks-gain">0,00 €</strong></article><article class="history-summary-card"><span>Performance</span><strong id="stocks-performance">0,00 %</strong></article></div>
+        <div class="toolbar table-filters stocks-filters"><div class="search-box"><span>⌕</span><input id="stocks-search" placeholder="Rechercher une action, un compte…" aria-label="Rechercher une action"></div><select id="stocks-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="stocks-performance-filter" aria-label="Filtrer les positions actions"><option value="all">Toutes les positions</option><option value="gain">En gain</option><option value="loss">En perte</option></select><select id="stocks-sort" aria-label="Trier les positions actions"><option value="manual">Ordre manuel</option><option value="name">Nom A → Z</option><option value="account">Compte</option><option value="invested-desc">Investi décroissant</option><option value="quantity-desc">Quantité décroissante</option><option value="value-desc">Valeur actuelle décroissante</option><option value="gain-desc">Gain/Perte décroissant</option><option value="performance-desc">Performance décroissante</option></select></div>
+        <div class="toolbar stocks-toolbar"><button class="secondary-button" id="stocks-refresh" type="button">Actualiser les cours</button><span class="toolbar-note" id="stocks-price-status">Cours pas encore chargés.</span></div>
+        <section class="panel table-panel"><div class="table-scroll"><table class="stocks-table"><thead><tr><th>TITRE</th><th>INVESTI</th><th>QUANTITÉ</th><th>PRIX ACTUEL</th><th>VALEUR ACTUELLE</th><th>GAIN/PERTE</th><th>%</th><th>ACTIONS</th></tr></thead><tbody id="stocks-rows"></tbody></table></div><div class="table-footer" id="stocks-footer">Cours fournis par StockAnalysis.com, convertis en euros lorsque nécessaire.</div></section>
+      </section>
+
       <section class="view" id="recurring-view">
         <div class="page-heading"><div><p class="eyebrow">OPÉRATIONS PROGRAMMÉES</p><h1>Récurrences</h1><p class="subtitle">Ajoutez, modifiez, suspendez ou supprimez vos opérations programmées. Les opérations déjà générées restent dans l’historique.</p></div><div class="heading-actions"><button class="secondary-button" id="recurring-add-template">Ajouter une récurrence</button><button class="primary-button" id="recurring-add-month">Générer les opérations du mois prochain</button></div></div>
         <div class="recurring-controls panel"><input id="recurring-month" type="hidden"><span id="recurring-summary">Les opérations seront ajoutées automatiquement pour le mois prochain. Les doublons seront ignorés.</span></div>
@@ -155,6 +164,12 @@
       </div>
       <label>Solde de départ (€)<input id="edit-account-opening" type="number" step="0.01" required></label>
       <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée. Pour ajouter un nouveau compte, renseignez son nom, son type, sa banque et son solde actuel.</p>
+      <fieldset class="pledge-field">
+        <legend>Nantissement</legend>
+        <label class="pledge-check"><input id="edit-account-pledged" type="checkbox"> Ce compte est nanti</label>
+        <label id="account-pledge-note-field" class="account-pledge-note-field">Précision du nantissement — facultatif<input id="edit-account-pledge-note" type="text" maxlength="160" placeholder="Ex. Nanti au profit de…" disabled></label>
+        <p class="form-help">Le statut « Nanti » sera affiché sur la carte du compte et dans la vue d’ensemble.</p>
+      </fieldset>
       <div class="modal-actions"><button type="button" class="secondary-button danger-button" id="account-delete" hidden>Supprimer</button><button type="button" class="secondary-button" data-close="account-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
@@ -185,6 +200,25 @@
       <div class="form-row"><label>Investi (€)<input id="crypto-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
       <p class="form-help">La valeur actuelle est calculée en multipliant la quantité par le prix du marché. Le logo est récupéré automatiquement avec les données CoinGecko.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="crypto-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="stock-dialog" class="modal stock-dialog">
+    <form id="stock-form">
+      <div class="modal-heading"><div><p class="eyebrow">PORTEFEUILLE ACTIONS</p><h2 id="stock-modal-title">Ajouter une action</h2></div><button type="button" class="close-button" data-close="stock-dialog" aria-label="Fermer">×</button></div>
+      <input type="hidden" id="stock-edit-id">
+      <label>Compte<select id="stock-edit-account" required></select></label>
+      <label>Rechercher une action ou un ETF<input id="stock-search" type="search" placeholder="AAPL, Air Liquide, CW8…" autocomplete="off" aria-autocomplete="list" aria-controls="stock-search-results" aria-expanded="false"></label>
+      <div id="stock-search-results" class="stock-results" role="listbox" hidden></div>
+      <p id="stock-selected" class="stock-selected" aria-live="polite">Aucune action sélectionnée.</p>
+      <input type="hidden" id="stock-edit-priceid">
+      <input type="hidden" id="stock-edit-symbol">
+      <input type="hidden" id="stock-edit-name">
+      <p class="form-help">Choisissez l’action ou l’ETF dans la liste : le symbole, la place de cotation et la devise sont remplis automatiquement. Plusieurs places peuvent proposer le même nom, vérifiez la devise avant d’enregistrer. Le cours est récupéré chez StockAnalysis puis converti en euros.</p>
+      <div class="form-row"><label>Investi (€)<input id="stock-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="stock-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
+      <div class="form-row"><label>Devise du cours<select id="stock-edit-currency" required></select></label><label>Place de cotation<input id="stock-edit-market" type="text" readonly placeholder="Choisie automatiquement"></label></div>
+      <p class="form-help">La valeur actuelle est calculée en euros à partir du dernier cours disponible et du taux de change de référence. Les cours peuvent être différés.</p>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close="stock-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
 

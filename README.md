@@ -42,6 +42,8 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Historique mensuel : choix du mois, recherche, filtre par compte/type, tri, total des entrées, sorties et net.
 - Pointage des opérations et ordre manuel.
 - Page crypto avec positions (investi, quantité), logos CoinGecko automatiques, recherche, filtre gain/perte, tris, prix réels en euros via CoinGecko, valeur actuelle, gain/perte et performance.
+- Page actions et ETF avec positions par compte (IBKR, PEA, CTO…), recherche StockAnalysis, cours convertis en euros, valeur actuelle, gain/perte et performance.
+- Nantissement d’un compte avec note facultative, badge visible sur les cartes, la vue d’ensemble et les positions actions.
 - Export JSON et export CSV des opérations.
 - Paramètres de compte et estimation indicative de trésorerie du compte professionnel.
 - Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
@@ -66,7 +68,7 @@ Il n’y a pas de `package.json` ni de pipeline de build front-end au moment de 
 
 ## Stockage et confidentialité
 
-L’application peut synchroniser comptes, paramètres, opérations, modèles de récurrence, positions crypto et crédit lombard avec Supabase après connexion. Les tables métier utilisent RLS et chaque ligne appartient à un utilisateur. Le navigateur conserve également des marqueurs locaux (notamment l’état de génération des mois) et une copie de sécurité peut être créée pendant la migration des données locales.
+L’application peut synchroniser comptes, paramètres, opérations, modèles de récurrence, positions crypto, positions actions, nantissements et crédit lombard avec Supabase après connexion. Les tables métier utilisent RLS et chaque ligne appartient à un utilisateur. Les positions actions et les nantissements sont conservés dans les métadonnées privées du compte Auth, sans table dédiée. Le navigateur conserve également des marqueurs locaux (notamment l’état de génération des mois) et une copie de sécurité peut être créée pendant la migration des données locales.
 
 Ne placez pas de données financières réelles, de jetons MCP, de JWT, de clé `service_role`, de mot de passe ou d’autres secrets dans le dépôt. La clé publishable de Supabase destinée au navigateur n’est pas une clé privilégiée ; les permissions doivent être protégées par Auth et RLS. Voir [docs/SUPABASE.md](./docs/SUPABASE.md).
 
@@ -94,6 +96,14 @@ Les positions sont des données personnelles : elles ne sont pas codées en dur 
 
 La colonne texte historique `crypto_holdings.status` n’est plus utilisée pour un logo. Le client y écrit `Détenu` pour respecter la contrainte existante ; les éventuelles anciennes data URLs sont ignorées puis remplacées à la prochaine synchronisation de la position.
 
+## Actions, ETF et nantissement
+
+La page « Actions » suit les actions et ETF détenus sur les comptes de l’utilisateur, notamment Interactive Brokers, un PEA ou un CTO. Chaque position associe un compte, un titre, un montant investi et une quantité. Les colonnes affichent le prix actuel en euros, la valeur actuelle, le gain/perte et la performance. La recherche, le filtre par compte, le filtre gain/perte et les tris fonctionnent comme sur la page Crypto ; les totaux correspondent aux positions affichées.
+
+Le titre est recherché via l’API publique StockAnalysis. Plusieurs places de cotation peuvent proposer le même nom : l’interface affiche la place, la devise et le type, et demande un choix explicite lorsque plusieurs places sont proposées. Les cours proviennent de StockAnalysis (graphique 1 jour, puis 1 an en secours) et sont convertis en euros avec les taux de référence d’ExchangeRate-API. Les cours du London Stock Exchange sont reçus en pence (`GBX`) et convertis via GBP/100. Les prix sont actualisés au chargement, toutes les cinq minutes lorsque l’onglet est visible et via le bouton « Actualiser les cours » ; les dernières valeurs sont mises en cache dans le navigateur. Une position sans cours n’est pas inventée et reste exclue des totaux. Les cours peuvent être différés et ne constituent pas un conseil financier.
+
+Les positions sont stockées dans les métadonnées privées du compte Supabase Auth (`user_metadata.stockHoldings`), sous forme de tableau d’objets `{ id, accountId, priceId, symbol, name, market, currency, invested, quantity, sortOrder }`. Le nantissement est stocké dans `user_metadata.accountPledges`, sous la forme `{ "identifiant-du-compte": { "note": "..." } }`. Aucune migration SQL n’est nécessaire. Le champ « Nanti » et sa note se gèrent depuis la fenêtre de configuration du compte ; le badge apparaît sur les cartes, la vue d’ensemble et les positions actions. Supprimer un compte supprime aussi ses positions actions et son nantissement. Les métadonnées Auth sont privées, mais elles ne remplacent pas les politiques RLS des tables métier.
+
 ## Crédit lombard et patrimoine net
 
 La vue d’ensemble affiche le patrimoine net calculé comme la somme des avoirs de tous les comptes, moins la dette du crédit lombard. Le crédit se gère depuis la carte « Crédit lombard » : libellé, dette actuelle, taux annuel facultatif et notes. Une seule valeur est conservée par utilisateur.
@@ -112,6 +122,6 @@ Le logo n’est plus ajouté manuellement : le formulaire de compte propose une 
 
 La banque choisie est enregistrée dans la colonne texte existante `accounts.short` sous la forme `bank:<identifiant>` (par exemple `bank:bnp`). Le client reconstruit la banque et les initiales à la lecture. Les anciennes valeurs de `short` contenant des initiales ou une data URL restent lisibles : la banque est déduite de l’identifiant du compte lorsqu’il est connu, sinon le compte utilise le monogramme « Autre / initiales » jusqu’à la prochaine modification. Aucune migration SQL n’est nécessaire. Les logos sont des fichiers locaux dans `assets/banks/`.
 
-La suppression d’un compte demande une confirmation explicite et indique le nombre d’opérations et de récurrences liées. Les opérations et récurrences sont supprimées localement puis le compte est supprimé dans Supabase ; les clés étrangères `on delete cascade` suppriment les lignes liées côté serveur. Le dernier compte ne peut pas être supprimé. Un jeton MCP qui utiliserait ce compte comme compte par défaut n’est pas modifié automatiquement : vérifiez ou recréez ce jeton si nécessaire.
+La suppression d’un compte demande une confirmation explicite et indique le nombre d’opérations, de récurrences, de positions actions et de nantissements liés. Les opérations et récurrences sont supprimées localement puis le compte est supprimé dans Supabase ; les clés étrangères `on delete cascade` suppriment les lignes liées côté serveur. Les positions actions et le nantissement sont retirés des métadonnées Auth à la synchronisation suivante. Le dernier compte ne peut pas être supprimé. Un jeton MCP qui utiliserait ce compte comme compte par défaut n’est pas modifié automatiquement : vérifiez ou recréez ce jeton si nécessaire.
 
 Le serveur MCP personnel et l’ajout rapide sont décrits dans [docs/mcp-transactions.md](./docs/mcp-transactions.md). Le système utilise des jetons Bearer personnels révocables ; il ne s’agit pas encore d’une implémentation OAuth 2.1 universelle. Les secrets privilégiés restent côté serveur.

@@ -342,3 +342,54 @@ tbody tr:hover td{background:#fafbff}
 .bank-field .bank-logo{width:48px;height:48px;flex-basis:48px;border-radius:14px;font-size:13px}
 .bank-field .bank-logo img{width:80%;height:80%}
 @media(max-width:580px){.bank-field{align-items:flex-start}}
+
+/* --- Portefeuille actions et nantissement (22 octobre 2026) --- */
+.stocks-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.stocks-filters{margin-bottom:12px}
+.stocks-toolbar{justify-content:space-between}
+.stocks-toolbar .toolbar-note{margin-left:auto;text-align:right}
+.stocks-toolbar .toolbar-note.is-error{color:#d66c58}
+.stocks-table td{vertical-align:middle}
+.stock-title{display:flex;align-items:center;gap:10px;min-width:245px}
+.stock-title-text{min-width:0}
+.stock-title-text strong{display:block;font-size:12px;color:#2f3a50;letter-spacing:.2px}
+.stock-title-text small{display:block;font-size:9px;color:#9aa3b2;margin-top:3px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stock-meta{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:9px;color:#8e98aa;max-width:260px;overflow:hidden;white-space:nowrap}
+.stock-meta-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stock-logo{position:relative;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;overflow:hidden;font-size:9px;font-weight:800;letter-spacing:.2px;line-height:1;flex:0 0 auto}
+.stock-logo.is-small{width:22px;height:22px;border-radius:7px;font-size:8px}
+.stock-quantity,.stock-price,.stock-performance,.stocks-table .table-amount,.stocks-table .table-balance{font-variant-numeric:tabular-nums}
+.stock-quantity{color:#4a566c}
+.stock-price{color:#39445a;font-weight:600}
+.stock-price small{display:block;font-size:8px;color:#9aa3b2;font-weight:500;margin-top:3px}
+.stock-performance{font-weight:700}
+.stock-results{margin:-8px 0 14px;border:1px solid #e1e7f1;border-radius:11px;background:#fff;max-height:270px;overflow:auto;box-shadow:0 12px 30px #19294a14}
+.stock-option{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:0;border-bottom:1px solid #f2f4f8;background:transparent;text-align:left;cursor:pointer;font:11px 'DM Sans',sans-serif;color:#46536b}
+.stock-option:last-child{border-bottom:0}
+.stock-option:hover,.stock-option:focus{background:#f4f7ff;outline:none}
+.stock-option-symbol{min-width:62px;font-weight:700;color:#2f3a50;font-size:10px;letter-spacing:.2px}
+.stock-option-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stock-option-market{font-size:9px;color:#9aa3b2;white-space:nowrap}
+.stock-message{padding:11px 12px;font-size:10px;color:#8f99ab}
+.stock-selected{font-size:10px;color:#8f99ab;background:#f7f8fb;border-radius:8px;padding:9px 11px;margin:-6px 0 16px}
+.stock-selected.is-selected{display:flex;align-items:center;gap:8px;background:#eef3ff;color:#4262aa;font-weight:600}
+.pledge-badge{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 5px;border-radius:999px;background:#fff4e2;border:1px solid #f2dcb6;color:#9a611b;font-size:8px;font-weight:700;letter-spacing:.2px;vertical-align:middle;line-height:1.2;white-space:nowrap}
+.pledge-badge i{width:4px;height:4px;border-radius:50%;background:#d79532;display:block;flex:0 0 auto}
+.stock-meta .pledge-badge{margin-left:2px;padding:1px 4px;font-size:7px}
+.account-info small{display:flex;align-items:center;gap:0;min-width:0}
+.account-row.is-pledged{background:linear-gradient(90deg,#fffaf1,#ffffff00 72%)}
+.account-card.is-pledged{border-color:#ecd7b2;background:linear-gradient(140deg,#fff 0%,#fffaf1 100%)}
+.account-card.is-pledged:hover{border-color:#e4c58f}
+.account-pledge-note{margin-top:6px;font-size:9px;color:#9b6a25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pledge-field{border:1px solid #f0e2cc;background:#fffbf5;border-radius:12px;padding:12px 14px;margin:0 0 18px}
+.pledge-field legend{font-size:11px;color:#7c6749;font-weight:700;padding:0 5px}
+.modal .pledge-check{display:flex;flex-direction:row;align-items:center;gap:8px;margin:0 0 10px;font-size:11px;font-weight:600;color:#6b5a43}
+.modal .pledge-check input{width:16px;height:16px;accent-color:#d79532;flex:0 0 16px}
+.account-pledge-note-field{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:7px!important;margin-bottom:0!important}
+.account-pledge-note-field.is-disabled{opacity:.55}
+.account-pledge-note-field input:disabled{background:#f5f4f2;color:#9aa3b2;cursor:not-allowed}
+.pledge-field .form-help{margin:9px 0 0;padding:8px 9px}
+@media(max-width:1100px){.stocks-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.stocks-summary-grid{grid-template-columns:1fr}.stocks-toolbar{align-items:flex-start;flex-direction:column}.stocks-toolbar .toolbar-note{margin-left:0;text-align:left}.stock-title{min-width:200px}.stock-option-market{display:none}}
+/* Les dialogues longs restent utilisables sur les écrans de faible hauteur. */
+.modal{max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c4ccd9 transparent}

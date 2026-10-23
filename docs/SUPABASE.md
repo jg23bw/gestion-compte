@@ -41,6 +41,16 @@ Définie par la migration MCP. Stocke un hash du jeton, son propriétaire, son n
 ### `crypto_holdings`
 Positions crypto associées à un utilisateur : symbole, nom, identifiant CoinGecko, montant investi, quantité et ordre d’affichage. Clé primaire composite `(user_id, id)`, RLS par `auth.uid()`. Les prix et les logos CoinGecko sont lus en direct via l’API publique et seulement mis en cache côté navigateur. Aucun logo personnalisé n’est enregistré : le client écrit `Détenu` dans la colonne texte historique `status` pour respecter la contrainte existante. Aucune colonne supplémentaire n’est nécessaire.
 
+### Positions actions et nantissement — métadonnées Auth
+Les positions actions/ETF et les nantissements n’utilisent pas de table PostgreSQL dédiée. Le client les enregistre dans les métadonnées privées de l’utilisateur Auth avec `supabase.auth.updateUser` :
+
+- `user_metadata.stockHoldings` : tableau d’objets `{ id, accountId, priceId, symbol, name, market, currency, invested, quantity, sortOrder }` ;
+- `user_metadata.accountPledges` : objet `{ "identifiant-du-compte": { "note": "..." } }`, la présence de la clé indiquant un compte nanti.
+
+Les cours et les taux de change sont lus en direct (StockAnalysis et ExchangeRate-API) et seulement mis en cache côté navigateur. Une position sans cours n’est pas valorisée et reste exclue des totaux. Aucune migration SQL, colonne ou politique RLS supplémentaire n’est nécessaire. Ces métadonnées sont privées et rattachées au compte Auth, mais elles ne doivent pas servir à des décisions d’autorisation : les permissions des données métier restent portées par les tables et les politiques RLS.
+
+La taille des métadonnées Auth est limitée par Supabase ; ce stockage convient à un usage personnel, pas à un historique massif. Les positions actions ne sont pas des opérations et ne modifient pas les soldes des comptes.
+
 ### Crédit lombard — métadonnées Auth
 Le crédit lombard n’utilise pas de table PostgreSQL dédiée. Le client l’enregistre dans les métadonnées privées de l’utilisateur Auth (`user_metadata.lombardCredit`) avec `supabase.auth.updateUser`. Le montant est déduit des avoirs bruts dans la vue d’ensemble ; le crédit n’est pas une opération et ne modifie pas les soldes des comptes.
 
@@ -54,12 +64,13 @@ Les comptes financiers personnalisés utilisent la table `accounts` existante : 
 - La synchronisation envoie la table complète des surcharges après les upserts/suppressions de comptes. Quand un compte redevient un livret standard, change de type de base ou est supprimé, son identifiant disparaît de la table. Le drapeau `cloud.accountTypesDirty` permet de retenter l’écriture si elle échoue.
 - Le logo d’un compte n’est plus une image envoyée par l’utilisateur. Le formulaire propose un catalogue de banques et de courtiers et le logo est choisi automatiquement. La banque est stockée dans `accounts.short` sous la forme `bank:<identifiant>` (`bank:lbp`, `bank:bnp`, etc.) ; le client la convertit en propriété `bank`. Les logos connus sont des fichiers locaux du dépôt et les autres établissements utilisent un monogramme. Aucune data URL n’est écrite dans `accounts.short`.
 - Le logo d’une crypto vient uniquement de CoinGecko. Le client écrit `Détenu` dans `crypto_holdings.status` pour respecter la contrainte ; cette colonne n’est plus utilisée pour un logo personnalisé.
+- Les positions actions/ETF et les nantissements sont stockés dans `user_metadata.stockHoldings` et `user_metadata.accountPledges` via `auth.updateUser`. Aucune migration SQL n’est requise. La synchronisation écrit ensemble `accountTypes` et `accountPledges`, puis les positions actions ; les drapeaux `cloud.accountPledgesDirty` et `cloud.stockHoldingsDirty` permettent de retenter une écriture échouée.
 - Aucune migration SQL, colonne ou politique RLS supplémentaire n’est nécessaire. Les métadonnées Auth restent privées et ne doivent pas être utilisées pour des décisions d’autorisation.
 - Un sous-type ou une banque choisie n’est visible sur un autre appareil qu’après la synchronisation réussie. Si `auth.updateUser` échoue, le compte peut être sauvegardé avec son type de base mais le sous-type précis peut être perdu au rechargement. L’application signale l’échec et retente lors d’une synchronisation ultérieure.
 
 ## Suppression d’un compte
 
-La fenêtre de configuration permet de supprimer un compte après confirmation. Le client retire le compte, ses opérations et ses récurrences de l’état local, puis supprime la ligne `accounts` dans Supabase. Les clés étrangères `on delete cascade` de `transactions` et `recurring_templates` suppriment les lignes liées côté serveur.
+La fenêtre de configuration permet de supprimer un compte après confirmation. Le client retire le compte, ses opérations, ses récurrences, ses positions actions et son nantissement de l’état local, puis supprime la ligne `accounts` dans Supabase. Les clés étrangères `on delete cascade` de `transactions` et `recurring_templates` suppriment les lignes liées côté serveur. Les positions actions et le nantissement sont retirés des métadonnées Auth lors de la synchronisation suivante.
 
 Le dernier compte ne peut pas être supprimé : l’application affiche un message demandant d’en créer un autre d’abord. Cette garde évite de retomber sur le réensemencement des comptes par défaut au prochain chargement. Un jeton MCP existant dont le compte par défaut est supprimé n’est pas mis à jour automatiquement ; il faut le recréer ou le modifier côté serveur si nécessaire.
 
@@ -128,6 +139,20 @@ Aucune migration SQL n’est nécessaire. Pour vérifier le parcours :
 6. Tester la suppression depuis la même fenêtre.
 
 La persistance dépend de Supabase Auth (`auth.updateUser`) et de la session active.
+
+## Vérification des actions, ETF et nantissements
+
+Aucune migration SQL n’est nécessaire. Pour vérifier avec un utilisateur test :
+1. Se connecter et ouvrir « Actions ».
+2. Ajouter une position sur un compte IBKR ou PEA : rechercher un titre, vérifier la place et la devise, saisir le montant investi et la quantité.
+3. Vérifier que le prix, la valeur actuelle, le gain/perte et la performance s’affichent ; une position sans cours doit rester exclue des totaux.
+4. Recharger la page et vérifier que la position est toujours présente. Dans le tableau de bord Auth, contrôler que `user_metadata.stockHoldings` contient l’objet correspondant.
+5. Ouvrir la configuration d’un compte, cocher « Ce compte est nanti », ajouter éventuellement une note et enregistrer.
+6. Vérifier le badge « Nanti » sur la carte, la vue d’ensemble et les positions actions, puis recharger et contrôler `user_metadata.accountPledges`.
+7. Supprimer une position test et un nantissement test, puis vérifier la mise à jour des métadonnées.
+8. Pour un titre coté à Londres, vérifier que le cours natif est affiché en GBP et que la valeur en euros utilise bien la conversion pence → GBP → EUR.
+
+Les métadonnées Auth sont rattachées au compte utilisateur et ne remplacent pas les politiques RLS. Ne pas y placer de secrets ni de données destinées à l’autorisation. En cas d’échec de `auth.updateUser`, l’application signale l’erreur et retente lors d’une synchronisation ultérieure ; une position ou un nantissement peut alors être perdu après rechargement tant que l’écriture n’a pas abouti.
 
 ## Vérification des types de comptes, logos et suppressions
 
