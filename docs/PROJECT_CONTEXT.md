@@ -224,3 +224,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - La vue d’ensemble et les soldes affichés dans « Mes comptes » incluent désormais la valeur de marché des positions rattachées à chaque compte. Si le cours d’une position est indisponible, la valorisation utilise temporairement le montant investi comme estimation et non un cours actuel.
 - Les prix restent dépendants du service StockAnalysis existant et peuvent être indisponibles ou différés ; le catalogue ISIN ne garantit pas que chaque identifiant de cotation soit pris en charge par ce fournisseur.
 - Vérification effectuée : relecture des blocs modifiés sur GitHub. Aucun test navigateur ni validation des cours pour chaque ligne de catalogue n’a été effectué.
+
+
+## 14. Crypto intégrées à la vue d’ensemble (23 octobre 2026)
+
+- Le total des avoirs et le patrimoine net de la vue d’ensemble incluent désormais la valorisation des positions crypto, en plus des soldes de comptes et des actions/ETF.
+- Quand un cours CoinGecko est disponible, la valeur retenue est quantité × prix en euros. Si le cours est indisponible, le montant investi sert d’estimation provisoire afin que la position ne disparaisse pas du total.
+- Les totaux « Banque » et « Professionnel » restent limités aux comptes correspondants : les cryptos ne sont pas attribuées artificiellement à un compte bancaire.
+- Le tableau de bord se rafraîchit lorsque la récupération des prix crypto se termine. Aucun test navigateur n’a été exécuté.
