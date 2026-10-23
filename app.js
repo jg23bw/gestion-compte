@@ -679,6 +679,7 @@ function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
 function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
 function totalStockValue(){return state.accounts.reduce((sum,a)=>sum+stockValueForAccount(a.id),0);}
+function totalCryptoValue(){return (state.cryptoHoldings||[]).reduce((sum,h)=>{const price=cryptoPrice(h);return sum+(price!==null?Number(h.quantity||0)*price:Number(h.invested||0));},0);}
 function accountOverviewBalance(accountId){return balanceAt(accountId)+stockValueForAccount(accountId);}
 function balanceAfterTransaction(transaction){
   const a=accountById(transaction.accountId);if(!a)return 0;
@@ -718,7 +719,7 @@ function accountMarkup(a,compact=false){
   return '<article class="account-card'+(pledged?' is-pledged':'')+'" data-account-open="'+a.id+'"><div class="account-card-top">'+bankLogo(a)+'<div class="account-info"><strong>'+escapeHtml(a.name)+'</strong><small>'+kindLabel(a)+pledgeBadgeMarkup(a.id)+'</small></div><button class="edit-account" data-edit-account="'+a.id+'" aria-label="Configurer '+escapeHtml(a.name)+'" title="Configurer le compte">···</button></div><div class="account-card-balance">'+euro(balance)+'</div>'+extra+pledgeNoteMarkup(a.id)+'<div class="account-card-foot"><span>Solde actuel</span><button data-account-transactions="'+a.id+'">Historique →</button></div></article>';
 }
 function renderDashboard(){
-  const total=totalAccountsBalance()+totalStockValue();
+  const total=totalAccountsBalance()+totalStockValue()+totalCryptoValue();
   const lombard=lombardAmount();
   const net=total-lombard;
   const bank=state.accounts.filter(a=>effectiveAccountType(a)!=='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
@@ -997,6 +998,7 @@ async function loadCryptoPrices(){
   }finally{
     cryptoPrices.loading=false;
     renderCrypto();
+    renderDashboard();
   }
 }
 function renderCrypto(){
