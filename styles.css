@@ -842,3 +842,22 @@ tbody tr:hover td{background:#fafbff}
 .fire-monthly-net span{font-weight:650;font-size:.9rem}.fire-monthly-net strong{font-size:clamp(1.35rem,2.8vw,2rem);line-height:1.2;font-variant-numeric:tabular-nums}
 .fire-year-detail{margin:9px 0 0;color:var(--text-muted,#8490a3);font-size:.85rem;line-height:1.5}
 @media(max-width:600px){.fire-graph-wrap{padding:6px 8px 14px}.fire-graph text{font-size:19px}.fire-year-list{padding:0 8px 16px}.fire-year-row{padding:12px}.fire-year-heading{gap:8px}.fire-year-capital{font-size:.85rem}.fire-monthly-net{align-items:flex-start;flex-direction:column;gap:6px;padding:12px}.fire-monthly-net strong{font-size:1.6rem}}
+
+/* Axes, grille et survol du graphique FIRE */
+.fire-graph-wrap{position:relative;width:100%;min-width:0;box-sizing:border-box;padding:8px 12px 18px;overflow:visible}
+.fire-graph{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
+.fire-graph-axis{stroke:var(--border-color,#415775);stroke-width:1.5}
+.fire-graph-grid{stroke:var(--border-color,#415775);stroke-width:1;opacity:.55;stroke-dasharray:3 5}
+.fire-graph-nominal,.fire-graph-real{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.fire-graph-nominal{stroke:#4779f5}.fire-graph-real{stroke:#f4a340}
+.fire-graph text{font-size:15px;fill:var(--text-muted,#8490a3)}
+.fire-graph-hit{fill:transparent;stroke:transparent;cursor:crosshair;outline:none}
+.fire-graph-hit:focus{stroke:#4779f5;stroke-width:2}
+.fire-graph-crosshair{stroke:var(--text-muted,#8490a3);stroke-width:1.5;stroke-dasharray:5 4;pointer-events:none}
+.fire-graph-hover-dot{fill:#4779f5;stroke:white;stroke-width:2;pointer-events:none}
+.fire-graph-tooltip{position:absolute;z-index:5;min-width:210px;max-width:min(300px,90%);padding:12px 14px;border:1px solid var(--border-color,#415775);border-radius:12px;background:var(--panel-bg,#172b4d);box-shadow:0 8px 28px rgba(0,0,0,.22);font-size:.82rem;line-height:1.6;pointer-events:none}
+.fire-graph-tooltip>strong{display:block;margin-bottom:6px;font-size:.95rem}
+.fire-graph-tooltip hr{border:0;border-top:1px solid var(--border-color,#415775);margin:7px 0}
+.fire-graph-tooltip .tooltip-monthly{margin-top:6px;padding:6px 8px;border-radius:7px;background:rgba(227,59,59,.14);font-size:.9rem}
+.fire-graph-tooltip .tooltip-monthly b{font-size:1.05rem}
+@media(max-width:600px){.fire-graph-wrap{padding:6px 2px 14px}.fire-graph text{font-size:17px}.fire-graph-tooltip{font-size:.75rem;min-width:185px}}
