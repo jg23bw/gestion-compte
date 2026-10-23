@@ -617,3 +617,44 @@ tbody tr:hover td{background:#fafbff}
 .bank-logo[data-bank="bourse-direct"]{background:linear-gradient(145deg,#e0ebff,#9bbcff)!important;color:#123f91!important}
 .bank-logo[data-bank="bforbank"]{background:linear-gradient(145deg,#e7eaf0,#c5ccd9)!important;color:#27334b!important}
 .bank-logo[data-bank="other"]{background:linear-gradient(145deg,#edf1ff,#b8c7ff)!important;color:#455ca7!important}
+
+
+/* Make bank marks visibly colorful even when official logo files exist */
+.bank-logo{
+  position:relative;overflow:hidden;isolation:isolate;
+  border:1px solid rgba(255,255,255,.78)!important;
+  border-radius:14px!important;
+  box-shadow:0 4px 12px rgba(28,43,77,.13),inset 0 1px 0 rgba(255,255,255,.68)!important;
+}
+.bank-logo.has-logo{background:var(--bank-accent)!important}
+.bank-logo.has-logo:after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(145deg,rgba(255,255,255,.44),transparent 48%,rgba(0,0,0,.06));
+  border-radius:inherit;
+}
+.bank-logo.has-logo img{
+  position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:contain;
+  padding:5px;box-sizing:border-box;border-radius:inherit;
+  background:rgba(255,255,255,.93);
+}
+.bank-logo.has-logo span[hidden]{display:none!important}
+.bank-logo:not(.has-logo)>span{position:relative;z-index:1}
+.bank-logo[data-bank="caisse-epargne"]{background:linear-gradient(145deg,#ff4b5f,#c70022)!important;color:#fff!important}
+.bank-logo[data-bank="hello-bank"]{background:linear-gradient(145deg,#30d5ef,#008acb)!important;color:#003f72!important}
+.bank-logo[data-bank="lcl"]{background:linear-gradient(145deg,#164caa,#06275e)!important;color:#fff!important}
+.bank-logo[data-bank="monabanq"]{background:linear-gradient(145deg,#ff5868,#d00022)!important;color:#fff!important}
+.bank-logo[data-bank="eToro"],.bank-logo[data-bank="etoro"]{background:linear-gradient(145deg,#35cf79,#0b874c)!important;color:#06472c!important}
+.bank-logo[data-bank="revolut"]{background:linear-gradient(145deg,#526bff,#18245e)!important;color:#fff!important}
+.bank-logo[data-bank="n26"]{background:linear-gradient(145deg,#3a4658,#111827)!important;color:#fff!important}
+.bank-logo[data-bank="bforbank"]{background:linear-gradient(145deg,#596579,#202b3e)!important;color:#fff!important}
+.bank-logo[data-bank="lbp"]{background:linear-gradient(145deg,#2491f4,#0054a6)!important;color:#fff!important}
+.bank-logo[data-bank="bourso"]{background:linear-gradient(145deg,#b78aff,#6638ba)!important;color:#fff!important}
+.bank-logo[data-bank="fortuneo"]{background:linear-gradient(145deg,#4be0a0,#078b5c)!important;color:#064d35!important}
+.bank-logo[data-bank="cic"]{background:linear-gradient(145deg,#6194ff,#173e93)!important;color:#fff!important}
+.bank-logo[data-bank="bnp"]{background:linear-gradient(145deg,#3fdb90,#007d4d)!important;color:#034b32!important}
+.bank-logo[data-bank="credit-agricole"]{background:linear-gradient(145deg,#31d7a0,#00664c)!important;color:#fff!important}
+.bank-logo[data-bank="credit-mutuel"]{background:linear-gradient(145deg,#6aa7ff,#123d7b)!important;color:#fff!important}
+.bank-logo[data-bank="interactive-brokers"]{background:linear-gradient(145deg,#ff6464,#b80b22)!important;color:#fff!important}
+.bank-logo[data-bank="degiro"]{background:linear-gradient(145deg,#ff926b,#d63d27)!important;color:#fff!important}
+.bank-logo[data-bank="bourse-direct"]{background:linear-gradient(145deg,#4b83ff,#123d8e)!important;color:#fff!important}
+.bank-logo[data-bank="banque-populaire"]{background:linear-gradient(145deg,#51b7ff,#005b9f)!important;color:#fff!important}
