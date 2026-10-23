@@ -5,6 +5,9 @@
 
 > La vue d’ensemble affiche explicitement une carte « Cryptomonnaies » avec la valorisation totale en euros. Cette valeur est distincte des comptes personnels/professionnels, mais elle est incluse dans les avoirs bruts et le patrimoine net.
 
+
+> Dans « Opérations », les comptes de type assurance vie, PEA et CTO sont masqués des sélecteurs d’opérations, d’historique et de récurrences ; ils restent disponibles dans le filtre des positions titres. Le catalogue de titres contient aussi SUR000001737, libellé « EUR SURAVENIR RENDEMENT 2 », référencé comme support en euros de Fortuneo Vie. Son cours de marché n’étant pas fourni par la source boursière habituelle, la valorisation retombe sur le montant investi si aucun cours n’est disponible.
+
 ## 1. Résumé rapide
 
 - Dépôt : [jg23bw/gestion-compte](https://github.com/jg23bw/gestion-compte).
