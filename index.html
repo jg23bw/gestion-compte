@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=remove-allocation-pie-1">
+  <link rel="stylesheet" href="styles.css?v=fire-inflation-mobile-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=remove-allocation-pie-1" defer></script>
+  <script src="app.js?v=fire-inflation-mobile-1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -50,12 +50,12 @@
     <main class="main-content">
       <header class="topbar">
         <div class="breadcrumb">Espace personnel <span>/</span> <strong id="breadcrumb-current">Vue d'ensemble</strong></div>
-        <div class="topbar-actions"><span class="local-status" id="cloud-status"><i></i> Mode local — non synchronisé</span><button class="icon-button theme-toggle" id="theme-toggle" type="button" title="Passer en mode sombre" aria-label="Passer en mode sombre">☾</button><button class="icon-button" id="export-btn" title="Exporter les données" aria-label="Exporter les données">⇩</button></div>
+        <div class="topbar-actions"><span class="local-status" id="cloud-status"><i></i> Mode local — non synchronisé</span><button class="icon-button mobile-account-button" id="mobile-account-open" type="button" title="Compte et déconnexion" aria-label="Compte et déconnexion">☻</button><button class="icon-button theme-toggle" id="theme-toggle" type="button" title="Passer en mode sombre" aria-label="Passer en mode sombre">☾</button><button class="icon-button" id="export-btn" title="Exporter les données" aria-label="Exporter les données">⇩</button></div>
       </header>
 
       <section class="view active" id="dashboard-view">
         <div class="page-heading">
-          <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div><button class="primary-button" id="dashboard-add-account"><span>＋</span> Ajouter un compte</button>
+          <div><p class="eyebrow">DIMANCHE 18 OCTOBRE 2026</p><h1>Vue d'ensemble</h1><p class="subtitle">Retrouvez la situation de vos comptes en un coup d'œil.</p></div>
         </div>
         <div class="summary-grid">
           <article class="summary-card total-card"><div class="card-top"><span>Patrimoine net</span><span class="card-icon navy">€</span></div><div class="metric" id="net-balance">0,00 €</div><div class="card-foot"><span class="muted" id="net-detail">Avoirs bruts − dette lombard</span><span class="trend-pill" id="accounts-count-pill">9 comptes</span></div><div class="sparkline" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></article>
@@ -67,7 +67,7 @@
         </div>
 <div class="content-grid">
           <section class="panel accounts-panel">
-            <div class="panel-heading"><div><h2>Mes comptes</h2><p>Vue rapide des soldes actuels</p></div><div class="panel-heading-actions"><button class="text-button" id="dashboard-account-add">＋ Ajouter</button><button class="text-button" data-goto="accounts">Voir tous <span>→</span></button></div></div>
+            <div class="panel-heading"><div><h2>Mes comptes</h2><p>Vue rapide des soldes actuels</p></div><div class="panel-heading-actions"><button class="text-button" data-goto="accounts">Voir tous <span>→</span></button></div></div>
             <div class="account-list" id="dashboard-accounts"></div>
           </section>
           <section class="panel activity-panel">
@@ -128,10 +128,10 @@
           <label>Rente mensuelle souhaitée (€)<input id="fire-rent" type="number" min="0" step="100" value="2500"></label>
           <label>Taux de retrait (%)<input id="fire-withdrawal" type="number" min="0.5" max="10" step="0.25" value="4"></label>
           <label>Épargne mensuelle (€)<input id="fire-saving" type="number" min="0" step="100" value="3000"></label>
-          <label>Rendement annuel (%)<input id="fire-return" type="number" min="-10" max="30" step="0.5" value="5"></label>
+          <label>Rendement annuel nominal (%)<input id="fire-return" type="number" min="-10" max="30" step="0.5" value="5"></label><label>Inflation annuelle (%)<input id="fire-inflation" type="number" min="0" max="15" step="0.5" value="2"></label>
         </div></div>
         <div class="fire-metrics history-summary-grid"><article class="history-summary-card"><span>Patrimoine net suivi</span><strong id="fire-current">—</strong></article><article class="history-summary-card"><span>Capital cible</span><strong id="fire-target">—</strong></article><article class="history-summary-card"><span>Manque actuel</span><strong id="fire-gap">—</strong></article><article class="history-summary-card"><span>Progression</span><strong id="fire-progress">—</strong></article></div>
-        <section class="panel"><div class="panel-heading"><div><h2>Projection du patrimoine</h2><p>Projection indicative avec versements mensuels et rendement constant.</p></div></div><div id="fire-chart" class="projection-chart"></div></section>
+        <section class="panel"><div class="panel-heading"><div><h2>Projection du patrimoine</h2><p>Valeurs nominales et pouvoir d’achat estimé en euros constants, selon l’inflation saisie.</p></div></div><div id="fire-chart" class="projection-chart"></div></section>
       </section>
       <section class="view" id="comparisons-view">
         <div class="page-heading"><div><p class="eyebrow">MISE EN PERSPECTIVE</p><h1>Comparaisons</h1><p class="subtitle">Repères de patrimoine financier et de patrimoine net. Les références ci-dessous sont indicatives, pas une mesure officielle de votre percentile exact.</p></div></div>
