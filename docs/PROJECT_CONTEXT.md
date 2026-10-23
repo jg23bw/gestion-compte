@@ -11,6 +11,9 @@
 
 > Dans l’écran Actions, seuls les comptes de type PEA, CTO et assurance vie sont proposés et leurs positions sont affichées. Le support Suravenir `SUR000001737` est géré à valeur manuelle : seul le montant détenu est demandé, sans quantité ni cours boursier ; sa valeur est incluse dans les totaux des positions et du patrimoine.
 
+
+> Dans l’écran Actions, la quantité est facultative. Si elle est laissée vide, la position est enregistrée en valeur manuelle à partir du montant saisi ; le support `SUR000001737` est automatiquement traité ainsi. La valeur manuelle est incluse dans les totaux, sans cours boursier ni calcul de plus-value automatique.
+
 ## 1. Résumé rapide
 
 - Dépôt : [jg23bw/gestion-compte](https://github.com/jg23bw/gestion-compte).
