@@ -8,6 +8,9 @@
 
 > Dans « Opérations », les comptes de type assurance vie, PEA et CTO sont masqués des sélecteurs d’opérations, d’historique et de récurrences ; ils restent disponibles dans le filtre des positions titres. Le catalogue de titres contient aussi SUR000001737, libellé « EUR SURAVENIR RENDEMENT 2 », référencé comme support en euros de Fortuneo Vie. Son cours de marché n’étant pas fourni par la source boursière habituelle, la valorisation retombe sur le montant investi si aucun cours n’est disponible.
 
+
+> Dans l’écran Actions, seuls les comptes de type PEA, CTO et assurance vie sont proposés et leurs positions sont affichées. Le support Suravenir `SUR000001737` est géré à valeur manuelle : seul le montant détenu est demandé, sans quantité ni cours boursier ; sa valeur est incluse dans les totaux des positions et du patrimoine.
+
 ## 1. Résumé rapide
 
 - Dépôt : [jg23bw/gestion-compte](https://github.com/jg23bw/gestion-compte).
