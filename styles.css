@@ -658,3 +658,31 @@ tbody tr:hover td{background:#fafbff}
 .bank-logo[data-bank="degiro"]{background:linear-gradient(145deg,#ff926b,#d63d27)!important;color:#fff!important}
 .bank-logo[data-bank="bourse-direct"]{background:linear-gradient(145deg,#4b83ff,#123d8e)!important;color:#fff!important}
 .bank-logo[data-bank="banque-populaire"]{background:linear-gradient(145deg,#51b7ff,#005b9f)!important;color:#fff!important}
+
+
+/* Colorful, modern navigation icons — distinct gradient tiles per section */
+.nav-icon{
+ width:34px;height:34px;flex:0 0 34px!important;display:inline-grid!important;place-items:center;
+ border-radius:12px;font-size:18px!important;font-weight:800;
+ color:#fff!important;position:relative;overflow:hidden;
+ background:linear-gradient(145deg,#7186ff,#4359d6);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.48),0 3px 8px rgba(42,63,130,.18);
+ text-shadow:0 1px 2px rgba(20,30,70,.18);
+}
+.nav-icon:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.35),transparent 54%);pointer-events:none}
+.nav-item[data-view="dashboard"] .nav-icon{background:linear-gradient(145deg,#54c8ff,#3568ed)}
+.nav-item[data-view="accounts"] .nav-icon{background:linear-gradient(145deg,#45d9a2,#159a78)}
+.nav-item[data-view="transactions"] .nav-icon{background:linear-gradient(145deg,#ffb45d,#f07835)}
+.nav-item[data-view="history"] .nav-icon{background:linear-gradient(145deg,#b5a0ff,#7651dd)}
+.nav-item[data-view="crypto"] .nav-icon{background:linear-gradient(145deg,#ffd66b,#f59b21);color:#56300a!important}
+.nav-item[data-view="stocks"] .nav-icon{background:linear-gradient(145deg,#50e0d0,#168ca8)}
+.nav-item[data-view="recurring"] .nav-icon{background:linear-gradient(145deg,#ff8fbc,#dc4b91)}
+.nav-item[data-view="fire"] .nav-icon{background:linear-gradient(145deg,#ff9d67,#ef4d4d)}
+.nav-item[data-view="comparisons"] .nav-icon{background:linear-gradient(145deg,#7de2a2,#33a85f)}
+.nav-item[data-view="lombard"] .nav-icon{background:linear-gradient(145deg,#a5c4ff,#536bd5)}
+.nav-item.active .nav-icon{filter:saturate(1.15);box-shadow:inset 0 1px 0 rgba(255,255,255,.62),0 4px 12px rgba(25,42,88,.25)}
+@media(max-width:900px){.nav-icon{width:36px;height:36px;flex-basis:36px!important;border-radius:13px}}
+@media(max-width:760px){
+ .sidebar .nav-icon{width:32px;height:32px;flex-basis:32px!important;border-radius:11px;font-size:18px!important}
+ .sidebar .nav-item.active .nav-icon{outline:1px solid rgba(255,255,255,.42);outline-offset:2px}
+}
