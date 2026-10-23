@@ -861,3 +861,12 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-tooltip .tooltip-monthly{margin-top:6px;padding:6px 8px;border-radius:7px;background:rgba(227,59,59,.14);font-size:.9rem}
 .fire-graph-tooltip .tooltip-monthly b{font-size:1.05rem}
 @media(max-width:600px){.fire-graph-wrap{padding:6px 2px 14px}.fire-graph text{font-size:17px}.fire-graph-tooltip{font-size:.75rem;min-width:185px}}
+
+/* Curseurs FIRE : valeurs visibles, manipulation confortable à la souris et au doigt. */
+.fire-slider-control{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 14px;min-width:0}
+.fire-slider-control>span{font-size:.88rem;line-height:1.35}
+.fire-slider-control output{font-size:.95rem;font-weight:750;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--text-color,#fff)}
+.fire-slider-control input[type="range"]{grid-column:1/-1;display:block;width:100%;height:30px;margin:0;padding:0;accent-color:#4779f5;cursor:pointer;touch-action:pan-y}
+.fire-slider-control input[type="range"]:focus-visible{outline:2px solid #4779f5;outline-offset:4px;border-radius:8px}
+.fire-controls{gap:18px 22px}
+@media(max-width:600px){.fire-slider-control{gap:8px 10px}.fire-slider-control>span{font-size:.84rem}.fire-slider-control output{font-size:.9rem}.fire-slider-control input[type="range"]{height:36px}}
