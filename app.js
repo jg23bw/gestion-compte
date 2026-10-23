@@ -126,6 +126,8 @@ const STOCK_ISIN_CATALOG = [
   {isin:'US78462F1030',symbol:'SPY',name:'SPDR S&P 500 ETF Trust',priceId:'NYSE-SPY',market:'NYSE',currency:'USD',kind:'e'},
   {isin:'US46090E1038',symbol:'QQQ',name:'Invesco QQQ Trust',priceId:'NASDAQ-QQQ',market:'NASDAQ',currency:'USD',kind:'e'}
 ];
+function isManualValueHolding(holding){return String(holding?.isin||'').toUpperCase()==='SUR000001737'||String(holding?.priceId||'').toUpperCase()==='SUR-SUR000001737';}
+function isInvestmentAccount(account){return ['pea','cto','av'].includes(effectiveAccountType(account));}
 function stockCatalogResults(query){
   const q=String(query||'').trim().toUpperCase();
   if(!q)return [];
@@ -678,7 +680,7 @@ function balanceAt(accountId,untilDate=null){
 }
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
-function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
+function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+Number(h.invested||0);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
 function totalStockValue(){return state.accounts.reduce((sum,a)=>sum+stockValueForAccount(a.id),0);}
 function totalCryptoValue(){return (state.cryptoHoldings||[]).reduce((sum,h)=>{const price=cryptoPrice(h);return sum+(price!==null?Number(h.quantity||0)*price:Number(h.invested||0));},0);}
 function accountOverviewBalance(accountId){return balanceAt(accountId)+stockValueForAccount(accountId);}
@@ -1054,11 +1056,7 @@ function renderCrypto(){
     if(sort==='performance-desc')return compareDesc(ma,mb,'performance')||bySymbol;
     return (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||bySymbol;
   });
-  const priced=holdings.filter(h=>metrics.get(h.id).value!==null);
-  const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
-  const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
-  const currentValue=priced.reduce((sum,h)=>sum+metrics.get(h.id).value,0);
-  const gain=currentValue-investedPriced;
+  const priced=holdings.filter(h=>metrics.get(h.id).value!==null&&!isManualValueHolding(h));const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const currentValue=holdings.reduce((sum,h)=>sum+(metrics.get(h.id).value??0),0);const gain=priced.reduce((sum,h)=>sum+(metrics.get(h.id).gain??0),0);
   const performance=investedPriced>0?gain/investedPriced*100:0;
 
   $('crypto-invested').textContent=euro(investedAll);
@@ -1209,19 +1207,14 @@ function stockLogoMarkup(symbol,extraClass=''){
   return '<span class="stock-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-hidden="true"><span>'+escapeHtml(label)+'</span></span>';
 }
 function stockAccountOptionLabel(account){return account.name+' · '+kindLabel(account);}
-function defaultStockAccountId(){
-  const filtered=$('stocks-account-filter')?.value;
-  if(filtered&&filtered!=='all'&&accountById(filtered))return filtered;
-  const preferred=state.accounts.find(a=>bankKeyForAccount(a)==='interactive-brokers')||state.accounts.find(a=>['pea','cto','av'].includes(effectiveAccountType(a)))||state.accounts[0];
-  return preferred?.id||'';
-}
+function defaultStockAccountId(){const eligible=state.accounts.filter(isInvestmentAccount);const filtered=$('stocks-account-filter')?.value;if(filtered&&filtered!=='all'&&eligible.some(a=>a.id===filtered))return filtered;return (eligible.find(a=>bankKeyForAccount(a)==='interactive-brokers'&&effectiveAccountType(a)==='cto')||eligible[0])?.id||'';}
 function fillStockAccountSelect(){
   const select=$('stock-edit-account');
   if(!select)return;
   const selected=select.value;
   select.replaceChildren();
-  state.accounts.forEach(account=>select.add(new Option(stockAccountOptionLabel(account),account.id)));
-  if(selected&&state.accounts.some(a=>a.id===selected))select.value=selected;
+  state.accounts.filter(isInvestmentAccount).forEach(account=>select.add(new Option(stockAccountOptionLabel(account),account.id)));
+  if(selected&&state.accounts.some(a=>isInvestmentAccount(a)&&a.id===selected))select.value=selected;
   else select.value=defaultStockAccountId();
 }
 function fillStockCurrencyOptions(selected='EUR'){
@@ -1385,15 +1378,12 @@ function renderStocks(){
     const details=stockPriceDetails(h);
     const invested=Number(h.invested)||0;
     const quantity=Number(h.quantity)||0;
-    const value=details.price===null?null:quantity*details.price;
-    const gain=value===null?null:value-invested;
+    const manual=isManualValueHolding(h);const value=manual?invested:(details.price===null?null:quantity*details.price);const gain=value===null||manual?null:value-invested;
     const performance=gain===null||invested<=0?null:gain/invested*100;
     return [h.id,{...details,invested,quantity,value,gain,performance}];
   }));
   const symbolOf=holding=>String(holding.symbol||'');
-  let holdings=allHoldings.filter(h=>{
-    const account=accountById(h.accountId);
-    const m=metrics.get(h.id);
+  let holdings=allHoldings.filter(h=>{const account=accountById(h.accountId);if(!isInvestmentAccount(account))return false;const m=metrics.get(h.id);
     const searchable=(symbolOf(h)+' '+String(h.name||'')+' '+String(h.market||'')+' '+String(account?.name||'')).toLocaleLowerCase('fr');
     if(!searchable.includes(query))return false;
     if(accountFilter!=='all'&&h.accountId!==accountFilter)return false;
@@ -1498,7 +1488,9 @@ function setStockSelection(data){
   const selected=$('stock-selected');
   selected.innerHTML=stockLogoMarkup(symbol,'is-small')+'<span>Sélection : '+escapeHtml(symbol+' — '+name)+' · '+escapeHtml(market)+' · '+escapeHtml(currency)+'</span>';
   selected.classList.add('is-selected');
+  updateStockValueOnlyFields();
 }
+function updateStockValueOnlyFields(){const manual=isManualValueHolding({isin:$('stock-edit-isin')?.value,priceId:$('stock-edit-priceid')?.value});const input=$('stock-edit-quantity');const label=input?.closest('label');if(label)label.hidden=manual;if(input){input.required=!manual;input.disabled=manual;input.value=manual?'1':input.value;}const priceFields=$('stock-edit-currency')?.closest('.form-row');if(priceFields)priceFields.hidden=manual;const help=$('stock-value-help');if(help)help.textContent=manual?'Support d’assurance vie à valorisation manuelle : saisissez le montant actuel détenu dans « Investi (€) ». Aucune quantité ni cours de marché n’est nécessaire.':'La valeur actuelle est calculée en euros à partir du dernier cours disponible et du taux de change de référence. Les cours peuvent être différés.';}
 function clearStockSelection(clearSearch=false){
   $('stock-edit-priceid').value='';
   $('stock-edit-isin').value='';
@@ -1509,7 +1501,7 @@ function clearStockSelection(clearSearch=false){
   if(clearSearch)$('stock-search').value='';
   const selected=$('stock-selected');
   selected.textContent='Aucune action sélectionnée.';
-  selected.classList.remove('is-selected');
+  selected.classList.remove('is-selected');updateStockValueOnlyFields();
 }
 async function searchStocks(query){
   const seq=++stockSearch.seq;
@@ -1563,8 +1555,7 @@ function openStockEditor(id=null){
     clearStockSelection(true);
     $('stock-edit-account').value=defaultStockAccountId();
   }
-  $('stock-modal-title').textContent=holding?'Modifier la position':'Ajouter une action';
-  $('stock-dialog').showModal();
+  $('stock-modal-title').textContent=holding?'Modifier la position':'Ajouter une action';updateStockValueOnlyFields();$('stock-dialog').showModal();
 }
 function deleteStockHolding(id){
   const holding=(state.stockHoldings||[]).find(h=>h.id===id);
@@ -1986,10 +1977,7 @@ $('stock-form').addEventListener('submit',event=>{
   const market=$('stock-edit-market').value.trim()||stockMarketInfo(priceId).label;
   const currency=normalizeStockCurrency($('stock-edit-currency').value);
   const invested=Number($('stock-edit-invested').value);
-  const quantity=Number($('stock-edit-quantity').value);
-  if(!accountById(accountId)){showToast('Choisissez un compte pour cette position.');return;}
-  if(!priceId||!symbol){showToast('Sélectionnez une action ou un ETF dans la liste de recherche.');return;}
-  if(!Number.isFinite(invested)||invested<0||!Number.isFinite(quantity)||quantity<0){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
+  const manual=isManualValueHolding({isin,priceId});const quantity=manual?1:Number($('stock-edit-quantity').value);if(!accountById(accountId)||!isInvestmentAccount(accountById(accountId))){showToast('Choisissez un compte de type PEA, CTO ou assurance vie.');return;}if(!priceId||!symbol){showToast('Sélectionnez l’instrument dans la liste de recherche.');return;}if(!Number.isFinite(invested)||invested<0||(!manual&&(!Number.isFinite(quantity)||quantity<0))){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
   if(isin&&!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){showToast('ISIN invalide : vérifiez les 12 caractères.',false);return;}
    const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
   if(existing)state.stockHoldings=state.stockHoldings.map(h=>h.id===id?record:h);
