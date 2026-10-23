@@ -14,6 +14,10 @@
 
 > Dans l’écran Actions, la quantité est facultative. Si elle est laissée vide, la position est enregistrée en valeur manuelle à partir du montant saisi ; le support `SUR000001737` est automatiquement traité ainsi. La valeur manuelle est incluse dans les totaux, sans cours boursier ni calcul de plus-value automatique.
 
+## Valorisation indicative du fonds euros Suravenir
+
+La position `SUR000001737` est valorisée à partir du montant saisi et progresse automatiquement selon une hypothèse annuelle de 2,10 %, taux publié pour Suravenir Rendement 2 en 2025. La projection est indicative, pas une garantie de rendement futur ; la date de référence est conservée pour éviter de réinitialiser la progression à chaque affichage.
+
 ## 1. Résumé rapide
 
 - Dépôt : [jg23bw/gestion-compte](https://github.com/jg23bw/gestion-compte).
