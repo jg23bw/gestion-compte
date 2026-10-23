@@ -540,3 +540,80 @@ tbody tr:hover td{background:#fafbff}
  .summary-card{padding:12px}
  .account-balance{font-size:12px}
 }
+
+
+/* Liquid Glass — visible mobile material, with contrast and layered reflections */
+@media(max-width:760px){
+ .sidebar{
+   background:linear-gradient(135deg,rgba(255,255,255,.24),rgba(255,255,255,.06) 35%,rgba(98,124,255,.20) 70%,rgba(255,255,255,.10)),rgba(28,39,66,.74)!important;
+   -webkit-backdrop-filter:blur(32px) saturate(210%) contrast(108%)!important;
+   backdrop-filter:blur(32px) saturate(210%) contrast(108%)!important;
+   border:1px solid rgba(255,255,255,.25)!important;
+   border-bottom:0!important;
+   box-shadow:0 -10px 40px rgba(20,32,68,.18),inset 0 1px 0 rgba(255,255,255,.4),inset 0 -1px 0 rgba(255,255,255,.06)!important;
+   isolation:isolate;
+ }
+ .sidebar:before{
+   content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+   background:radial-gradient(120% 90% at 8% 0%,rgba(255,255,255,.32),transparent 48%),linear-gradient(105deg,transparent 20%,rgba(255,255,255,.10) 45%,transparent 70%);
+   border-radius:inherit;
+ }
+ .sidebar .nav-item,.sidebar .nav-item.active{
+   position:relative;border:1px solid transparent!important;
+   transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+ }
+ .sidebar .nav-item:active{transform:scale(.95)}
+ .sidebar .nav-item.active{
+   background:linear-gradient(145deg,rgba(255,255,255,.34),rgba(255,255,255,.10) 48%,rgba(122,146,255,.24))!important;
+   border-color:rgba(255,255,255,.34)!important;
+   box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.12),0 4px 16px rgba(8,20,52,.16)!important;
+   -webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%);
+ }
+ .sidebar .nav-item.active:before{
+   content:"";position:absolute;top:3px;left:20%;right:20%;height:1px;
+   background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent);
+ }
+ .topbar{
+   background:linear-gradient(120deg,rgba(255,255,255,.76),rgba(255,255,255,.38) 55%,rgba(227,233,255,.56))!important;
+   -webkit-backdrop-filter:blur(28px) saturate(190%)!important;backdrop-filter:blur(28px) saturate(190%)!important;
+   border:1px solid rgba(255,255,255,.7)!important;border-top:0!important;border-radius:0 0 20px 20px;
+   box-shadow:0 8px 24px rgba(35,54,92,.07),inset 0 1px 0 rgba(255,255,255,.85);
+ }
+ :root[data-theme="dark"] .topbar{
+   background:linear-gradient(120deg,rgba(39,55,83,.84),rgba(27,41,66,.62) 55%,rgba(68,73,126,.48))!important;
+   border-color:rgba(210,222,255,.17)!important;box-shadow:0 8px 26px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.14);
+ }
+ .icon-button{background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(235,240,255,.62))!important;border:1px solid rgba(255,255,255,.85)!important;box-shadow:0 4px 12px rgba(45,62,102,.10),inset 0 1px 0 #fff}
+ :root[data-theme="dark"] .icon-button{background:linear-gradient(145deg,rgba(74,91,124,.8),rgba(36,49,76,.8))!important;border-color:rgba(220,230,255,.22)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+ .panel,.summary-card,.account-card{
+   background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(249,251,255,.82))!important;
+   border-color:rgba(255,255,255,.92)!important;
+   box-shadow:0 10px 28px rgba(36,52,90,.075),inset 0 1px 0 rgba(255,255,255,.95)!important;
+ }
+ :root[data-theme="dark"] .panel,:root[data-theme="dark"] .summary-card,:root[data-theme="dark"] .account-card{
+   background:linear-gradient(145deg,rgba(30,45,70,.94),rgba(20,32,53,.9))!important;
+   border-color:rgba(190,208,255,.14)!important;box-shadow:0 10px 28px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.06)!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){.sidebar .nav-item,.sidebar .nav-item.active{transition:none!important}}
+/* Distinct, colorful fallback badges when a bank's real asset is unavailable */
+.bank-logo:not(.has-logo){font-size:11px;letter-spacing:-.45px;border:1px solid rgba(255,255,255,.85);box-shadow:0 4px 11px rgba(22,35,62,.12),inset 0 1px rgba(255,255,255,.85)}
+.bank-logo[data-bank="lbp"]{background:linear-gradient(145deg,#e9f4ff,#b9dcff)!important;color:#0054a6!important}
+.bank-logo[data-bank="fortuneo"]{background:linear-gradient(145deg,#dff9ed,#a1e6c7)!important;color:#08794f!important}
+.bank-logo[data-bank="cic"]{background:linear-gradient(145deg,#e5edff,#9eb9ff)!important;color:#204d9b!important}
+.bank-logo[data-bank="bourso"]{background:linear-gradient(145deg,#f1e8ff,#c8a8ff)!important;color:#6536b4!important}
+.bank-logo[data-bank="tiime"]{background:linear-gradient(145deg,#fff1d7,#ffc96b)!important;color:#925a12!important}
+.bank-logo[data-bank="bnp"]{background:linear-gradient(145deg,#dff9e8,#9de4b7)!important;color:#007a4b!important}
+.bank-logo[data-bank="banque-populaire"]{background:linear-gradient(145deg,#e0f2ff,#91d2ff)!important;color:#005c9f!important}
+.bank-logo[data-bank="credit-agricole"]{background:linear-gradient(145deg,#ddf8eb,#8de0bb)!important;color:#006347!important}
+.bank-logo[data-bank="credit-mutuel"]{background:linear-gradient(145deg,#e1edff,#a5c8ff)!important;color:#173f82!important}
+.bank-logo[data-bank="societe-generale"]{background:linear-gradient(145deg,#ffe5e9,#ffabb9)!important;color:#c90028!important}
+.bank-logo[data-bank="trade-republic"]{background:linear-gradient(145deg,#e4eaff,#b6c6ff)!important;color:#233e9b!important}
+.bank-logo[data-bank="revolut"]{background:linear-gradient(145deg,#e8edff,#b5c7ff)!important;color:#182d68!important}
+.bank-logo[data-bank="interactive-brokers"]{background:linear-gradient(145deg,#ffe7e7,#ffb0b0)!important;color:#b30b20!important}
+.bank-logo[data-bank="n26"]{background:linear-gradient(145deg,#e8edf4,#bdc8d8)!important;color:#202b3b!important}
+.bank-logo[data-bank="wise"]{background:linear-gradient(145deg,#e1fae9,#a5e9b8)!important;color:#176a35!important}
+.bank-logo[data-bank="degiro"]{background:linear-gradient(145deg,#ffebe4,#ffbda9)!important;color:#bf351f!important}
+.bank-logo[data-bank="bourse-direct"]{background:linear-gradient(145deg,#e0ebff,#9bbcff)!important;color:#123f91!important}
+.bank-logo[data-bank="bforbank"]{background:linear-gradient(145deg,#e7eaf0,#c5ccd9)!important;color:#27334b!important}
+.bank-logo[data-bank="other"]{background:linear-gradient(145deg,#edf1ff,#b8c7ff)!important;color:#455ca7!important}
