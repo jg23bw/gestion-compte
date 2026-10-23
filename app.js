@@ -734,6 +734,7 @@ function renderDashboard(){
   $('net-balance').textContent=euro(net);
   $('total-balance').textContent=euro(total);
   $('crypto-balance').textContent=euro(totalCryptoValue());
+  renderWealthViews();
   $('lombard-balance').textContent=euro(lombard);
   $('bank-balance').textContent=euro(bank);
   $('pro-balance').textContent=euro(pro);
@@ -1600,6 +1601,9 @@ function renderWealthViews(){
  renderBars('compare-financial-bars',fr,financial);renderBars('compare-world-bars',world,financial);
  const allocation=[{label:'PEA / Actions',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes bancaires & épargne',value:w.accounts}];
  $('comparison-allocation').innerHTML=pieMarkup(allocation);
+ const allocationHtml=pieMarkup([{label:'Actions / ETF',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes & épargne',value:w.accounts}]);
+ if($('overview-pie-allocation'))$('overview-pie-allocation').innerHTML=allocationHtml;
+ if($('overview-pie-assets'))$('overview-pie-assets').innerHTML=pieMarkup([{label:'Titres cotés',value:w.stocks},{label:'Crypto-actifs',value:w.crypto},{label:'Liquidités et comptes',value:w.accounts}]);
  const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100;
  const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
  let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
