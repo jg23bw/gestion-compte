@@ -475,7 +475,6 @@ tbody tr:hover td{background:#fafbff}
  .sidebar .nav-item.active{background:rgba(112,139,255,.18);box-shadow:inset 0 1px rgba(255,255,255,.25),0 3px 12px rgba(40,70,160,.18);border:1px solid rgba(255,255,255,.1)}
  .panel,.summary-card,.account-card,.modal{backdrop-filter:blur(18px) saturate(145%);-webkit-backdrop-filter:blur(18px) saturate(145%)}
  .panel,.summary-card,.account-card{border-color:rgba(150,165,195,.22);box-shadow:0 8px 24px rgba(20,35,65,.06)}
- .page-heading>.primary-button{display:none}
  .projection-row{grid-template-columns:38px minmax(30px,1fr) minmax(94px,auto);gap:8px}
  .projection-row>strong{font-size:10px}
  .projection-row>strong small{font-size:9px}
