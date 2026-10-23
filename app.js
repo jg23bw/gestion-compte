@@ -1575,10 +1575,54 @@ function deleteStockHolding(id){
 }
 function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();saveState();}
 function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.setAttribute('aria-label','Annuler la dernière action');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();try{undoLastAction();}catch(error){console.error('Undo failed',error);showToast('Impossible d’annuler cette action : '+(error.message||'erreur inconnue.'));}},{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},10000);}
+
+function wealthSnapshot(){
+  const accounts=totalAccountsBalance(),stocks=totalStockValue(),crypto=totalCryptoValue();
+  const gross=accounts+stocks+crypto, debt=lombardAmount();
+  const investments=(state.stockHoldings||[]).reduce((sum,h)=>sum+(isManualValueHolding(h)?manualHoldingValue(h):(()=>{const d=stockPriceDetails(h);return d.price!==null?Number(h.quantity||0)*d.price:Number(h.invested||0)})()),0);
+  const liquid=state.accounts.filter(a=>effectiveAccountType(a)!=='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
+  return {accounts,stocks,crypto,gross,debt,net:gross-debt,investments,liquid};
+}
+function pieMarkup(items){
+ const total=items.reduce((s,x)=>s+Math.max(0,x.value),0)||1;let angle=0;
+ const colors=['#f4c653','#35d6b0','#f36bb5','#63a5ff','#a58bff'];
+ const stops=items.map((x,i)=>{const start=angle;angle+=Math.max(0,x.value)/total*360;return colors[i%colors.length]+' '+start+'deg '+angle+'deg'}).join(',');
+ return '<div class="wealth-pie" style="background:conic-gradient('+stops+')"><div class="wealth-pie-hole"></div></div><div class="pie-legend">'+items.map((x,i)=>'<div><i style="background:'+colors[i%colors.length]+'"></i><span>'+x.label+'</span><strong>'+euro(x.value)+'</strong><small>'+Math.round(Math.max(0,x.value)/total*100)+'%</small></div>').join('')+'</div>';
+}
+function renderWealthViews(){
+ const w=wealthSnapshot();
+ const financial=Math.max(0,w.accounts+w.stocks+w.crypto);
+ const fr=[['Médiane',18000],['Top 25 %',65000],['Top 10 %',200000],['Top 5 %',400000],['Top 1 %',1200000]];
+ const world=[['Médiane',2300],['Top 25 %',12000],['Top 10 %',42000],['Top 5 %',120000],['Top 1 %',450000]];
+ const renderBars=(id,items,value)=>{const el=$(id);if(el)el.innerHTML=items.map(([label,threshold])=>'<div class="comparison-bar-row"><span>'+label+'</span><strong>'+euro(threshold)+'</strong><div><i style="width:'+Math.min(100,Math.max(2,value/threshold*100))+'%"></i></div><small>'+(value>=threshold?'Seuil dépassé':'')+'</small></div>').join('')};
+ $('compare-financial').textContent=financial>=1200000?'Au-dessus du repère top 1 %':financial>=400000?'Au-dessus du repère top 5 %':financial>=200000?'Au-dessus du repère top 10 %':'À comparer aux seuils';
+ $('compare-world').textContent=financial>=450000?'Au-dessus du repère top 1 % mondial':financial>=120000?'Au-dessus du repère top 5 %':'À comparer aux seuils';
+ renderBars('compare-financial-bars',fr,financial);renderBars('compare-world-bars',world,financial);
+ const allocation=[{label:'PEA / Actions',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes bancaires & épargne',value:w.accounts}];
+ $('comparison-allocation').innerHTML=pieMarkup(allocation);
+ const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100;
+ const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
+ let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
+ while(balance<target&&years<60){balance=balance*(1+rate)+saving*12;years++;series.push({year:new Date().getFullYear()+years,value:balance});if(balance<0)break}
+ $('fire-year').textContent=Number.isFinite(target)?(current>=target?'Atteint':years>=60?'Hors horizon':String(new Date().getFullYear()+years)):'—';
+ $('fire-summary').textContent=Number.isFinite(target)?'Objectif '+euro(target)+' · '+(years>=60?'plus de 60 ans':years+' an(s) estimé(s)):'Saisissez un taux de retrait positif.';
+ $('fire-current').textContent=euro(current);$('fire-target').textContent=Number.isFinite(target)?euro(target):'—';$('fire-gap').textContent=Number.isFinite(target)?euro(gap):'—';$('fire-progress').textContent=Number.isFinite(target)?(target>0?Math.min(100,current/target*100):100).toFixed(1)+' %':'—';
+ $('fire-chart').innerHTML=series.slice(0,31).map(p=>'<div class="projection-row"><span>'+p.year+'</span><div><i style="width:'+Math.min(100,target>0?p.value/target*100:0)+'%"></i></div><strong>'+euro(p.value)+'</strong></div>').join('');
+ const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
+ const remaining=Math.max(0,principal-repaid),loanBtc=60000/(70100/fx),personalBtc=69800/(85100/fx),loanValue=loanBtc*btc/fx,personalValue=personalBtc*btc/fx;
+ const loanGain=loanValue-60000,personalGain=personalValue-69800;
+ $('lombard-remaining').textContent=euro(remaining);$('lombard-loan-btc').textContent=loanBtc.toFixed(6)+' BTC';$('lombard-loan-value').textContent=euro(loanValue);$('lombard-personal-value').textContent=euro(personalValue);
+ $('lombard-loan-gain').textContent=(loanGain>=0?'+':'')+euro(loanGain);$('lombard-loan-detail').textContent='Coût d’achat : 60 000 € · valeur estimée : '+euro(loanValue)+'.';
+ $('lombard-personal-gain').textContent=(personalGain>=0?'+':'')+euro(personalGain);$('lombard-personal-detail').textContent='Coût d’achat : 69 800 € · valeur estimée : '+euro(personalValue)+'.';
+ const totalBtcValue=loanValue+personalValue;const netAfterSale=totalBtcValue-remaining;
+ $('lombard-scenarios').innerHTML=[{label:'Aucun BTC vendu',v:0},{label:'Vente de 25 % des BTC',v:totalBtcValue*.25},{label:'Vente de 50 % des BTC',v:totalBtcValue*.5},{label:'Vente de 100 % des BTC',v:totalBtcValue}].map(x=>'<div><span>'+x.label+'</span><strong>'+euro(x.v)+'</strong><small>Après remboursement de la dette : '+(x.v>=remaining?euro(x.v-remaining):'reste '+euro(remaining-x.v)+' de dette')+'</small></div>').join('');
+}
+
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',recurring:'Récurrences'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',recurring:'Récurrences',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
+  if(['dashboard','fire','comparisons','lombard'].includes(view))renderWealthViews();
   if(view==='recurring')renderRecurring();
   if(view==='accounts')renderAccounts();if(view==='transactions')renderTransactions();if(view==='history')renderMonthlyHistory();
   if(view==='crypto'){renderCrypto();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();}
@@ -1777,6 +1821,9 @@ function downloadCsv(){
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='operations-'+today()+'.csv';a.click();URL.revokeObjectURL(url);showToast('Export CSV téléchargé.');
 }
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
+
+['fire-rent','fire-withdrawal','fire-saving','fire-return','lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
+
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
 $('recurring-add-month').addEventListener('click',()=>generateRecurringForMonth(nextMonthValue()));
 $('recurring-add-template').addEventListener('click',()=>openRecurringEditor());
