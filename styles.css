@@ -815,3 +815,11 @@ tbody tr:hover td{background:#fafbff}
 .fire-net-withdrawal span{font-size:.85rem;color:var(--text-muted,#8290a6)}
 .fire-net-withdrawal strong{font-size:clamp(1.35rem,2.8vw,2rem);line-height:1.2;font-variant-numeric:tabular-nums}
 @media(max-width:800px){.projection-chart{padding:0 10px 18px;gap:10px}.projection-row{grid-template-columns:48px minmax(0,1fr) minmax(92px,auto)!important;gap:8px!important;padding:8px 5px}.projection-row .projection-bars i{height:10px;min-height:10px}.projection-row>strong{min-width:0;font-size:.72rem}.projection-row>strong small{font-size:.65rem}.projection-cashflow{font-size:.65rem}.fire-net-withdrawal{margin:0 16px 16px;padding:14px;gap:10px}.fire-net-withdrawal span{font-size:.75rem}.fire-net-withdrawal strong{font-size:1.25rem}}
+
+/* Projection FIRE : les lignes et barres occupent toute la largeur disponible sans débordement. */
+.projection-chart{display:grid;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:0 16px 22px;gap:12px;}
+.projection-row{display:grid;width:100%;max-width:100%;min-width:0;box-sizing:border-box;grid-template-columns:minmax(42px,.16fr) minmax(0,1fr) minmax(88px,.32fr);gap:clamp(6px,1.2vw,14px);padding:9px 10px;align-items:center;}
+.projection-row .projection-bars{width:100%;min-width:0;max-width:100%;box-sizing:border-box;}
+.projection-row .projection-cashflow{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.45;}
+.projection-row>strong{min-width:0;max-width:100%;overflow-wrap:anywhere;text-align:right;font-size:clamp(.68rem,.9vw,.9rem);}
+@media(max-width:800px){.projection-chart{padding:0 8px 18px;gap:10px}.projection-row{grid-template-columns:40px minmax(0,1fr) minmax(72px,.38fr)!important;gap:6px!important;padding:8px 4px}.projection-row>strong{min-width:0;font-size:.68rem}.projection-row>strong small{font-size:.62rem}.projection-row .projection-cashflow{font-size:.65rem;}}
