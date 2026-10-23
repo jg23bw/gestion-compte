@@ -879,3 +879,14 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-tooltip hr{border-top:1px solid #cbd5e1!important}
 .fire-graph-tooltip .tooltip-monthly{background:#fff0f0!important;border:1px solid #e9a4a4!important}
 .fire-graph-tooltip .tooltip-monthly,.fire-graph-tooltip .tooltip-monthly *{color:#8f1721!important}
+
+/* FIRE : ventilation du revenu mensuel total capital + loyers */
+.fire-monthly-net{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px 16px}
+.fire-monthly-net>span{grid-column:1/-1}
+.fire-monthly-net>strong{grid-column:1/-1;font-size:clamp(1.5rem,3vw,2.1rem);line-height:1.2;color:#126b49}
+.fire-monthly-breakdown{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px 16px;padding-top:10px;border-top:1px solid #d8e5dc;font-size:.9rem}
+.fire-monthly-breakdown span{color:#344054;font-weight:500}
+.fire-monthly-breakdown b{color:#172033;text-align:right;font-variant-numeric:tabular-nums}
+.fire-graph-tooltip .tooltip-monthly>div{display:flex;justify-content:space-between;gap:12px}
+.fire-graph-tooltip .tooltip-monthly hr{width:100%}
+@media(max-width:600px){.fire-monthly-breakdown{font-size:.85rem;gap:8px 10px}}
