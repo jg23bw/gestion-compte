@@ -1615,9 +1615,7 @@ function renderWealthViews(){
  $('compare-financial').textContent=financial>=1200000?'Au-dessus du repère top 1 %':financial>=400000?'Au-dessus du repère top 5 %':financial>=200000?'Au-dessus du repère top 10 %':'À comparer aux seuils';
  $('compare-world').textContent=financial>=450000?'Au-dessus du repère top 1 % mondial':financial>=120000?'Au-dessus du repère top 5 %':'À comparer aux seuils';
  renderBars('compare-financial-bars',fr,financial);renderBars('compare-world-bars',world,financial);
- const allocationHtml=pieMarkup([{label:'Actions / ETF',value:w.stocks},{label:'Crypto',value:w.crypto},{label:'Comptes & épargne (hors pro)',value:w.liquid}]);
- if($('overview-pie-allocation'))$('overview-pie-allocation').innerHTML=allocationHtml;
- activatePieHover();
+ // Aucun camembert d'allocation patrimoniale sur la vue d'ensemble.
  const r=Number($('fire-rent')?.value)||0,withdrawal=(Number($('fire-withdrawal')?.value)||4)/100,saving=Math.max(0,Number($('fire-saving')?.value)||0),rate=(Number($('fire-return')?.value)||0)/100;
  const target=withdrawal>0?r*12/withdrawal:Infinity,current=Math.max(0,w.net),gap=Math.max(0,target-current);
  let balance=current,years=0;const series=[{year:new Date().getFullYear(),value:balance}];
