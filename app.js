@@ -1389,8 +1389,6 @@ function renderStocks(){
     const searchable=(symbolOf(h)+' '+String(h.name||'')+' '+String(h.market||'')+' '+String(account?.name||'')).toLocaleLowerCase('fr');
     if(!searchable.includes(query))return false;
     if(accountFilter!=='all'&&h.accountId!==accountFilter)return false;
-    if(performanceFilter==='gain')return m.gain!==null&&m.gain>0;
-    if(performanceFilter==='loss')return m.gain!==null&&m.gain<0;
     return true;
   });
   const compareDesc=(a,b,key)=>{
