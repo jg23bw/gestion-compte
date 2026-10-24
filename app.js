@@ -182,9 +182,19 @@ const stockHistory={values:{},loading:false,error:''};
 function periodReturnMarkup(history){return '<div class="asset-periods">'+PERFORMANCE_PERIODS.map(([key,label])=>{const value=history&&Number.isFinite(history[key])?history[key]:null;return '<span class="asset-period '+(value===null?'is-unavailable':value>0?'positive':value<0?'negative':'')+'" title="'+label+'"> <small>'+label+'</small><b>'+(value===null?'—':formatSignedPercent(value))+'</b></span>';}).join('')+'</div>';}
 function portfolioPeriodReturn(holdings,metrics,historyMap,valueKey){let totalValue=0;for(const h of holdings){const m=metrics.get(h.id),value=Number(m?.[valueKey]);if(Number.isFinite(value)&&value>0)totalValue+=value;}const result={};for(const [key] of PERFORMANCE_PERIODS){let weight=0,weightedReturn=0;for(const h of holdings){const m=metrics.get(h.id),v=Number(m?.[valueKey]),hist=historyMap[h.coingeckoId||h.priceId],ret=hist&&Number.isFinite(hist[key])?hist[key]:null;if(v>0&&ret!==null){weight+=v;weightedReturn+=v*ret;}}result[key]=weight>0?weightedReturn/weight:null;result[key+'_coverage']=totalValue>0?weight/totalValue:0;}return result;}
 function renderPeriodSummary(prefix,performance){const el=$(prefix+'-period-performance');if(!el)return;el.innerHTML=PERFORMANCE_PERIODS.map(([key,label])=>{const v=performance[key];return '<article class="period-summary-card '+(v===null?'is-unavailable':v>0?'positive':v<0?'negative':'')+'"><span>'+label+'</span><strong>'+(v===null?'—':formatSignedPercent(v))+'</strong><small>'+(v===null?'Historique indisponible':Math.round((performance[key+'_coverage']||0)*100)+' % du portefeuille couvert')+'</small></article>';}).join('');}
+async function loadStockHistory(){
+  const holdings=[...(state.stockHoldings||[])].filter(h=>h.priceId&&!isManualValueHolding(h)&&isInvestmentAccount(accountById(h.accountId)));
+  const ids=[...new Set(holdings.map(h=>h.priceId))].filter(id=>!stockHistory.values[id]);
+  if(!ids.length||stockHistory.loading||!cloud.client)return;
+  stockHistory.loading=true;stockHistory.error='';
+  try{
+    const queue=[...ids],workers=Array.from({length:Math.min(2,queue.length)},async()=>{while(queue.length){const id=queue.shift();try{const data=await stockFunction('history',{id});if(data?.returns&&Object.keys(data.returns).length)stockHistory.values[id]=data.returns;}catch(error){stockHistory.error=error.message||'Historique boursier indisponible';}}});
+    await Promise.all(workers);
+  }finally{stockHistory.loading=false;renderStocks();}
+}
 async function loadCryptoHistory(){
   const holdings=[...(state.cryptoHoldings||[])].filter(h=>h.coingeckoId),now=Date.now();
-  const ids=[...new Set(holdings.map(h=>h.coingeckoId))].filter(id=>{const entry=cryptoHistory.values[id];return !entry||(!entry._fetchedAt&&now-(cryptoHistory.lastAttempt||0)>15*60*1000);});
+  const ids=[...new Set(holdings.map(h=>h.coingeckoId))].filter(id=>{const entry=cryptoHistory.values[id];return !entry||!PERFORMANCE_PERIODS.some(([key])=>typeof entry[key]==='number'&&Number.isFinite(entry[key]));});
   if(!ids.length||cryptoHistory.loading||now-(cryptoHistory.lastAttempt||0)<15000)return;
   cryptoHistory.loading=true;cryptoHistory.lastAttempt=now;cryptoHistory.error='';
   try{
@@ -1008,7 +1018,7 @@ function formatSignedPercent(value){
 function cryptoTimeLabel(timestamp){
   return new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'}).format(new Date(timestamp));
 }
-function hydratePerformanceHistory(){try{const c=JSON.parse(localStorage.getItem('gestion-comptes-crypto-history-v1'));if(c?.values&&typeof c.values==='object')cryptoHistory.values=c.values;}catch(error){}}
+function hydratePerformanceHistory(){try{const c=JSON.parse(localStorage.getItem('gestion-comptes-crypto-history-v1'));if(c?.values&&typeof c.values==='object'){const values={};for(const [id,entry] of Object.entries(c.values)){if(entry&&PERFORMANCE_PERIODS.some(([key])=>typeof entry[key]==='number'&&Number.isFinite(entry[key])))values[id]=entry;}cryptoHistory.values=values;}}catch(error){}}
 function hydrateCryptoPrices(){
   try{
     const saved=JSON.parse(localStorage.getItem(CRYPTO_PRICE_CACHE_KEY));
