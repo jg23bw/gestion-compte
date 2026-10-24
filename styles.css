@@ -770,8 +770,8 @@ tbody tr:hover td{background:#fafbff}
 .projection-legend span{display:inline-flex;align-items:center;gap:7px}
 .projection-legend-accumulation:before,.projection-legend-retirement:before{display:none!important}
 .projection-legend span i{display:inline-block;width:11px;height:11px;flex:0 0 11px;border-radius:3px}
-.projection-legend-accumulation i{background:#159d5b}
-.projection-legend-retirement i{background:#0f9f76}
+.projection-legend-accumulation i{background:#2563eb}
+.projection-legend-retirement i{background:#059669}
 .projection-legend-nominal i{background:#4779ed}
 .projection-legend-real i{background:#f4a340}
 .projection-phase-accumulation{background:rgba(21,157,91,.055);border-left-color:#159d5b}
@@ -829,16 +829,19 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
 .fire-graph-axis{stroke:var(--border-color,#415775);stroke-width:1.5}
 /* FIRE : fonds distincts pour l'accumulation et la retraite, avec une palette positive. */
-.fire-zone-accumulation{fill:#bfdbfe;opacity:.72}
-.fire-zone-retirement{fill:#a7f3d0;opacity:.72}
+.fire-zone-accumulation{fill:#bfdbfe;opacity:.82}
+.fire-zone-retirement{fill:#a7f3d0;opacity:.82}
 :root[data-theme="dark"] .fire-zone-accumulation{fill:#1d4ed8;opacity:.42}
 :root[data-theme="dark"] .fire-zone-retirement{fill:#047857;opacity:.48}
 .fire-graph-nominal,.fire-graph-real{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .fire-graph-nominal{stroke:#4779f5}.fire-graph-real{stroke:#f4a340}
 .fire-graph text{font-size:16px;fill:var(--text-muted,#8490a3)}
 .fire-year-list{display:grid;gap:10px;padding:0 16px 20px;min-width:0}
-.fire-year-row{min-width:0;padding:14px 16px;border:1px solid var(--border-color,#d9e1e9);border-left:4px solid #12a66a;border-radius:12px;background:rgba(18,166,106,.045);box-sizing:border-box}
-.fire-year-retirement{border-left-color:#0f9f76;background:rgba(15,159,118,.07)}
+.fire-year-row{min-width:0;padding:14px 16px;border:1px solid var(--border-color,#d9e1e9);border-left:4px solid #2563eb;border-radius:12px;background:rgba(59,130,246,.09);box-sizing:border-box}
+.fire-year-accumulation{border-left-color:#2563eb;background:rgba(59,130,246,.10)}
+.fire-year-retirement{border-left-color:#059669;background:rgba(16,185,129,.10)}
+:root[data-theme="dark"] .fire-year-accumulation{border-left-color:#60a5fa;background:rgba(37,99,235,.2)}
+:root[data-theme="dark"] .fire-year-retirement{border-left-color:#34d399;background:rgba(5,150,105,.2)}
 .fire-year-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;min-width:0}
 .fire-year-heading>div,.fire-year-capital{display:flex;flex-direction:column;gap:4px;min-width:0}
 .fire-year-heading strong{font-size:1rem}.fire-year-heading small{color:var(--text-muted,#8490a3);font-size:.85rem}
