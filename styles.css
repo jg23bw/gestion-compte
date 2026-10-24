@@ -898,3 +898,9 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-tooltip .tooltip-monthly>div{display:flex;justify-content:space-between;gap:12px}
 .fire-graph-tooltip .tooltip-monthly hr{width:100%}
 @media(max-width:600px){.fire-monthly-breakdown{font-size:.85rem;gap:8px 10px}}
+
+/* Graphique FIRE : priorité visuelle aux 20 prochaines années, puis projection comprimée en pointillés. */
+.fire-graph-future{stroke-dasharray:7 7;opacity:.78}
+.fire-graph-focus-divider{stroke:var(--text-muted,#8490a3);stroke-width:1.5;stroke-dasharray:4 5;opacity:.8}
+.fire-graph-end-marker{stroke:var(--text-muted,#8490a3);stroke-width:1.5;stroke-dasharray:3 5;opacity:.9}
+.fire-graph-end-label{font-weight:700}
