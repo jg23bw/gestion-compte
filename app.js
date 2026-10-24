@@ -1623,7 +1623,7 @@ function renderWealthViews(){
  const passiveIncome=Math.max(0,Number($('fire-passive-income')?.value||0));
  const pensionIncome=Math.max(0,Math.min(15000,Number($('fire-pension')?.value)||0));
  const pensionStartAge=64;
- const financialNeed=Math.max(0,desiredIncome-passiveIncome);
+ const financialNeed=Math.max(0,desiredIncome-passiveIncome-(currentAge>=pensionStartAge?pensionIncome:0));
  const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||4)/100));
  const saving=Math.max(0,Number($('fire-saving')?.value||0));
  const rate=Number($('fire-return')?.value||0)/100;
@@ -1690,7 +1690,7 @@ function renderWealthViews(){
      annualGrossActual=0;annualTaxActual=0;annualNetActual=0;
    }
  } $('fire-year').textContent=financialNeed===0?'Déjà couvert':fireAge!==null?'À '+Math.ceil(fireAge)+' ans':'Non atteint';
- $('fire-summary').textContent=financialNeed===0?'Les revenus passifs saisis couvrent déjà l’objectif mensuel.':fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+Math.ceil(fireAge-currentAge))+' · revenu financier nécessaire : '+euro(financialNeed)+'/mois, après '+euro(passiveIncome)+' de revenus passifs.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
+ $('fire-summary').textContent=financialNeed===0?'Les loyers'+(currentAge>=pensionStartAge?' et la pension de retraite':'')+' saisis couvrent déjà l’objectif mensuel.':fireAge!==null?'Capital cible estimé atteint vers '+(currentYear+Math.ceil(fireAge-currentAge))+' · besoin financier mensuel actuel : '+euro(financialNeed)+' après déduction des revenus déjà disponibles.':'Le capital cible ne serait pas atteint avant '+endAge+' ans avec ces hypothèses.';
  $('fire-current').textContent=euro(current);$('fire-target').textContent=euro(target);$('fire-gap').textContent=euro(gap);$('fire-progress').textContent=target>0?Math.min(100,current/target*100).toFixed(1)+' %':'100 %';
  // Projection complète jusqu'à l'âge de fin, avec échelle logarithmique adoucie pour compresser l'exponentielle après 64 ans.
  const chartEndAge=endAge;
@@ -1713,7 +1713,7 @@ function renderWealthViews(){
  const realPoints=pointsFor('real');
  const yGrid=uniqueYTicks.map(v=>'<g><line x1="'+left+'" y1="'+yAt(v).toFixed(1)+'" x2="'+(chartWidth-right)+'" y2="'+yAt(v).toFixed(1)+'" class="fire-graph-grid"/><text x="'+(left-12)+'" y="'+(yAt(v)+5).toFixed(1)+'" text-anchor="end">'+fmtAxis(v)+'</text></g>').join('');
  const fireX=fireAge===null?chartWidth-right:xAtAge(fireAge);
- const retirementAgeMarker=currentAge<64&&64<=chartEndAge?'<line x1="'+xAtAge(64).toFixed(1)+'" y1="'+top+'" x2="'+xAtAge(64).toFixed(1)+'" y2="'+(top+plotH)+'" class="fire-graph-focus-divider" aria-label="Âge légal de départ à la retraite : 64 ans"/>' :'';
+ const retirementAgeMarker=currentAge<=64&&64<=chartEndAge?'<line x1="'+xAtAge(64).toFixed(1)+'" y1="'+top+'" x2="'+xAtAge(64).toFixed(1)+'" y2="'+(top+plotH)+'" class="fire-graph-focus-divider" aria-label="Âge légal de départ à la retraite : 64 ans"/>' :'';
  const phaseZones='<rect x="'+left+'" y="'+top+'" width="'+Math.max(0,Math.min(chartWidth-right,fireX)-left)+'" height="'+plotH+'" class="fire-zone-accumulation"/>'+(fireAge!==null&&fireX<chartWidth-right?'<rect x="'+Math.max(left,fireX)+'" y="'+top+'" width="'+Math.max(0,chartWidth-right-Math.max(left,fireX))+'" height="'+plotH+'" class="fire-zone-retirement"/>':'');
  const tickAges=[];for(let age=Math.ceil(currentAge/5)*5;age<chartEndAge;age+=5)if(age>currentAge)tickAges.push(age);
  if(64>currentAge&&64<chartEndAge)tickAges.push(64);
