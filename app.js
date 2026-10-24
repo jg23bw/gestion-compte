@@ -1744,11 +1744,13 @@ function renderWealthViews(){
    const wrapRect=graphWrap.getBoundingClientRect(),svgRect=graphSvg.getBoundingClientRect();
    const pointX=svgRect.left-wrapRect.left+(x/chartWidth)*svgRect.width;
    const pointY=svgRect.top-wrapRect.top+(y/chartHeight)*svgRect.height;
-   const tipWidth=Math.min(270,Math.max(190,wrapRect.width-24));
-   graphTip.style.width=tipWidth+'px';graphTip.style.left=Math.max(12,Math.min(wrapRect.width-tipWidth-12,pointX-tipWidth/2))+'px';
+   const tipWidth=Math.min(245,Math.max(185,wrapRect.width-24));
+   graphTip.style.width=tipWidth+'px';graphTip.style.left=Math.max(8,Math.min(wrapRect.width-tipWidth-8,pointX-tipWidth/2))+'px';
    graphTip.style.right='auto';
+   graphTip.style.bottom='auto';graphTip.style.top='8px';
    const tipHeight=graphTip.offsetHeight;
-   graphTip.style.top=Math.max(8,pointY-tipHeight-10)+'px';graphTip.style.bottom='auto';
+   const desiredTop=pointY-tipHeight-12;
+   graphTip.style.top=Math.max(8,Math.min(Math.max(8,pointY-24),desiredTop))+'px';
  };
  graphSvg.querySelectorAll('.fire-graph-hit').forEach(el=>{
    const show=()=>showGraphPoint(Number(el.dataset.index));
