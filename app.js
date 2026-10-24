@@ -1672,7 +1672,6 @@ function renderWealthViews(){
      tax=gross*effectiveTax;net=gross-tax;balance=Math.max(0,balance-gross);
      annualGrossActual+=gross;annualTaxActual+=tax;annualNetActual+=net;
      if(plannedGross>0&&balance<=0&&exhaustedAge===null)exhaustedAge=currentAge+step/12;
-     if(monthsRetired===0){retirementGrossFirstYear=gross*12;retirementNetFirstYear=net*12;}
    }
    if(step%12===0||step===monthlySteps){
      const outputAge=currentAge+step/12,year=currentYear+step/12;
