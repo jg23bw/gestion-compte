@@ -1714,9 +1714,13 @@ function renderWealthViews(){
    graphTip.innerHTML='<strong>'+p.age+' ans · '+(p.phase==='Retraits'?'Retraite':'Accumulation')+'</strong><div>Patrimoine nominal : <b>'+euro(p.value)+'</b></div><div>Patrimoine réel : <b>'+euro(p.real)+'</b></div>'+(p.phase==='Retraits'?'<hr><div>Retrait brut annuel : <b>'+euro(p.gross)+'</b></div><div>Impôts estimés : <b>'+euro(p.tax)+'</b></div><div>Revenu net annuel : <b>'+euro(p.net)+'</b></div><div class="tooltip-monthly"><div><span>Capital net par mois</span><b>'+euro(p.net/12)+'</b></div><div><span>Loyers nets par mois</span><b>'+euro(p.passiveIncome??passiveIncome)+'</b></div><hr><div><strong>Total net disponible par mois</strong><b>'+euro(p.net/12+(p.passiveIncome??passiveIncome))+'</b></div></div>':'<div>Épargne mensuelle : <b>'+euro(saving)+'</b></div>');
    graphTip.hidden=false;
    const rect=graphWrap.getBoundingClientRect();
-   const px=x/chartWidth*rect.width;
+   const svgRect=graphSvg.getBoundingClientRect();
+   const px=svgRect.left-rect.left+x/chartWidth*svgRect.width;
+   const py=svgRect.top-rect.top+y/chartHeight*svgRect.height;
    graphTip.style.left=Math.max(8,Math.min(rect.width-graphTip.offsetWidth-8,px-graphTip.offsetWidth/2))+'px';
-   graphTip.style.top='8px';
+   // Place le tooltip au-dessus du point survolé, en gardant une marge dans le graphique.
+   // Si le point est trop haut, le tooltip reste au bord supérieur plutôt que de sortir du conteneur.
+   graphTip.style.top=Math.max(8,py-graphTip.offsetHeight-16)+'px';
  };
  graphSvg.querySelectorAll('.fire-graph-hit').forEach(el=>{
    const show=()=>showGraphPoint(Number(el.dataset.index));
