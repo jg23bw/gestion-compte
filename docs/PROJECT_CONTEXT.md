@@ -256,3 +256,17 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Vue FIRE : hypothèses modifiables de rente, taux de retrait, épargne et rendement ; projection illustrative basée sur le patrimoine net suivi dans l’application.
 - Comparaisons : seuils financiers statiques et explicitement indicatifs, non présentés comme un percentile officiel calculé.
 - Lombard : simulation BTC sur les achats communiqués (60 000 € à 70 100 $/BTC financés par le crédit ; 69 800 € à 85 100 $/BTC en personnel), prix BTC et EUR/USD modifiables, dette restante estimée à partir de 101 000 € empruntés moins 39 000 € remboursés. Les calculs excluent intérêts, frais et fiscalité.
+
+
+## 17. Consolidation du calcul FIRE (24 octobre 2026)
+
+- Le calcul FIRE reste un modèle indicatif côté navigateur, sans modification de base ni migration Supabase.
+- Le capital suivi correspond aux comptes, positions actions/ETF et cryptomonnaies valorisés par l'application, diminués du crédit lombard. Il ne représente pas automatiquement la valeur nette immobilière si celle-ci n'est pas saisie dans les avoirs suivis.
+- Le seuil FIRE est revalorisé chaque mois avec l'inflation pour maintenir le pouvoir d'achat cible à l'âge de départ.
+- Les retraits et les loyers affichés sont indexés sur l'inflation. Cette hypothèse sur les loyers peut différer de la réalité.
+- Un retrait ne peut plus dépasser le capital disponible. Une fois le portefeuille épuisé, le revenu réellement versé par le capital tombe à zéro.
+- Les scénarios affichés sont prudent, central, favorable et choc ponctuel de -20 % au premier mois de retraite. Ils sont déterministes et ne constituent ni une simulation Monte-Carlo ni une garantie.
+- Le taux de retrait par défaut est passé à 4 % ; il reste modifiable. La fiscalité reste une approximation basée sur la part estimée de gains et doit être vérifiée selon l'enveloppe et la réglementation applicable.
+- Les calculs mensuels utilisent un rendement mensuel équivalent au rendement annuel nominal, avec versements d'épargne en fin de mois. Le patrimoine réel est exprimé en euros constants.
+- Référence méthodologique : docs/FIRE-METHODOLOGY.md.
+- Contrôles effectués : relecture statique du code et des sources. Le navigateur, les données Supabase réelles et le déploiement GitHub Pages ne sont pas déclarés testés.
