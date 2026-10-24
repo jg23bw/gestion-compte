@@ -926,3 +926,16 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-tooltip{height:auto!important;overflow:visible!important;box-sizing:border-box;box-shadow:0 5px 18px rgba(15,23,42,.2)}
 .fire-graph-tooltip .tooltip-monthly{padding:4px 6px;gap:2px 8px;margin-top:3px}
 .fire-graph-tooltip .tooltip-total{padding-top:3px;margin-top:1px}
+
+/* Performances multi-horizons pour les portefeuilles actions et crypto. */
+.period-performance-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.period-summary-card{min-width:0;padding:12px 13px;border:1px solid var(--border-color,#e2e8f0);border-radius:14px;background:linear-gradient(145deg,#fff,#f8fafc);box-shadow:0 3px 12px rgba(15,23,42,.045);display:flex;flex-direction:column;gap:5px}
+.period-summary-card span{font-size:.72rem;color:var(--muted,#64748b);font-weight:650;line-height:1.25}
+.period-summary-card strong{font-size:1.03rem;letter-spacing:-.025em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.period-summary-card small{font-size:.63rem;color:var(--muted,#64748b);line-height:1.25}
+.period-summary-card.positive strong,.asset-period.positive b{color:#07805d}.period-summary-card.negative strong,.asset-period.negative b{color:#d14343}.period-summary-card.is-unavailable strong,.asset-period.is-unavailable b{color:#94a3b8}
+.asset-periods{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;max-width:390px}
+.asset-period{display:inline-flex;align-items:center;gap:4px;padding:3px 5px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;white-space:nowrap;line-height:1.1}
+.asset-period small{font-size:.61rem;color:#64748b}.asset-period b{font-size:.66rem;font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.period-performance-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.period-summary-card{padding:10px}}
+@media(max-width:600px){.period-performance-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.period-summary-card{padding:10px;border-radius:11px}.period-summary-card strong{font-size:.98rem}.asset-periods{gap:3px;max-width:260px}.asset-period{padding:3px 4px}.asset-period small{font-size:.57rem}.asset-period b{font-size:.62rem}}
