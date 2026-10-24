@@ -754,28 +754,28 @@ tbody tr:hover td{background:#fafbff}
 .projection-legend span{display:inline-flex;align-items:center;gap:7px;font-size:.78rem;color:var(--text-muted,#8290a6)}
 .projection-legend-accumulation:before,.projection-legend-retirement:before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px}
 .projection-legend-accumulation:before{background:#159d87}
-.projection-legend-retirement:before{background:#ed655f}
+.projection-legend-retirement:before{background:#0f9f76}
 .projection-row{padding:5px 10px;border-left:3px solid transparent;border-radius:8px}
 .projection-phase-accumulation{background:rgba(21,157,135,.055);border-left-color:#159d87}
-.projection-phase-retirement{background:rgba(237,101,95,.065);border-left-color:#ed655f}
+.projection-phase-retirement{background:rgba(15,159,118,.07);border-left-color:#0f9f76}
 .projection-phase-label{display:block;margin-top:2px;font-size:.65rem;font-weight:600;line-height:1.2;color:var(--text-muted,#8290a6)}
 @media(max-width:800px){.projection-legend{padding:12px 16px 10px;gap:7px}.projection-legend span{font-size:.7rem}.projection-phase-label{font-size:.6rem}}
 /* FIRE: the bars follow the phase color (green while saving, red in retirement) */
 .projection-phase-accumulation .projection-bars .projection-nominal{background:linear-gradient(90deg,#42c995,#159d5b)!important}
 .projection-phase-accumulation .projection-bars .projection-real{background:linear-gradient(90deg,#a4e8c5,#42ad79)!important}
-.projection-phase-retirement .projection-bars .projection-nominal{background:linear-gradient(90deg,#ff8a80,#d93636)!important}
-.projection-phase-retirement .projection-bars .projection-real{background:linear-gradient(90deg,#ffc0b8,#e86b63)!important}
+.projection-phase-retirement .projection-bars .projection-nominal{background:linear-gradient(90deg,#55c9a5,#0f9f76)!important}
+.projection-phase-retirement .projection-bars .projection-real{background:linear-gradient(90deg,#b4efdc,#55c9a5)!important}
 /* FIRE projection: phase color and value color encode two different things */
 .projection-legend{gap:10px 16px}
 .projection-legend span{display:inline-flex;align-items:center;gap:7px}
 .projection-legend-accumulation:before,.projection-legend-retirement:before{display:none!important}
 .projection-legend span i{display:inline-block;width:11px;height:11px;flex:0 0 11px;border-radius:3px}
 .projection-legend-accumulation i{background:#159d5b}
-.projection-legend-retirement i{background:#d93636}
+.projection-legend-retirement i{background:#0f9f76}
 .projection-legend-nominal i{background:#4779ed}
 .projection-legend-real i{background:#f4a340}
 .projection-phase-accumulation{background:rgba(21,157,91,.055);border-left-color:#159d5b}
-.projection-phase-retirement{background:rgba(217,54,54,.055);border-left-color:#d93636}
+.projection-phase-retirement{background:rgba(15,159,118,.07);border-left-color:#0f9f76}
 .projection-row .projection-bars .projection-nominal{background:#4779ed!important}
 .projection-row .projection-bars .projection-real{background:#f4a340!important}
 .projection-phase-accumulation .projection-bars .projection-nominal,
@@ -828,12 +828,17 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-wrap{width:100%;min-width:0;box-sizing:border-box;padding:8px 20px 18px;overflow:hidden}
 .fire-graph{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
 .fire-graph-axis{stroke:var(--border-color,#415775);stroke-width:1.5}
+/* FIRE : fonds distincts pour l'accumulation et la retraite, avec une palette positive. */
+.fire-zone-accumulation{fill:#dbeafe;opacity:.46}
+.fire-zone-retirement{fill:#d1fae5;opacity:.58}
+:root[data-theme="dark"] .fire-zone-accumulation{fill:#1e3a5f;opacity:.42}
+:root[data-theme="dark"] .fire-zone-retirement{fill:#064e3b;opacity:.48}
 .fire-graph-nominal,.fire-graph-real{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .fire-graph-nominal{stroke:#4779f5}.fire-graph-real{stroke:#f4a340}
 .fire-graph text{font-size:16px;fill:var(--text-muted,#8490a3)}
 .fire-year-list{display:grid;gap:10px;padding:0 16px 20px;min-width:0}
 .fire-year-row{min-width:0;padding:14px 16px;border:1px solid var(--border-color,#d9e1e9);border-left:4px solid #12a66a;border-radius:12px;background:rgba(18,166,106,.045);box-sizing:border-box}
-.fire-year-retirement{border-left-color:#e33b3b;background:rgba(227,59,59,.055)}
+.fire-year-retirement{border-left-color:#0f9f76;background:rgba(15,159,118,.07)}
 .fire-year-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;min-width:0}
 .fire-year-heading>div,.fire-year-capital{display:flex;flex-direction:column;gap:4px;min-width:0}
 .fire-year-heading strong{font-size:1rem}.fire-year-heading small{color:var(--text-muted,#8490a3);font-size:.85rem}
@@ -858,7 +863,7 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-tooltip{position:absolute;z-index:5;min-width:210px;max-width:min(300px,90%);padding:12px 14px;border:1px solid var(--border-color,#415775);border-radius:12px;background:var(--panel-bg,#172b4d);box-shadow:0 8px 28px rgba(0,0,0,.22);font-size:.82rem;line-height:1.6;pointer-events:none}
 .fire-graph-tooltip>strong{display:block;margin-bottom:6px;font-size:.95rem}
 .fire-graph-tooltip hr{border:0;border-top:1px solid var(--border-color,#415775);margin:7px 0}
-.fire-graph-tooltip .tooltip-monthly{margin-top:6px;padding:6px 8px;border-radius:7px;background:rgba(227,59,59,.14);font-size:.9rem}
+.fire-graph-tooltip .tooltip-monthly{margin-top:6px;padding:6px 8px;border-radius:7px;background:rgba(15,159,118,.12);font-size:.9rem}
 .fire-graph-tooltip .tooltip-monthly b{font-size:1.05rem}
 @media(max-width:600px){.fire-graph-wrap{padding:6px 2px 14px}.fire-graph text{font-size:17px}.fire-graph-tooltip{font-size:.75rem;min-width:185px}}
 
@@ -877,8 +882,8 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-tooltip>strong{color:#101828!important;font-weight:800}
 .fire-graph-tooltip b{color:#111827!important;font-weight:800}
 .fire-graph-tooltip hr{border-top:1px solid #cbd5e1!important}
-.fire-graph-tooltip .tooltip-monthly{background:#fff0f0!important;border:1px solid #e9a4a4!important}
-.fire-graph-tooltip .tooltip-monthly,.fire-graph-tooltip .tooltip-monthly *{color:#8f1721!important}
+.fire-graph-tooltip .tooltip-monthly{background:#e9f8f1!important;border:1px solid #8bd5b8!important}
+.fire-graph-tooltip .tooltip-monthly,.fire-graph-tooltip .tooltip-monthly *{color:#145c46!important}
 
 /* FIRE : ventilation du revenu mensuel total capital + loyers */
 .fire-monthly-net{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px 16px}
