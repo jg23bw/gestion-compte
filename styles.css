@@ -825,7 +825,7 @@ tbody tr:hover td{background:#fafbff}
 @media(max-width:800px){.projection-chart{padding:0 8px 18px;gap:10px}.projection-row{grid-template-columns:40px minmax(0,1fr) minmax(72px,.38fr)!important;gap:6px!important;padding:8px 4px}.projection-row>strong{min-width:0;font-size:.68rem}.projection-row>strong small{font-size:.62rem}.projection-row .projection-cashflow{font-size:.65rem;}}
 
 /* Graphique FIRE et détail annuel des revenus nets */
-.fire-graph-wrap{width:100%;min-width:0;box-sizing:border-box;padding:8px 20px 18px;overflow:hidden}
+.fire-graph-wrap{position:relative;width:100%;min-width:0;box-sizing:border-box;padding:8px 20px 210px;overflow:hidden}
 .fire-graph{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
 .fire-graph-axis{stroke:var(--border-color,#415775);stroke-width:1.5}
 /* FIRE : fonds distincts pour l'accumulation et la retraite, avec une palette positive. */
@@ -863,13 +863,13 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-hit:focus{stroke:#4779f5;stroke-width:2}
 .fire-graph-crosshair{stroke:var(--text-muted,#8490a3);stroke-width:1.5;stroke-dasharray:5 4;pointer-events:none}
 .fire-graph-hover-dot{fill:#4779f5;stroke:white;stroke-width:2;pointer-events:none}
-.fire-graph-tooltip{position:relative;z-index:1;width:fit-content;min-width:210px;max-width:min(420px,100%);margin:10px 8px 0;padding:12px 14px;border:1px solid var(--border-color,#cbd5e1);border-radius:12px;background:#fff;color:#172033;box-shadow:0 4px 16px rgba(15,23,42,.12);font-size:.85rem;line-height:1.6;pointer-events:none;overflow-wrap:anywhere}
+.fire-graph-tooltip{position:absolute;z-index:5;left:8px;right:8px;bottom:8px;width:auto;min-width:0;max-width:none;margin:0;padding:12px 14px;border:1px solid var(--border-color,#cbd5e1);border-radius:12px;background:#fff;color:#172033;box-shadow:0 4px 16px rgba(15,23,42,.12);font-size:.85rem;line-height:1.6;pointer-events:none;overflow-wrap:anywhere}
 :root[data-theme="dark"] .fire-graph-tooltip{background:#172b4d;color:#f8fafc;border-color:#526783}
 .fire-graph-tooltip>strong{display:block;margin-bottom:6px;font-size:.95rem}
 .fire-graph-tooltip hr{border:0;border-top:1px solid var(--border-color,#415775);margin:7px 0}
 .fire-graph-tooltip .tooltip-monthly{margin-top:6px;padding:6px 8px;border-radius:7px;background:rgba(15,159,118,.12);font-size:.9rem}
 .fire-graph-tooltip .tooltip-monthly b{font-size:1.05rem}
-@media(max-width:600px){.fire-graph-wrap{padding:6px 2px 14px}.fire-graph text{font-size:17px}.fire-graph-tooltip{font-size:.78rem;min-width:0;width:calc(100% - 16px);max-width:calc(100% - 16px);margin-left:8px;padding:10px 12px}}
+@media(max-width:600px){.fire-graph-wrap{padding:6px 2px 14px}.fire-graph text{font-size:17px}.fire-graph-tooltip{font-size:.78rem;min-width:0;width:auto;max-width:none;left:8px;right:8px;margin:0;padding:10px 12px}}
 
 /* Curseurs FIRE : valeurs visibles, manipulation confortable à la souris et au doigt. */
 .fire-slider-control{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px 14px;min-width:0}
