@@ -1074,7 +1074,7 @@ function renderCrypto(){
   });
   const priced=holdings.filter(h=>metrics.get(h.id).value!==null&&!isManualValueHolding(h));const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const currentValue=holdings.reduce((sum,h)=>sum+(metrics.get(h.id).value??0),0);const gain=priced.reduce((sum,h)=>sum+(metrics.get(h.id).gain??0),0);
   const performance=investedPriced>0?gain/investedPriced*100:0;
-  renderPeriodSummary('crypto',portfolioPeriodReturn(holdings,metrics,cryptoHistory.values,'value'));
+  renderPeriodSummary('crypto',portfolioPeriodReturn(allHoldings,metrics,cryptoHistory.values,'value'));
 
   $('crypto-invested').textContent=euro(investedAll);
   $('crypto-value').textContent=euro(currentValue);
@@ -1434,7 +1434,7 @@ function renderStocks(){
   const currentValue=priced.reduce((sum,h)=>sum+metrics.get(h.id).value,0);
   const gain=currentValue-investedPriced;
   const performance=investedPriced>0?gain/investedPriced*100:0;
-  renderPeriodSummary('stocks',portfolioPeriodReturn(holdings,metrics,stockHistory.values,'value'));
+  renderPeriodSummary('stocks',portfolioPeriodReturn(allHoldings.filter(h=>isInvestmentAccount(accountById(h.accountId))),metrics,stockHistory.values,'value'));
 
   $('stocks-invested').textContent=euro(investedAll);
   $('stocks-value').textContent=euro(currentValue);
