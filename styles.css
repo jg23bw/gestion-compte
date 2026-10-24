@@ -904,3 +904,5 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph-focus-divider{stroke:var(--text-muted,#8490a3);stroke-width:1.5;stroke-dasharray:4 5;opacity:.8}
 .fire-graph-end-marker{stroke:var(--text-muted,#8490a3);stroke-width:1.5;stroke-dasharray:3 5;opacity:.9}
 .fire-graph-end-label{font-weight:700}
+
+.fire-graph-caption{margin:0 16px 12px;color:var(--text-muted,#8490a3);font-size:.9rem;line-height:1.45}
