@@ -53,6 +53,20 @@ async function searchStocks(query: string) {
   return json({ data });
 }
 
+async function fetchStockHistory(id: string) {
+  const periods: Record<string,string> = { day: "1D", month: "1M", quarter: "3M", ytd: "YTD", year: "1Y", twoYears: "2Y", fiveYears: "5Y" };
+  const returns: Record<string,number> = {};
+  await Promise.all(Object.entries(periods).map(async ([key, period]) => {
+    const response = await fetch(STOCK_CHART_URL + encodeURIComponent(id) + "/" + period + "/l", { headers: UPSTREAM_HEADERS, cache: "no-store" });
+    if (!response.ok) return;
+    const payload = await response.json().catch(() => null);
+    const rows = Array.isArray(payload?.data) ? payload.data : [];
+    const prices = rows.map((row: Record<string, unknown>) => Number(row?.c)).filter((price: number) => Number.isFinite(price) && price > 0);
+    if (prices.length >= 2) returns[key] = (prices[prices.length - 1] / prices[0] - 1) * 100;
+  }));
+  return json({ id, returns });
+}
+
 async function fetchStockPrice(id: string) {
   let lastStatus = 0;
   for (const period of ["1D", "1Y"]) {
@@ -92,6 +106,11 @@ Deno.serve(async (req) => {
       const query = String(body?.query ?? "").trim();
       if (query.length < 2 || query.length > 80) return json({ error: "Recherche invalide." }, 400);
       return await searchStocks(query);
+    }
+    if (action === "history") {
+      const id = String(body?.id ?? "").trim();
+      if (!/^[A-Za-z0-9._-]{1,40}$/.test(id)) return json({ error: "Identifiant de titre invalide." }, 400);
+      return await fetchStockHistory(id);
     }
     if (action === "price") {
       const id = String(body?.id ?? "").trim();
