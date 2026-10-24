@@ -1659,7 +1659,7 @@ function renderWealthViews(){
      // Les loyers restent constants en euros nominaux : ils ne sont pas indexés sur l'inflation.
      const rentsAtStep=passiveIncome;
      // La pension saisie est exprimée en euros d'aujourd'hui et suit l'inflation dans cette projection.
-     const pensionAtStep=currentAge+step/12>=pensionStartAge?pensionIncome*inflationFactor:0;
+     const pensionAtStep=currentAge+step/12>=pensionStartAge?pensionIncome:0;
      const availableNetAtStep=balance*withdrawal/12*netFactor+rentsAtStep+pensionAtStep;
      // FIRE n'est atteint que lorsque le revenu mensuel net total couvre l'objectif revalorisé.
      if(availableNetAtStep>=targetIncomeAtStep){fireAge=currentAge+step/12;fireCapital=balance;retirementStartMonth=step;}
@@ -1668,7 +1668,7 @@ function renderWealthViews(){
      balance=Math.max(0,balance*(1+monthlyRate));
      const inflationFactor=Math.pow(1+inflation,step/12);
      const targetIncomeAtStep=desiredIncome*inflationFactor;
-     const pensionAtStep=currentAge+step/12>=pensionStartAge?pensionIncome*inflationFactor:0;
+     const pensionAtStep=currentAge+step/12>=pensionStartAge?pensionIncome:0;
      // Le capital ne finance que le complément après loyers constants et pension.
      const plannedGross=balance*withdrawal/12;
      gross=Math.min(balance,plannedGross);
@@ -1681,7 +1681,7 @@ function renderWealthViews(){
      const real=balance/Math.pow(1+inflation,step/12);
      // Afficher les loyers saisis sans revalorisation automatique.
      const passiveAtDate=passiveIncome;
-     const pensionAtDate=outputAge>=pensionStartAge?pensionIncome*Math.pow(1+inflation,step/12):0;
+     const pensionAtDate=outputAge>=pensionStartAge?pensionIncome:0;
      // Annualiser le revenu mensuel courant évite de sous-estimer la première année de retraite partielle.
       const displayedGross=phase==='Retraits'?gross*12:annualGrossActual;
       const displayedTax=phase==='Retraits'?tax*12:annualTaxActual;
@@ -1741,7 +1741,14 @@ function renderWealthViews(){
    hoverDot.setAttribute('cx',x);hoverDot.setAttribute('cy',y);hoverDot.setAttribute('visibility','visible');
    graphTip.innerHTML='<strong>'+p.age+' ans · '+(p.phase==='Retraits'?'Retraite':'Accumulation')+'</strong><div>Patrimoine nominal : <b>'+euro(p.value)+'</b></div><div>Patrimoine réel : <b>'+euro(p.real)+'</b></div>'+(p.phase==='Retraits'?'<div class="tooltip-monthly"><div><span>Capital net / mois</span><b>'+euro(p.net/12)+'</b></div><div><span>Loyers / mois</span><b>'+euro(p.passiveIncome??passiveIncome)+'</b></div><div><span>Pension / mois</span><b>'+euro(p.pensionIncome??0)+'</b></div><div class="tooltip-total"><strong>Total net / mois</strong><b>'+euro(p.net/12+(p.passiveIncome??passiveIncome)+(p.pensionIncome??0))+'</b></div></div><small>Retrait brut/an : '+euro(p.gross)+' · Impôts/an : '+euro(p.tax)+'</small>':'<div>Épargne mensuelle : <b>'+euro(saving)+'</b></div>');
    graphTip.hidden=false;
-   // L’infobulle reste sous le graphique, dans le flux, pour ne jamais recouvrir les courbes.
+   const wrapRect=graphWrap.getBoundingClientRect(),svgRect=graphSvg.getBoundingClientRect();
+   const pointX=svgRect.left-wrapRect.left+(x/chartWidth)*svgRect.width;
+   const pointY=svgRect.top-wrapRect.top+(y/chartHeight)*svgRect.height;
+   const tipWidth=Math.min(270,Math.max(190,wrapRect.width-24));
+   graphTip.style.width=tipWidth+'px';graphTip.style.left=Math.max(12,Math.min(wrapRect.width-tipWidth-12,pointX-tipWidth/2))+'px';
+   graphTip.style.right='auto';
+   const tipHeight=graphTip.offsetHeight;
+   graphTip.style.top=Math.max(8,pointY-tipHeight-10)+'px';graphTip.style.bottom='auto';
  };
  graphSvg.querySelectorAll('.fire-graph-hit').forEach(el=>{
    const show=()=>showGraphPoint(Number(el.dataset.index));
@@ -1757,7 +1764,7 @@ function renderWealthViews(){
    const months=Math.max(0,Math.round((horizonAge-currentAge)*12)),mr=Math.pow(Math.max(0.000001,1+sc.rate),1/12)-1;
    for(let m=1;m<=months;m++){
      const inflationFactor=Math.pow(1+inflation,m/12),age=currentAge+m/12;
-     const pensionAt=age>=pensionStartAge?pensionIncome*inflationFactor:0;
+     const pensionAt=age>=pensionStartAge?pensionIncome:0;
      if(ageFire===null){b=b*(1+mr)+saving;const targetIncome=desiredIncome*inflationFactor;if(b*withdrawal/12*netFactor+passiveIncome+pensionAt>=targetIncome){ageFire=age;fireBal=b;startMonth=m;}}
      else{if(sc.crash&&m===(startMonth??0)+1)b*=0.8;b=Math.max(0,b*(1+mr));const planned=b*withdrawal/12;const actual=Math.min(b,planned);b=Math.max(0,b-actual);if(planned>0&&b<=0&&drained===null)drained=age;}
    }
