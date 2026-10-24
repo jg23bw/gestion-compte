@@ -960,8 +960,7 @@ function cryptoImage(holding){
   return typeof value==='string'?value:'';
 }
 function cryptoLogoMarkup(image,symbol,extraClass=''){
-  const initials=String(symbol||'?').slice(0,3).toUpperCase();
-  return '<span class="crypto-logo'+(extraClass?' '+extraClass:'')+'" aria-hidden="true"><span>'+escapeHtml(initials)+'</span>'+(image?'<img src="'+escapeHtml(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':'')+'</span>';
+  return '<span class="crypto-logo'+(extraClass?' '+extraClass:'')+'" aria-hidden="true">'+(image?'<img src="'+escapeHtml(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':'')+'</span>';
 }
 function euroPrecise(value){
   const number=Number(value)||0;
