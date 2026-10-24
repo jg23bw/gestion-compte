@@ -1636,12 +1636,15 @@ function renderWealthViews(){
  const netFactor=Math.max(0.01,1-effectiveTax);
  const target=financialNeed>0?financialNeed*12/(withdrawal*netFactor):0;
  const current=Math.max(0,w.net),gap=Math.max(0,target-current);
+ const initialPensionIncome=currentAge>=pensionStartAge?pensionIncome:0;
+ const initialGrossMonthly=Math.max(0,desiredIncome-passiveIncome-initialPensionIncome)/(netFactor*12);
+ const currentIncomeCovered=current*withdrawal/12*netFactor+passiveIncome+initialPensionIncome>=desiredIncome;
  const monthlyRate=Math.pow(Math.max(0.000001,1+rate),1/12)-1;
  const realAnnualRate=(1+rate)/(1+inflation)-1;
  const monthlyRealRate=Math.pow(Math.max(0.000001,1+realAnnualRate),1/12)-1;
  const realTarget=target;
- let balance=current,fireAge=current>=target?currentAge:null,fireCapital=current>=target?current:null;
- let nominalPaidIn=current,series=[{age:currentAge,year:currentYear,month:0,value:balance,real:balance,phase:current>=target?'Retraits':'Accumulation',gross:financialNeed>0&&current>=target?current*withdrawal:0,tax:financialNeed>0&&current>=target?current*withdrawal*effectiveTax:0,net:financialNeed>0&&current>=target?current*withdrawal*netFactor:0,passiveIncome}];
+ let balance=current,fireAge=currentIncomeCovered?currentAge:null,fireCapital=currentIncomeCovered?current:null;
+ let nominalPaidIn=current,series=[{age:currentAge,year:currentYear,month:0,value:balance,real:balance,phase:currentIncomeCovered?'Retraits':'Accumulation',gross:currentIncomeCovered?Math.min(current,initialGrossMonthly)*12:0,tax:currentIncomeCovered?Math.min(current,initialGrossMonthly)*12*effectiveTax:0,net:currentIncomeCovered?Math.min(current,initialGrossMonthly)*12*netFactor:0,passiveIncome,pensionIncome:initialPensionIncome}];
  let exhaustedAge=null,retirementNetFirstYear=0,retirementGrossFirstYear=0;
  const monthlySteps=(endAge-currentAge)*12;
  let retirementStartMonth=fireAge===null?null:0;
@@ -1712,7 +1715,8 @@ function renderWealthViews(){
  const fireX=fireAge===null?chartWidth-right:xAtAge(fireAge);
  const phaseZones='<rect x="'+left+'" y="'+top+'" width="'+Math.max(0,Math.min(chartWidth-right,fireX)-left)+'" height="'+plotH+'" class="fire-zone-accumulation"/>'+(fireAge!==null&&fireX<chartWidth-right?'<rect x="'+Math.max(left,fireX)+'" y="'+top+'" width="'+Math.max(0,chartWidth-right-Math.max(left,fireX))+'" height="'+plotH+'" class="fire-zone-retirement"/>':'');
  const tickAges=[];for(let age=Math.ceil(currentAge/5)*5;age<chartEndAge;age+=5)if(age>currentAge)tickAges.push(age);
- tickAges.unshift(currentAge);if(tickAges[tickAges.length-1]!==chartEndAge)tickAges.push(chartEndAge);
+ if(64>currentAge&&64<chartEndAge)tickAges.push(64);
+ tickAges.sort((a,b)=>a-b);tickAges.unshift(currentAge);if(tickAges[tickAges.length-1]!==chartEndAge)tickAges.push(chartEndAge);
  const xLabels=tickAges.map(age=>'<text x="'+xAtAge(age).toFixed(1)+'" y="'+(chartHeight-10)+'" text-anchor="'+(age===chartEndAge?'end':age===currentAge?'start':'middle')+'">'+age+' ans</text>').join('');
  const hitPoints=chartSeries.map(p=>{const i=series.indexOf(p);return '<circle class="fire-graph-hit" data-index="'+i+'" cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(p.value).toFixed(1)+'" r="11" tabindex="0" role="button" aria-label="'+p.age+' ans, patrimoine '+euro(p.value)+'" />';}).join('');
  $('fire-chart').innerHTML='<p class="fire-graph-caption">Projection complète jusqu’à '+chartEndAge+' ans. Échelle verticale compressée pour conserver la lisibilité entre '+currentAge+' et 64 ans, sans masquer la tendance à long terme.</p><div class="projection-legend"><span class="projection-legend-accumulation"><i></i> Accumulation</span><span class="projection-legend-retirement"><i></i> Retraite</span><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants</span></div><div class="fire-graph-wrap"><svg class="fire-graph" viewBox="0 0 '+chartWidth+' '+chartHeight+'" role="group" aria-label="Graphique interactif du patrimoine par âge">'+phaseZones+yGrid+'<line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(chartWidth-right)+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><polyline points="'+nominalPoints+'" class="fire-graph-nominal"/><polyline points="'+realPoints+'" class="fire-graph-real"/>'+xLabels+hitPoints+'<line id="fire-crosshair" x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-crosshair" visibility="hidden"/><circle id="fire-hover-dot" cx="'+left+'" cy="'+top+'" r="6" class="fire-graph-hover-dot" visibility="hidden"/></svg><div id="fire-graph-tooltip" class="fire-graph-tooltip" role="status" hidden></div></div><div class="fire-year-list">'+series.map(p=>{
