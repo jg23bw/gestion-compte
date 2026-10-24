@@ -1651,7 +1651,8 @@ function renderWealthViews(){
      nominalPaidIn+=saving;
      const inflationFactor=Math.pow(1+inflation,step/12);
      const targetIncomeAtStep=desiredIncome*inflationFactor;
-     const rentsAtStep=passiveIncome*inflationFactor;
+     // Les loyers restent constants en euros nominaux : ils ne sont pas indexés sur l'inflation.
+     const rentsAtStep=passiveIncome;
      const availableNetAtStep=balance*withdrawal/12*netFactor+rentsAtStep;
      // FIRE n'est atteint que lorsque le revenu mensuel net total couvre l'objectif revalorisé.
      if(availableNetAtStep>=targetIncomeAtStep){fireAge=currentAge+step/12;fireCapital=balance;retirementStartMonth=step;}
@@ -1669,7 +1670,8 @@ function renderWealthViews(){
    if(step%12===0||step===monthlySteps){
      const outputAge=currentAge+step/12,year=currentYear+step/12;
      const real=balance/Math.pow(1+inflation,step/12);
-     const passiveAtDate=passiveIncome*Math.pow(1+inflation,Math.max(0,outputAge-currentAge));
+     // Afficher les loyers saisis sans revalorisation automatique.
+     const passiveAtDate=passiveIncome;
      // Annualiser le revenu mensuel courant évite de sous-estimer la première année de retraite partielle.
       const displayedGross=phase==='Retraits'?gross*12:annualGrossActual;
       const displayedTax=phase==='Retraits'?tax*12:annualTaxActual;
