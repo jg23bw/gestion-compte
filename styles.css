@@ -829,10 +829,10 @@ tbody tr:hover td{background:#fafbff}
 .fire-graph{display:block;width:100%;height:auto;max-width:100%;overflow:visible}
 .fire-graph-axis{stroke:var(--border-color,#415775);stroke-width:1.5}
 /* FIRE : fonds distincts pour l'accumulation et la retraite, avec une palette positive. */
-.fire-zone-accumulation{fill:#dbeafe;opacity:.46}
-.fire-zone-retirement{fill:#d1fae5;opacity:.58}
-:root[data-theme="dark"] .fire-zone-accumulation{fill:#1e3a5f;opacity:.42}
-:root[data-theme="dark"] .fire-zone-retirement{fill:#064e3b;opacity:.48}
+.fire-zone-accumulation{fill:#bfdbfe;opacity:.72}
+.fire-zone-retirement{fill:#a7f3d0;opacity:.72}
+:root[data-theme="dark"] .fire-zone-accumulation{fill:#1d4ed8;opacity:.42}
+:root[data-theme="dark"] .fire-zone-retirement{fill:#047857;opacity:.48}
 .fire-graph-nominal,.fire-graph-real{fill:none;stroke-width:4;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .fire-graph-nominal{stroke:#4779f5}.fire-graph-real{stroke:#f4a340}
 .fire-graph text{font-size:16px;fill:var(--text-muted,#8490a3)}
