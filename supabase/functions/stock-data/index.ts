@@ -57,12 +57,14 @@ async function fetchStockHistory(id: string) {
   const periods: Record<string,string> = { day: "1D", month: "1M", quarter: "3M", ytd: "YTD", year: "1Y", twoYears: "2Y", fiveYears: "5Y" };
   const returns: Record<string,number> = {};
   await Promise.all(Object.entries(periods).map(async ([key, period]) => {
-    const response = await fetch(STOCK_CHART_URL + encodeURIComponent(id) + "/" + period + "/l", { headers: UPSTREAM_HEADERS, cache: "no-store" });
-    if (!response.ok) return;
-    const payload = await response.json().catch(() => null);
-    const rows = Array.isArray(payload?.data) ? payload.data : [];
-    const prices = rows.map((row: Record<string, unknown>) => Number(row?.c)).filter((price: number) => Number.isFinite(price) && price > 0);
-    if (prices.length >= 2) returns[key] = (prices[prices.length - 1] / prices[0] - 1) * 100;
+    try {
+      const response = await fetch(STOCK_CHART_URL + encodeURIComponent(id) + "/" + period + "/l", { headers: UPSTREAM_HEADERS, cache: "no-store" });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => null);
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const prices = rows.map((row: Record<string, unknown>) => Number(row?.c)).filter((price: number) => Number.isFinite(price) && price > 0);
+      if (prices.length >= 2) returns[key] = (prices[prices.length - 1] / prices[0] - 1) * 100;
+    } catch (_) { /* One missing period must not cancel the other periods. */ }
   }));
   return json({ id, returns });
 }
