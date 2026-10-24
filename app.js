@@ -1621,7 +1621,7 @@ function renderWealthViews(){
  const endAge=Math.max(currentAge+1,Math.min(120,Math.round(Number($('fire-end-age')?.value)||95)));
  const desiredIncome=Math.max(0,Number($('fire-rent')?.value||0));
  const passiveIncome=Math.max(0,Number($('fire-passive-income')?.value||0));
- const pensionIncome=Math.max(0,Math.min(15000,Number($('fire-pension')?.value)||0));
+ const pensionIncome=Math.max(0,Math.min(15000,Number($('fire-pension')?.value??2000)));
  const pensionStartAge=64;
  const financialNeed=Math.max(0,desiredIncome-passiveIncome-(currentAge>=pensionStartAge?pensionIncome:0));
  const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||4)/100));
@@ -1739,7 +1739,7 @@ function renderWealthViews(){
    const x=xAt(index),y=yAt(p.value);
    crosshair.setAttribute('x1',x);crosshair.setAttribute('x2',x);crosshair.setAttribute('visibility','visible');
    hoverDot.setAttribute('cx',x);hoverDot.setAttribute('cy',y);hoverDot.setAttribute('visibility','visible');
-   graphTip.innerHTML='<strong>'+p.age+' ans · '+(p.phase==='Retraits'?'Retraite':'Accumulation')+'</strong><div>Patrimoine nominal : <b>'+euro(p.value)+'</b></div><div>Patrimoine réel : <b>'+euro(p.real)+'</b></div>'+(p.phase==='Retraits'?'<hr><div>Retrait brut annuel : <b>'+euro(p.gross)+'</b></div><div>Impôts estimés : <b>'+euro(p.tax)+'</b></div><div>Revenu net annuel : <b>'+euro(p.net)+'</b></div><div class="tooltip-monthly"><div><span>Capital net par mois</span><b>'+euro(p.net/12)+'</b></div><div><span>Loyers nets par mois</span><b>'+euro(p.passiveIncome??passiveIncome)+'</b></div><div><span>Pension nette par mois</span><b>'+euro(p.pensionIncome??0)+'</b></div><hr><div><strong>Total net disponible par mois</strong><b>'+euro(p.net/12+(p.passiveIncome??passiveIncome)+(p.pensionIncome??0))+'</b></div></div>':'<div>Épargne mensuelle : <b>'+euro(saving)+'</b></div>');
+   graphTip.innerHTML='<strong>'+p.age+' ans · '+(p.phase==='Retraits'?'Retraite':'Accumulation')+'</strong><div>Patrimoine nominal : <b>'+euro(p.value)+'</b></div><div>Patrimoine réel : <b>'+euro(p.real)+'</b></div>'+(p.phase==='Retraits'?'<div class="tooltip-monthly"><div><span>Capital net / mois</span><b>'+euro(p.net/12)+'</b></div><div><span>Loyers / mois</span><b>'+euro(p.passiveIncome??passiveIncome)+'</b></div><div><span>Pension / mois</span><b>'+euro(p.pensionIncome??0)+'</b></div><div class="tooltip-total"><strong>Total net / mois</strong><b>'+euro(p.net/12+(p.passiveIncome??passiveIncome)+(p.pensionIncome??0))+'</b></div></div><small>Retrait brut/an : '+euro(p.gross)+' · Impôts/an : '+euro(p.tax)+'</small>':'<div>Épargne mensuelle : <b>'+euro(saving)+'</b></div>');
    graphTip.hidden=false;
    // L’infobulle reste sous le graphique, dans le flux, pour ne jamais recouvrir les courbes.
  };
