@@ -1639,7 +1639,7 @@ function renderWealthViews(){
  const monthlyRealRate=Math.pow(Math.max(0.000001,1+realAnnualRate),1/12)-1;
  const realTarget=target;
  let balance=current,fireAge=current>=target?currentAge:null,fireCapital=current>=target?current:null;
- let nominalPaidIn=current,series=[{age:currentAge,year:currentYear,month:0,value:balance,real:balance,phase:current>=target?'Retraits':'Accumulation',gross:current>=target?current*withdrawal:0,tax:current>=target?current*withdrawal*effectiveTax:0,net:current>=target?current*withdrawal*netFactor:0,passiveIncome}];
+ let nominalPaidIn=current,series=[{age:currentAge,year:currentYear,month:0,value:balance,real:balance,phase:current>=target?'Retraits':'Accumulation',gross:financialNeed>0&&current>=target?current*withdrawal:0,tax:financialNeed>0&&current>=target?current*withdrawal*effectiveTax:0,net:financialNeed>0&&current>=target?current*withdrawal*netFactor:0,passiveIncome}];
  let exhaustedAge=null,retirementNetFirstYear=0,retirementGrossFirstYear=0;
  const monthlySteps=(endAge-currentAge)*12;
  let retirementStartMonth=fireAge===null?null:0;
