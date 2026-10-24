@@ -1,6 +1,6 @@
 # Contexte projet — Gestion de comptes
 
-**Dernière mise à jour documentaire : 2026-10-22.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
+**Dernière mise à jour documentaire : 2026-10-24.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
 
 > La vue d’ensemble affiche explicitement une carte « Cryptomonnaies » avec la valorisation totale en euros. Cette valeur est distincte des comptes personnels/professionnels, mais elle est incluse dans les avoirs bruts et le patrimoine net.
@@ -270,3 +270,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les calculs mensuels utilisent un rendement mensuel équivalent au rendement annuel nominal, avec versements d'épargne en fin de mois. Le patrimoine réel est exprimé en euros constants.
 - Référence méthodologique : docs/FIRE-METHODOLOGY.md.
 - Contrôles effectués : relecture statique du code et des sources. Le navigateur, les données Supabase réelles et le déploiement GitHub Pages ne sont pas déclarés testés.
+
+
+## Simulateur FIRE — pension et graphique (2026-10-24)
+- Le montant de pension nette mensuelle estimée est saisissable dans `#fire-pension`, initialisé à 0 € et activé à partir de 64 ans.
+- La pension saisie est interprétée en euros d’aujourd’hui puis projetée avec l’inflation paramétrée ; les loyers restent constants en euros nominaux et ne sont pas indexés.
+- À la retraite, les retraits du capital couvrent le complément nécessaire après loyers et pension ; les tableaux et infobulles détaillent ces trois sources de revenus.
+- Le graphique couvre l’âge actuel jusqu’à l’âge de fin et utilise une échelle verticale logarithmique adoucie pour rendre lisibles les valeurs à court terme malgré la croissance à long terme.
+- Le modèle reste déterministe et indicatif ; aucun test navigateur de bout en bout n’a été effectué pour ce changement.
