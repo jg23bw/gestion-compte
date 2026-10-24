@@ -51,6 +51,8 @@ const DEFAULT_RECURRING_TEMPLATES = [];
 
 const CRYPTO_PRICE_CACHE_KEY='gestion-comptes-crypto-prices-v2';
 const CRYPTO_MARKET_ENDPOINT='https://api.coingecko.com/api/v3/coins/markets';
+const CRYPTO_FALLBACK_ENDPOINT='https://api.coincap.io/v2/assets';
+const COINCAP_IDS={bitcoin:'bitcoin',ethereum:'ethereum',tether:'tether',binancecoin:'binance-coin',solana:'solana',ripple:'xrp',usd-coin:'usd-coin',dogecoin:'dogecoin',cardano:'cardano',avalanche-2:'avalanche',chainlink:'chainlink',polkadot:'polkadot',tron:'tron',litecoin:'litecoin',bitcoin-cash:'bitcoin-cash',stellar:'stellar',shiba-inu:'shiba-inu',near:'near-protocol',uniswap:'uniswap',render-token:'render-token',aave:'aave',ondo-finance:'ondo',bittensor:'bittensor',sui:'sui',aptos:'aptos',toncoin:'toncoin',cosmos:'cosmos',hedera-hashgraph:'hedera-hashgraph',internet-computer:'internet-computer',ethereum-classic:'ethereum-classic',monero:'monero',kaspa:'kaspa',pepe:'pepe',arbitrum:'arbitrum',optimism:'optimism',maker:'maker',the-graph:'the-graph'};
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const CRYPTO_REFRESH_MS=60000;
 const cryptoSearch={timer:null,controller:null,results:[]};
@@ -987,25 +989,41 @@ function hydrateCryptoPrices(){
   }catch(error){console.warn('Cache des prix crypto illisible',error);}
 }
 async function loadCryptoPrices(){
-  const ids=[...new Set((state.cryptoHoldings||[]).map(h=>h.coingeckoId).filter(Boolean))];
+  const holdings=(state.cryptoHoldings||[]).filter(h=>h.coingeckoId);
+  const ids=[...new Set(holdings.map(h=>h.coingeckoId))];
   if(!ids.length){renderCrypto();return;}
   if(cryptoPrices.loading)return;
   cryptoPrices.loading=true;
   cryptoPrices.error='';
   renderCrypto();
   try{
-    const response=await fetch(CRYPTO_MARKET_ENDPOINT+'?vs_currency=eur&ids='+encodeURIComponent(ids.join(','))+'&sparkline=false&per_page=250',{headers:{Accept:'application/json'}});
-    if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
-    const data=await response.json();
-    const values={},images={};
-    for(const coin of Array.isArray(data)?data:[]){
-      const id=coin?.id;
-      if(!id)continue;
-      const price=Number(coin.current_price);
-      if(Number.isFinite(price)&&price>0)values[id]=price;
-      if(typeof coin.image==='string'&&coin.image)images[id]=coin.image;
+    let values={},images={},sourceError='';
+    try{
+      const response=await fetch(CRYPTO_MARKET_ENDPOINT+'?vs_currency=eur&ids='+encodeURIComponent(ids.join(','))+'&sparkline=false&per_page=250',{headers:{Accept:'application/json'},cache:'no-store'});
+      if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
+      const data=await response.json();
+      for(const coin of Array.isArray(data)?data:[]){
+        if(!coin?.id)continue;
+        const price=Number(coin.current_price);
+        if(Number.isFinite(price)&&price>0)values[coin.id]=price;
+        if(typeof coin.image==='string'&&coin.image)images[coin.id]=coin.image;
+      }
+      if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
+    }catch(error){sourceError=error.message||'CoinGecko indisponible';}
+    if(!Object.keys(values).length){
+      const mapped=ids.map(id=>COINCAP_IDS[id]).filter(Boolean);
+      if(mapped.length){
+        const response=await fetch(CRYPTO_FALLBACK_ENDPOINT+'?ids='+encodeURIComponent(mapped.join(',')),{headers:{Accept:'application/json'},cache:'no-store'});
+        if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'CoinCap indisponible (HTTP '+response.status+')');
+        const payload=await response.json();
+        const idByCoincap=Object.fromEntries(Object.entries(COINCAP_IDS).map(([coingecko,coincap])=>[coincap,coingecko]));
+        for(const asset of Array.isArray(payload?.data)?payload.data:[]){
+          const id=idByCoincap[asset.id],usd=Number(asset.priceUsd);
+          if(id&&Number.isFinite(usd)&&usd>0)values[id]=usd*(Number(stockFx.rates?.USD)||0.92);
+        }
+      }
+      if(!Object.keys(values).length)throw new Error(/load failed|failed to fetch|networkerror/i.test(sourceError)?'connexion aux fournisseurs de prix impossible. Vérifiez le réseau puis réessayez.':sourceError||'aucun prix reçu');
     }
-    if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
     cryptoPrices.values={...cryptoPrices.values,...values};
     cryptoPrices.images={...cryptoPrices.images,...images};
     cryptoPrices.updatedAt=Date.now();
