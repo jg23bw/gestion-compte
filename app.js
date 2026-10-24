@@ -1739,14 +1739,7 @@ function renderWealthViews(){
    hoverDot.setAttribute('cx',x);hoverDot.setAttribute('cy',y);hoverDot.setAttribute('visibility','visible');
    graphTip.innerHTML='<strong>'+p.age+' ans · '+(p.phase==='Retraits'?'Retraite':'Accumulation')+'</strong><div>Patrimoine nominal : <b>'+euro(p.value)+'</b></div><div>Patrimoine réel : <b>'+euro(p.real)+'</b></div>'+(p.phase==='Retraits'?'<hr><div>Retrait brut annuel : <b>'+euro(p.gross)+'</b></div><div>Impôts estimés : <b>'+euro(p.tax)+'</b></div><div>Revenu net annuel : <b>'+euro(p.net)+'</b></div><div class="tooltip-monthly"><div><span>Capital net par mois</span><b>'+euro(p.net/12)+'</b></div><div><span>Loyers nets par mois</span><b>'+euro(p.passiveIncome??passiveIncome)+'</b></div><div><span>Pension nette par mois</span><b>'+euro(p.pensionIncome??0)+'</b></div><hr><div><strong>Total net disponible par mois</strong><b>'+euro(p.net/12+(p.passiveIncome??passiveIncome)+(p.pensionIncome??0))+'</b></div></div>':'<div>Épargne mensuelle : <b>'+euro(saving)+'</b></div>');
    graphTip.hidden=false;
-   const rect=graphWrap.getBoundingClientRect();
-   const svgRect=graphSvg.getBoundingClientRect();
-   const px=svgRect.left-rect.left+x/chartWidth*svgRect.width;
-   const py=svgRect.top-rect.top+y/chartHeight*svgRect.height;
-   graphTip.style.left=Math.max(8,Math.min(rect.width-graphTip.offsetWidth-8,px-graphTip.offsetWidth/2))+'px';
-   // Place le tooltip au-dessus du point survolé, en gardant une marge dans le graphique.
-   // Si le point est trop haut, le tooltip reste au bord supérieur plutôt que de sortir du conteneur.
-   graphTip.style.top=Math.max(8,py-graphTip.offsetHeight-16)+'px';
+   // L’infobulle reste sous le graphique, dans le flux, pour ne jamais recouvrir les courbes.
  };
  graphSvg.querySelectorAll('.fire-graph-hit').forEach(el=>{
    const show=()=>showGraphPoint(Number(el.dataset.index));
@@ -1774,8 +1767,6 @@ function renderWealthViews(){
  const scenarioEl=$('fire-scenarios');if(scenarioEl)scenarioEl.innerHTML='<table class="fire-scenario-table"><thead><tr><th>Scénario</th><th>Âge FIRE</th><th>Épuisement</th><th>Capital final nominal</th><th>Capital final réel</th></tr></thead><tbody>'+scenarioRows+'</tbody></table><h3 class="fire-milestones-title">Capital restant à 80, 90 et 95 ans</h3><table class="fire-scenario-table"><thead><tr><th>Âge</th>'+scenarios.map(sc=>'<th>'+sc.name+' nominal</th><th>'+sc.name+' réel</th>').join('')+'</tr></thead><tbody>'+milestoneRows+'</tbody></table><p class="fire-year-detail">Le scénario « Choc initial » applique une baisse ponctuelle de 20 % au premier mois de retraite. Les autres scénarios conservent un rendement annuel constant ; aucun scénario déterministe ne garantit le résultat réel.</p>';
  $('fire-real-return').textContent=(realAnnualRate*100).toFixed(2)+' %';
  $('fire-net-need').textContent=euro(financialNeed);
- const pensionNote=$('fire-pension')?.closest('label');
- if(pensionNote){const note=pensionNote.querySelector('span');if(note)note.textContent='Pension nette mensuelle estimée à 64 ans (Info Retraite, en euros d’aujourd’hui)';}
 
  const taxRegime=$('fire-tax-regime'),customLabel=$('fire-custom-tax-label');
  if(taxRegime&&customLabel)customLabel.hidden=taxRegime.value!=='custom';
@@ -2007,6 +1998,7 @@ const fireSliderFormats={
  'fire-age':v=>Math.round(v)+' ans','fire-end-age':v=>Math.round(v)+' ans',
  'fire-rent':v=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v)+' €',
  'fire-passive-income':v=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v)+' €',
+ 'fire-pension':v=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v)+' €',
  'fire-saving':v=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(v)+' €',
  'fire-withdrawal':v=>Number(v).toLocaleString('fr-FR',{maximumFractionDigits:2})+' %',
  'fire-return':v=>Number(v).toLocaleString('fr-FR',{maximumFractionDigits:1})+' %',
@@ -2017,13 +2009,12 @@ function updateFireSliderValue(id){
  const input=$(id),output=$(id+'-value');
  if(input&&output&&fireSliderFormats[id])output.textContent=fireSliderFormats[id](input.value);
 }
-['fire-age','fire-end-age','fire-rent','fire-passive-income','fire-withdrawal','fire-saving','fire-return','fire-inflation','fire-gain-share','fire-custom-tax'].forEach(id=>{
+['fire-age','fire-end-age','fire-rent','fire-passive-income','fire-pension','fire-withdrawal','fire-saving','fire-return','fire-inflation','fire-gain-share','fire-custom-tax'].forEach(id=>{
  const input=$(id);if(!input)return;
  updateFireSliderValue(id);
  input.addEventListener('input',()=>{updateFireSliderValue(id);renderWealthViews();});
 });
 ['lombard-btc-price','lombard-fx','lombard-principal','lombard-repaid'].forEach(id=>$(id)?.addEventListener('input',renderWealthViews));
-$('fire-pension')?.addEventListener('input',renderWealthViews);
 $('fire-tax-regime')?.addEventListener('change',renderWealthViews);
 
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.goto)));
