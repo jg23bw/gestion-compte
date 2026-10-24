@@ -176,47 +176,6 @@ function undoLastAction(){
 const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),pendingAccountDeletes:new Set(),accountTypesDirty:false,accountPledgesDirty:false,stockHoldingsDirty:false,authReady:false};
 let cryptoTableReady=null;
 const cryptoPrices={values:{},images:{},updatedAt:0,error:'',loading:false};
-const PERFORMANCE_PERIODS=[['day','Journée'],['month','1 mois'],['quarter','3 mois'],['ytd','Année en cours'],['year','1 an'],['twoYears','2 ans'],['fiveYears','5 ans']];
-const cryptoHistory={values:{},loading:false,error:''};
-const stockHistory={values:{},loading:false,error:''};
-function periodReturnMarkup(history){return '<div class="asset-periods">'+PERFORMANCE_PERIODS.map(([key,label])=>{const value=history&&Number.isFinite(history[key])?history[key]:null;return '<span class="asset-period '+(value===null?'is-unavailable':value>0?'positive':value<0?'negative':'')+'" title="'+label+'"> <small>'+label+'</small><b>'+(value===null?'—':formatSignedPercent(value))+'</b></span>';}).join('')+'</div>';}
-function portfolioPeriodReturn(holdings,metrics,historyMap,valueKey){let totalValue=0;for(const h of holdings){const m=metrics.get(h.id),value=Number(m?.[valueKey]);if(Number.isFinite(value)&&value>0)totalValue+=value;}const result={};for(const [key] of PERFORMANCE_PERIODS){let weight=0,weightedReturn=0;for(const h of holdings){const m=metrics.get(h.id),v=Number(m?.[valueKey]),hist=historyMap[h.coingeckoId||h.priceId],ret=hist&&Number.isFinite(hist[key])?hist[key]:null;if(v>0&&ret!==null){weight+=v;weightedReturn+=v*ret;}}result[key]=weight>0?weightedReturn/weight:null;result[key+'_coverage']=totalValue>0?weight/totalValue:0;}return result;}
-function renderPeriodSummary(prefix,performance){const el=$(prefix+'-period-performance');if(!el)return;el.innerHTML=PERFORMANCE_PERIODS.map(([key,label])=>{const v=performance[key];return '<article class="period-summary-card '+(v===null?'is-unavailable':v>0?'positive':v<0?'negative':'')+'"><span>'+label+'</span><strong>'+(v===null?'—':formatSignedPercent(v))+'</strong><small>'+(v===null?'Historique indisponible':Math.round((performance[key+'_coverage']||0)*100)+' % du portefeuille couvert')+'</small></article>';}).join('');}
-async function loadStockHistory(){
-  const holdings=[...(state.stockHoldings||[])].filter(h=>h.priceId&&!isManualValueHolding(h)&&isInvestmentAccount(accountById(h.accountId)));
-  const ids=[...new Set(holdings.map(h=>h.priceId))].filter(id=>!stockHistory.values[id]);
-  if(!ids.length||stockHistory.loading||!cloud.client)return;
-  stockHistory.loading=true;stockHistory.error='';
-  try{
-    const queue=[...ids],workers=Array.from({length:Math.min(2,queue.length)},async()=>{while(queue.length){const id=queue.shift();try{const data=await stockFunction('history',{id});if(data?.returns&&Object.keys(data.returns).length)stockHistory.values[id]=data.returns;}catch(error){stockHistory.error=error.message||'Historique boursier indisponible';}}});
-    await Promise.all(workers);
-  }finally{stockHistory.loading=false;renderStocks();}
-}
-async function loadCryptoHistory(){
-  const holdings=[...(state.cryptoHoldings||[])].filter(h=>h.coingeckoId),now=Date.now();
-  const ids=[...new Set(holdings.map(h=>h.coingeckoId))].filter(id=>{const entry=cryptoHistory.values[id];return !entry||!PERFORMANCE_PERIODS.some(([key])=>typeof entry[key]==='number'&&Number.isFinite(entry[key]));});
-  if(!ids.length||cryptoHistory.loading||now-(cryptoHistory.lastAttempt||0)<15000)return;
-  cryptoHistory.loading=true;cryptoHistory.lastAttempt=now;cryptoHistory.error='';
-  try{
-    // Keep CoinGecko historical requests sequential so they cannot overwhelm live-price refreshes.
-    for(const id of ids){
-      try{
-        const response=await fetch('https://api.coingecko.com/api/v3/coins/'+encodeURIComponent(id)+'/market_chart?vs_currency=eur&days=max&interval=daily',{headers:{Accept:'application/json'}});
-        if(!response.ok){cryptoHistory.error=response.status===429?'Limite historique CoinGecko atteinte':'HTTP '+response.status;break;}
-        const payload=await response.json(),prices=Array.isArray(payload.prices)?payload.prices:[];
-        const out={_fetchedAt:Date.now()};
-        if(prices.length>=2){
-          const latest=Number(prices[prices.length-1][1]),nowTs=Date.now();
-          const cutoffs={day:nowTs-86400000,month:nowTs-30*86400000,quarter:nowTs-90*86400000,ytd:new Date(new Date().getFullYear(),0,1).getTime(),year:nowTs-365*86400000,twoYears:nowTs-730*86400000,fiveYears:nowTs-1825*86400000};
-          for(const [key,cutoff] of Object.entries(cutoffs)){let old=null,best=Infinity;for(const point of prices){const delta=Math.abs(Number(point[0])-cutoff);if(delta<best){best=delta;old=Number(point[1]);}}const tolerance=key==='day'?36*3600000:key==='ytd'?10*86400000:45*86400000;if(old>0&&Number.isFinite(latest)&&best<=tolerance)out[key]=(latest/old-1)*100;}
-        }
-        cryptoHistory.values[id]=out;
-      }catch(error){cryptoHistory.error=error.message||'Historique crypto indisponible';}
-    }
-    try{localStorage.setItem('gestion-comptes-crypto-history-v1',JSON.stringify({values:cryptoHistory.values,updatedAt:Date.now()}));}catch(error){}
-  }finally{cryptoHistory.loading=false;renderCrypto();}
-}
-
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function frenchAuthError(error){
   const message=String(error?.message||'').trim();
@@ -1018,7 +977,6 @@ function formatSignedPercent(value){
 function cryptoTimeLabel(timestamp){
   return new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'}).format(new Date(timestamp));
 }
-function hydratePerformanceHistory(){try{const c=JSON.parse(localStorage.getItem('gestion-comptes-crypto-history-v1'));if(c?.values&&typeof c.values==='object'){const values={};for(const [id,entry] of Object.entries(c.values)){if(entry&&PERFORMANCE_PERIODS.some(([key])=>typeof entry[key]==='number'&&Number.isFinite(entry[key])))values[id]=entry;}cryptoHistory.values=values;}}catch(error){}}
 function hydrateCryptoPrices(){
   try{
     const saved=JSON.parse(localStorage.getItem(CRYPTO_PRICE_CACHE_KEY));
@@ -1059,7 +1017,6 @@ async function loadCryptoPrices(){
   }finally{
     cryptoPrices.loading=false;
     renderCrypto();
-    loadCryptoHistory();
     renderDashboard();
   }
 }
@@ -1067,7 +1024,6 @@ function renderCrypto(){
   if(!$('crypto-rows'))return;
   const allHoldings=[...(state.cryptoHoldings||[])];
   const query=$('crypto-search')?.value.trim().toLocaleLowerCase('fr')||'';
-  const performanceFilter=$('crypto-performance-filter')?.value||'all';
   const sort=$('crypto-sort')?.value||'manual';
   const metrics=new Map(allHoldings.map(h=>{
     const price=cryptoPrice(h);
@@ -1083,8 +1039,6 @@ function renderCrypto(){
     const m=metrics.get(h.id);
     const searchable=(symbolOf(h)+' '+String(h.name||'')).toLocaleLowerCase('fr');
     if(!searchable.includes(query))return false;
-    if(performanceFilter==='gain')return m.gain!==null&&m.gain>0;
-    if(performanceFilter==='loss')return m.gain!==null&&m.gain<0;
     return true;
   });
   const compareDesc=(a,b,key)=>{
@@ -1107,7 +1061,6 @@ function renderCrypto(){
   });
   const priced=holdings.filter(h=>metrics.get(h.id).value!==null&&!isManualValueHolding(h));const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const currentValue=holdings.reduce((sum,h)=>sum+(metrics.get(h.id).value??0),0);const gain=priced.reduce((sum,h)=>sum+(metrics.get(h.id).gain??0),0);
   const performance=investedPriced>0?gain/investedPriced*100:0;
-  renderPeriodSummary('crypto',portfolioPeriodReturn(allHoldings,metrics,cryptoHistory.values,'value'));
 
   $('crypto-invested').textContent=euro(investedAll);
   $('crypto-value').textContent=euro(currentValue);
@@ -1130,10 +1083,10 @@ function renderCrypto(){
   const migration=$('crypto-migration');
   if(migration)migration.hidden=cryptoTableReady!==false;
 
-  const filtered=query!==''||performanceFilter!=='all';
+  const filtered=query!=='';
   $('crypto-rows').innerHTML=holdings.length?holdings.map(h=>{
     const m=metrics.get(h.id);
-    return '<tr><td><div class="crypto-coin">'+cryptoLogoMarkup(cryptoImage(h),h.symbol)+'<div class="crypto-coin-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small>'+periodReturnMarkup(cryptoHistory.values[h.coingeckoId])+'</div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+    return '<tr><td><div class="crypto-coin">'+cryptoLogoMarkup(cryptoImage(h),h.symbol)+'<div class="crypto-coin-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
   }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.')+'</div></td></tr>';
 
   const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
@@ -1413,7 +1366,6 @@ async function loadStockPrices(){
   }finally{
     stockPrices.loading=false;
     renderStocks();
-    loadStockHistory();
     renderDashboard();
     renderAccounts();
   }
@@ -1423,7 +1375,6 @@ function renderStocks(){
   const allHoldings=[...(state.stockHoldings||[])];
   const query=$('stocks-search')?.value.trim().toLocaleLowerCase('fr')||'';
   const accountFilter=$('stocks-account-filter')?.value||'all';
-  const performanceFilter=$('stocks-performance-filter')?.value||'all';
   const sort=$('stocks-sort')?.value||'manual';
   const metrics=new Map(allHoldings.map(h=>{
     const details=stockPriceDetails(h);
@@ -1467,7 +1418,6 @@ function renderStocks(){
   const currentValue=priced.reduce((sum,h)=>sum+metrics.get(h.id).value,0);
   const gain=currentValue-investedPriced;
   const performance=investedPriced>0?gain/investedPriced*100:0;
-  renderPeriodSummary('stocks',portfolioPeriodReturn(allHoldings.filter(h=>isInvestmentAccount(accountById(h.accountId))),metrics,stockHistory.values,'value'));
 
   $('stocks-invested').textContent=euro(investedAll);
   $('stocks-value').textContent=euro(currentValue);
@@ -1494,14 +1444,14 @@ function renderStocks(){
     else{priceStatus.textContent='Cours pas encore chargés.';priceStatus.classList.remove('is-error');}
   }
 
-  const filtered=query!==''||accountFilter!=='all'||performanceFilter!=='all';
+  const filtered=query!==''||accountFilter!=='all';
   $('stocks-rows').innerHTML=holdings.length?holdings.map(h=>{
     const m=metrics.get(h.id);
     const account=accountById(h.accountId)||{id:'',name:'Compte supprimé',kind:'bank'};
     const market=String(h.market||stockMarketInfo(h.priceId).label);
     const nativeLabel=m.nativePrice!==null&&normalizeStockCurrency(h.currency)!=='EUR'?'<small>'+escapeHtml(nativeMoney(m.nativePrice,h.currency))+'</small>':'';
     const manual=isManualValueHolding(h);
-    return '<tr><td><div class="stock-title">'+stockLogoMarkup(h.symbol)+'<div class="stock-title-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small>'+periodReturnMarkup(stockHistory.values[h.priceId])+'<span class="stock-meta"><span class="stock-meta-text">'+escapeHtml(account.name)+' · '+escapeHtml(market)+'</span>'+pledgeBadgeMarkup(account.id)+'</span></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="stock-quantity">'+(manual?'—':numberFr(m.quantity))+'</td><td class="stock-price">'+(manual?'—':m.price===null?'—':euroPrecise(m.price))+nativeLabel+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="stock-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-stock="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-stock="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+    return '<tr><td><div class="stock-title">'+stockLogoMarkup(h.symbol)+'<div class="stock-title-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small><span class="stock-meta"><span class="stock-meta-text">'+escapeHtml(account.name)+' · '+escapeHtml(market)+'</span>'+pledgeBadgeMarkup(account.id)+'</span></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="stock-quantity">'+(manual?'—':numberFr(m.quantity))+'</td><td class="stock-price">'+(manual?'—':m.price===null?'—':euroPrecise(m.price))+nativeLabel+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="stock-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-stock="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-stock="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
   }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position actions ou ETF. Cliquez sur « Ajouter une action » pour commencer.')+'</div></td></tr>';
 
   const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
@@ -2183,7 +2133,7 @@ $('cloud-logout').addEventListener('click',async()=>{
 });
 $('crypto-add').addEventListener('click',()=>openCryptoEditor());
 $('crypto-refresh').addEventListener('click',loadCryptoPrices);
-['crypto-performance-filter','crypto-sort'].forEach(id=>$(id).addEventListener('change',renderCrypto));
+['crypto-sort'].forEach(id=>$(id).addEventListener('change',renderCrypto));
 $('crypto-search').addEventListener('input',renderCrypto);
 $('crypto-coin-search').addEventListener('input',event=>{
   const query=event.target.value.trim();
@@ -2237,7 +2187,7 @@ $('crypto-form').addEventListener('submit',event=>{
 });
 $('stocks-add').addEventListener('click',()=>openStockEditor());
 $('stocks-refresh').addEventListener('click',loadStockPrices);
-['stocks-account-filter','stocks-performance-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',renderStocks));
+['stocks-account-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',renderStocks));
 $('stocks-search').addEventListener('input',renderStocks);
 $('stock-search').addEventListener('input',event=>{
   const query=event.target.value.trim();
@@ -2419,7 +2369,6 @@ document.addEventListener('click',event=>{
   if(account){openAccountEditor(account.dataset.accountOpen);}
 });
 hydrateCryptoPrices();
-  hydratePerformanceHistory();
 hydrateStockPrices();
 setInterval(()=>{
   if(!document.hidden&&(state.cryptoHoldings||[]).length)loadCryptoPrices();
