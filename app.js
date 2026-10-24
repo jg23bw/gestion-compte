@@ -1649,8 +1649,12 @@ function renderWealthViews(){
    if(fireAge===null){
      balance=balance*(1+monthlyRate)+saving;
      nominalPaidIn+=saving;
-     const targetAtStep=target*Math.pow(1+inflation,step/12);
-     if(balance>=targetAtStep){fireAge=currentAge+step/12;fireCapital=balance;retirementStartMonth=step;}
+     const inflationFactor=Math.pow(1+inflation,step/12);
+     const targetIncomeAtStep=desiredIncome*inflationFactor;
+     const rentsAtStep=passiveIncome*inflationFactor;
+     const availableNetAtStep=balance*withdrawal/12*netFactor+rentsAtStep;
+     // FIRE n'est atteint que lorsque le revenu mensuel net total couvre l'objectif revalorisé.
+     if(availableNetAtStep>=targetIncomeAtStep){fireAge=currentAge+step/12;fireCapital=balance;retirementStartMonth=step;}
    }else{
      phase='Retraits';
      balance=Math.max(0,balance*(1+monthlyRate));
@@ -1666,7 +1670,11 @@ function renderWealthViews(){
      const outputAge=currentAge+step/12,year=currentYear+step/12;
      const real=balance/Math.pow(1+inflation,step/12);
      const passiveAtDate=passiveIncome*Math.pow(1+inflation,Math.max(0,outputAge-currentAge));
-     series.push({age:outputAge,year,month:step,value:balance,real,phase,gross:annualGrossActual,tax:annualTaxActual,net:annualNetActual,passiveIncome:passiveAtDate});
+     // Annualiser le revenu mensuel courant évite de sous-estimer la première année de retraite partielle.
+      const displayedGross=phase==='Retraits'?gross*12:annualGrossActual;
+      const displayedTax=phase==='Retraits'?tax*12:annualTaxActual;
+      const displayedNet=phase==='Retraits'?net*12:annualNetActual;
+      series.push({age:outputAge,year,month:step,value:balance,real,phase,gross:displayedGross,tax:displayedTax,net:displayedNet,passiveIncome:passiveAtDate});
      annualGrossActual=0;annualTaxActual=0;annualNetActual=0;
    }
  } $('fire-year').textContent=financialNeed===0?'Déjà couvert':fireAge!==null?'À '+Math.ceil(fireAge)+' ans':'Non atteint';
@@ -1683,9 +1691,11 @@ function renderWealthViews(){
  const nominalPoints=series.map((p,i)=>xAt(i).toFixed(1)+','+yAt(p.value).toFixed(1)).join(' ');
  const realPoints=series.map((p,i)=>xAt(i).toFixed(1)+','+yAt(p.real).toFixed(1)).join(' ');
  const yGrid=yTicks.map(v=>'<g><line x1="'+left+'" y1="'+yAt(v).toFixed(1)+'" x2="'+(chartWidth-right)+'" y2="'+yAt(v).toFixed(1)+'" class="fire-graph-grid"/><text x="'+(left-12)+'" y="'+(yAt(v)+5).toFixed(1)+'" text-anchor="end">'+fmtAxis(v)+'</text></g>').join('');
+  const fireX=fireAge===null?chartWidth-right:left+Math.max(0,Math.min(1,(fireAge-currentAge)/(endAge-currentAge)))*plotW;
+  const phaseZones='<rect x="'+left+'" y="'+top+'" width="'+Math.max(0,fireX-left)+'" height="'+plotH+'" class="fire-zone-accumulation"/>'+(fireAge!==null?'<rect x="'+fireX+'" y="'+top+'" width="'+Math.max(0,chartWidth-right-fireX)+'" height="'+plotH+'" class="fire-zone-retirement"/>':'');
  const xLabels=series.filter((p,i)=>i===0||i===series.length-1||p.age%5===0).map(p=>{const i=series.indexOf(p);return '<text x="'+xAt(i).toFixed(1)+'" y="'+(chartHeight-10)+'" text-anchor="middle">'+p.age+' ans</text>';}).join('');
  const hitPoints=series.map((p,i)=>'<circle class="fire-graph-hit" data-index="'+i+'" cx="'+xAt(i).toFixed(1)+'" cy="'+yAt(p.value).toFixed(1)+'" r="11" tabindex="0" role="button" aria-label="'+p.age+' ans, patrimoine '+euro(p.value)+'" />').join('');
- $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants</span></div><div class="fire-graph-wrap"><svg class="fire-graph" viewBox="0 0 '+chartWidth+' '+chartHeight+'" role="group" aria-label="Graphique interactif du patrimoine par âge">'+yGrid+'<line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(chartWidth-right)+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><polyline points="'+nominalPoints+'" class="fire-graph-nominal"/><polyline points="'+realPoints+'" class="fire-graph-real"/>'+xLabels+hitPoints+'<line id="fire-crosshair" x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-crosshair" visibility="hidden"/><circle id="fire-hover-dot" cx="'+left+'" cy="'+top+'" r="6" class="fire-graph-hover-dot" visibility="hidden"/></svg><div id="fire-graph-tooltip" class="fire-graph-tooltip" role="status" hidden></div></div><div class="fire-year-list">'+series.map(p=>{
+ $('fire-chart').innerHTML='<div class="projection-legend"><span class="projection-legend-accumulation"><i></i> Accumulation</span><span class="projection-legend-retirement"><i></i> Retraite</span><span class="projection-legend-nominal"><i></i> Patrimoine nominal</span><span class="projection-legend-real"><i></i> Patrimoine en euros constants</span></div><div class="fire-graph-wrap"><svg class="fire-graph" viewBox="0 0 '+chartWidth+' '+chartHeight+'" role="group" aria-label="Graphique interactif du patrimoine par âge">'+yGrid+'<line x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><line x1="'+left+'" y1="'+(top+plotH)+'" x2="'+(chartWidth-right)+'" y2="'+(top+plotH)+'" class="fire-graph-axis"/><polyline points="'+nominalPoints+'" class="fire-graph-nominal"/><polyline points="'+realPoints+'" class="fire-graph-real"/>'+xLabels+hitPoints+'<line id="fire-crosshair" x1="'+left+'" y1="'+top+'" x2="'+left+'" y2="'+(top+plotH)+'" class="fire-graph-crosshair" visibility="hidden"/><circle id="fire-hover-dot" cx="'+left+'" cy="'+top+'" r="6" class="fire-graph-hover-dot" visibility="hidden"/></svg><div id="fire-graph-tooltip" class="fire-graph-tooltip" role="status" hidden></div></div><div class="fire-year-list">'+series.map(p=>{
    const retired=p.phase==='Retraits';
    const rentAtDate=p.passiveIncome??passiveIncome;
    const detail=retired?'<div class="fire-monthly-net"><span>Revenu net disponible par mois</span><strong>'+euro(p.net/12+rentAtDate)+'</strong><div class="fire-monthly-breakdown"><span>Du capital (après impôts)</span><b>'+euro(p.net/12)+'</b><span>Des loyers nets</span><b>'+euro(rentAtDate)+'</b></div></div><p class="fire-year-detail">Retrait brut : '+euro(p.gross)+'/an · impôts estimés : '+euro(p.tax)+'/an · revenu financier net : '+euro(p.net)+'/an</p>':'<p class="fire-year-detail">Épargne mensuelle : '+euro(saving)+'</p>';
@@ -1721,7 +1731,7 @@ function renderWealthViews(){
    let b=current,ageFire=current>=target?currentAge:null,fireBal=current>=target?current:null,startMonth=ageFire===null?null:0,drained=null;
    const months=Math.max(0,Math.round((horizonAge-currentAge)*12)),mr=Math.pow(Math.max(0.000001,1+sc.rate),1/12)-1;
    for(let m=1;m<=months;m++){
-     if(ageFire===null){b=b*(1+mr)+saving;const targetAtMonth=target*Math.pow(1+inflation,m/12);if(b>=targetAtMonth){ageFire=currentAge+m/12;fireBal=b;startMonth=m;}}
+     if(ageFire===null){b=b*(1+mr)+saving;const inflationFactor=Math.pow(1+inflation,m/12);const targetIncome=desiredIncome*inflationFactor;const rentIncome=passiveIncome*inflationFactor;if(b*withdrawal/12*netFactor+rentIncome>=targetIncome){ageFire=currentAge+m/12;fireBal=b;startMonth=m;}}
      else{if(sc.crash&&m===(startMonth??0)+1)b*=0.8;b=Math.max(0,b*(1+mr));const retiredMonths=Math.max(0,m-(startMonth??0)-1);const planned=financialNeed>0?(fireBal||0)*withdrawal/12*Math.pow(1+inflation,retiredMonths/12):0;const actual=Math.min(b,planned);b=Math.max(0,b-actual);if(planned>0&&b<=0&&drained===null)drained=currentAge+m/12;}
    }
    return {balance:b,ageFire,drained};
