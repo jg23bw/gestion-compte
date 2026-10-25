@@ -2510,10 +2510,7 @@ $('stock-form').addEventListener('submit',event=>{
   showToast(existing?'Position actions modifiée.':'Position actions ajoutée.');
   if(!manualValue&&stockPrices.values[priceId]===undefined)loadStockPrices();
 });
-$('export-btn').addEventListener('click',()=>{
-  const choice=window.confirm('OK : exporter toutes les données en JSON.\nAnnuler : exporter uniquement les opérations en CSV.');
-  choice?exportData():downloadCsv();
-});
+
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>$(button.dataset.close).close()));
 $('transaction-form').addEventListener('submit',event=>{
   event.preventDefault();
