@@ -1828,7 +1828,7 @@ function opportunityChange(asset,period){
   const reported=asset.changes?.[key];
   if(reported!==null&&reported!==undefined&&reported!==''&&Number.isFinite(Number(reported)))return Number(reported);
   if(asset.type==='stock'){
-    const history=opportunityHistory?.[asset.id+'|1y']||opportunityHistory?.[asset.id+'|5y']||[];
+    const history=opportunityHistory?.[asset.id+'|1y']||[];
     if(history.length>1){const last=history[history.length-1],days=period==='24h'?2:period==='7d'?7:30,cutoff=last.t-days*86400000;let prior=null;for(const p of history){if(p.t<=cutoff)prior=p;else break;}if(prior&&prior.c>0)return (last.c/prior.c-1)*100;}
   }
   return null;
@@ -1873,7 +1873,7 @@ function opportunityChartSvg(points,period,fullPoints=points){
   let started=false;const smaPath=sma.map((v,i)=>{if(!Number.isFinite(v)){started=false;return null;}const path=(started?'L':'M')+x(i).toFixed(2)+' '+y(v).toFixed(2);started=true;return path;}).filter(Boolean).join(' ');
   const grid=[0,1,2,3].map(i=>{const v=max-(range*i/3),yy=padT+innerH*i/3;return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(width-padR)+'" y2="'+yy+'" stroke="currentColor" opacity=".10"/><text x="'+(padL-9)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(new Intl.NumberFormat('fr-FR',{notation:'compact',maximumFractionDigits:2}).format(v))+'</text>';}).join('');
   const area=line+' L'+x(usable.length-1)+' '+(height-padB)+' L'+x(0)+' '+(height-padB)+' Z';
-  const dateLabel=index=>{const d=new Date(usable[index].t);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('fr-FR',{month:'short',year:period==='5y'?'2-digit':undefined}).format(d);};
+  const dateLabel=index=>{const d=new Date(usable[index].t);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('fr-FR',{month:'short',year:undefined}).format(d);};
   return '<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Cours historique et moyenne mobile 200 jours">'+grid+'<path d="'+area+'" fill="#526ff0" opacity=".08"/><path d="'+line+'" fill="none" stroke="#526ff0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+(smaPath?'<path d="'+smaPath+'" fill="none" stroke="#e7a844" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>':'')+'<text x="'+padL+'" y="'+(height-6)+'" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(0))+'</text><text x="'+(width-padR)+'" y="'+(height-6)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(usable.length-1))+'</text></svg>';
 }
 function isActiveOpportunityChart(assetId,period){
@@ -1885,7 +1885,7 @@ async function loadOpportunityHistory(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   // 1m, 3m et 1y utilisent le même historique annuel : on évite les appels
   // identiques et on conserve 200 clôtures pour calculer la MM200.
-  const historyPeriod=period==='5y'?'5y':'1y';
+  const historyPeriod='1y';
   const key=asset.id+'|'+historyPeriod;
   if(opportunityHistory[key]){if(isActiveOpportunityChart(assetId,period))renderOpportunityChart(assetId,period);return;}
   if(opportunityHistoryLoading[key])return opportunityHistoryLoading[key];
@@ -1897,7 +1897,7 @@ async function loadOpportunityHistory(assetId,period){
     try{
       let points=[];
       if(asset.type==='crypto'){
-        const days=historyPeriod==='5y'?1825:365;
+        const days=365;
         const payload=await stockFunction('crypto-history',{id:asset.raw.coingeckoId,days});
         points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((a,b)=>a.t-b.t);
       }else{
@@ -1925,11 +1925,11 @@ function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
   if(!opportunityHasHistorySource(asset)){chart.innerHTML='<div class="opportunity-chart-empty" role="status">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas de source de cours historique exploitable ; aucun prix n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
-  const historyPeriod=period==='5y'?'5y':'1y';
+  const historyPeriod='1y';
   const fullPoints=opportunityHistory[asset.id+'|'+historyPeriod]||[];
   if(!fullPoints.length){loadOpportunityHistory(assetId,period);return;}
   const latestTime=fullPoints[fullPoints.length-1].t;
-  const rangeDays=period==='1m'?30:period==='3m'?90:period==='5y'?1825:365;
+  const rangeDays=period==='1m'?30:period==='3m'?90:365;
   const visibleFrom=latestTime-rangeDays*86400000;
   const points=fullPoints.filter(p=>p.t>=visibleFrom);
   const smaFull=opportunitySma(fullPoints.map(p=>p.c),200),last=fullPoints[fullPoints.length-1],lastSma=smaFull[smaFull.length-1];
@@ -1965,27 +1965,29 @@ function setupOpportunityChart(){
   const period=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
   renderOpportunityChart(select.value,period);
 }
+function opportunityMovingAverageStatus(asset){
+  const history=opportunityHistory[asset.id+'|1y']||[];
+  if(history.length<200)return {label:'MM200 indisponible',tone:'neutral',distance:null};
+  const closes=history.map(p=>p.c),sma=opportunitySma(closes,200),last=closes[closes.length-1],avg=sma[sma.length-1];
+  if(!Number.isFinite(avg)||avg<=0)return {label:'MM200 indisponible',tone:'neutral',distance:null};
+  const distance=(last/avg-1)*100;
+  return {label:distance>=0?'Au-dessus MM200':'Sous MM200',tone:distance>=0?'positive':'negative',distance};
+}
 function renderOpportunityHeatmap(period='24h'){
   const container=$('opportunity-heatmap');if(!container)return;
-  const assets=opportunityAssets().filter(a=>a.value!==null&&Number.isFinite(a.value)&&a.value>0);
-  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions valorisées dans Actions ou Crypto pour afficher la carte.</div>';return;}
-  const rows=assets.map(a=>({asset:a,change:opportunityChange(a,period)})).sort((a,b)=>b.asset.value-a.asset.value);
-  const total=rows.reduce((sum,r)=>sum+r.asset.value,0)||1;
-  const positive=rows.filter(r=>r.change!==null&&r.change>0.15).length;
-  const negative=rows.filter(r=>r.change!==null&&r.change< -0.15).length;
-  const missing=rows.filter(r=>r.change===null).length;
+  const assets=opportunityAssets();
+  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions dans Actions ou Crypto pour afficher le classement.</div>';return;}
+  const rows=assets.map(asset=>({asset,change:opportunityChange(asset,period),mm:opportunityMovingAverageStatus(asset)}));
+  rows.sort((a,b)=>{if(a.change===null&&b.change!==null)return 1;if(b.change===null&&a.change!==null)return -1;if(a.change===null&&b.change===null)return String(a.asset.symbol).localeCompare(String(b.asset.symbol),'fr');return b.change-a.change;});
+  const positive=rows.filter(r=>r.change!==null&&r.change>0).length,negative=rows.filter(r=>r.change!==null&&r.change<0).length,missing=rows.filter(r=>r.change===null).length;
   const summary=$('opportunity-heatmap-summary');
-  if(summary)summary.innerHTML='<span><strong>'+rows.length+'</strong> actifs valorisés</span><span class="opportunity-heatmap-summary-up"><strong>'+positive+'</strong> en hausse</span><span class="opportunity-heatmap-summary-down"><strong>'+negative+'</strong> en baisse</span><span><strong>'+missing+'</strong> sans variation</span>';
-  container.innerHTML=rows.map(({asset,change})=>{
-    const tone=change===null?'missing':change>0.15?'up':change< -0.15?'down':'flat';
-    const share=asset.value/total;
-    // La surface suit la racine carrée du poids pour conserver une lecture équilibrée.
-    const span=Math.max(1,Math.min(12,Math.round(Math.sqrt(share)*24)));
-    const value=euro(asset.value),label=change===null?'—':opportunityPercent(change);
-    const shareLabel=(share*100).toLocaleString('fr-FR',{maximumFractionDigits:1,minimumFractionDigits:share>=.1?1:0})+' % du portefeuille';
-    const accessible=asset.symbol+' · '+asset.name+' · '+value+' · '+(change===null?'variation indisponible':label)+' · '+shareLabel;
-    return '<article class="opportunity-heat-tile '+tone+'" style="--tile-span:'+span+';--tile-share:'+share+'" tabindex="0" aria-label="'+escapeHtml(accessible)+'" title="'+escapeHtml(accessible)+'"><div class="opportunity-tile-head">'+opportunityLogoMarkup(asset)+'<div class="opportunity-tile-ident"><strong>'+escapeHtml(asset.symbol)+'</strong><span>'+escapeHtml(asset.name)+'</span></div><span class="opportunity-tile-type">'+(asset.type==='crypto'?'CRYPTO':'ACTION / ETF')+'</span></div><div class="opportunity-tile-bottom"><strong class="opportunity-tile-change">'+label+'</strong><span>'+value+'</span><small>'+shareLabel+'</small></div><div class="opportunity-tile-track" aria-hidden="true"><i style="width:'+(change===null?0:Math.min(100,Math.abs(change)*3.5))+'%"></i></div></article>';
-  }).join('');
+  if(summary)summary.innerHTML='<span><strong>'+rows.length+'</strong> actifs suivis</span><span class="opportunity-heatmap-summary-up"><strong>'+positive+'</strong> en hausse</span><span class="opportunity-heatmap-summary-down"><strong>'+negative+'</strong> en baisse</span><span><strong>'+missing+'</strong> variation indisponible</span>';
+  const periodLabel=period==='24h'?'24 h':period==='7d'?'7 jours':'30 jours';
+  container.innerHTML='<table class="opportunity-ranking-table"><thead><tr><th>Actif</th><th>Type</th><th>Valeur détenue</th><th>Variation · '+periodLabel+'</th><th>Tendance MM200</th></tr></thead><tbody>'+rows.map(({asset,change,mm})=>{
+    const changeClass=change===null?'missing':change>0?'positive':change<0?'negative':'neutral';
+    const mmText=mm.distance===null?mm.label:mm.label+' · '+opportunityPercent(mm.distance);
+    return '<tr><td><div class="opportunity-ranking-asset">'+opportunityLogoMarkup(asset)+'<span><strong>'+escapeHtml(asset.symbol)+'</strong><small>'+escapeHtml(asset.name)+'</small></span></div></td><td><span class="opportunity-ranking-type">'+(asset.type==='crypto'?'Crypto':'Action / ETF')+'</span></td><td class="opportunity-ranking-value">'+(asset.value===null?'—':escapeHtml(euro(asset.value)))+'</td><td><span class="opportunity-ranking-change '+changeClass+'">'+(change===null?'Indisponible':escapeHtml(opportunityPercent(change)))+'</span></td><td><span class="opportunity-ranking-mm '+mm.tone+'">'+escapeHtml(mmText)+'</span></td></tr>';
+  }).join('')+'</tbody></table>';
 }
 function renderOpportunityAssets(filter='all'){
   const container=$('opportunity-assets');if(!container)return;
@@ -2014,7 +2016,7 @@ function renderOpportunityAllocation(){
     if(horizon==='short')raw*=Number.isFinite(w)&&w>0?1:.55;
     // La MM200 est le filtre prioritaire lorsqu'un historique est déjà en cache.
     const chartPeriod=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
-    const history=opportunityHistory[a.id+'|'+chartPeriod]||opportunityHistory[a.id+'|1y']||[];
+    const history=opportunityHistory[a.id+'|1y']||[];
     if(history.length>=200){const closes=history.map(p=>p.c),sma=opportunitySma(closes,200),last=closes[closes.length-1],avg=sma[sma.length-1];if(Number.isFinite(avg)){if(last>avg)raw*=1.2;else raw*=.65;}}
     return {...a,signal,raw,currentWeight,weekly:w,monthly:m};
   }).filter(a=>a.raw>0);
@@ -2033,7 +2035,7 @@ function renderOpportunityAllocation(){
   container.innerHTML='<div class="opportunity-allocation-total"><span>Somme simulée · '+assets.length+' positions (actions/ETF + cryptos)</span><strong>'+euro(amount)+'</strong></div>'+final.map(a=>{const above=opportunityAboveSma(a);return '<div class="opportunity-allocation-row"><div class="opportunity-allocation-name">'+opportunityLogoMarkup(a)+'<div><strong>'+escapeHtml(a.symbol)+' · '+escapeHtml(a.name)+'</strong><small>'+(above===true?'Cours au-dessus MM200':above===false?'Cours sous MM200':'MM200 à confirmer')+' · poids actuel '+(a.currentWeight*100).toLocaleString('fr-FR',{maximumFractionDigits:1})+' % du portefeuille suivi</small></div></div><strong>'+euro(a.euros)+'</strong><div class="opportunity-allocation-bar"><i style="width:'+(a.weight*100)+'%"></i></div><small>'+a.weight.toLocaleString('fr-FR',{style:'percent',maximumFractionDigits:1})+'</small></div>';}).join('')+'<p class="opportunity-allocation-warning">Simulation indicative sur toutes les positions valorisées. Les actifs dont le momentum manque reçoivent un score neutre, pas une donnée inventée. Le bonus MM200 n’est appliqué que si un historique suffisant est en cache. Ne tient pas compte de la fiscalité, des frais, de la dette, des réserves ni des fondamentaux ; ce n’est pas un ordre d’achat.</p>';
 }
 function opportunityAboveSma(asset){
-  const p=opportunityHistory[asset.id+'|1y']||opportunityHistory[asset.id+'|5y']||[];
+  const p=opportunityHistory[asset.id+'|1y']||[];
   if(p.length<200)return null;const sma=opportunitySma(p.map(x=>x.c),200),avg=sma[sma.length-1],last=p[p.length-1].c;
   return Number.isFinite(avg)?last>avg:null;
 }
