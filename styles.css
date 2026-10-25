@@ -1185,3 +1185,12 @@ table tbody tr:hover{background:rgba(255,255,255,.45)}
 .sidebar .nav-item .nav-count{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 auto;min-width:31px;height:28px;padding:0 8px;border:1px solid rgba(255,255,255,.68);border-radius:9px;background:linear-gradient(145deg,#4268a8,#294774)!important;color:#fff!important;font-size:12px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;box-shadow:inset 0 1px rgba(255,255,255,.25),0 3px 8px rgba(35,66,117,.18);text-shadow:0 1px 1px rgba(16,36,68,.25)}
 .sidebar .nav-item.active .nav-count{background:linear-gradient(145deg,#376ff0,#2554c8)!important;border-color:rgba(255,255,255,.8);box-shadow:inset 0 1px rgba(255,255,255,.3),0 3px 9px rgba(47,98,213,.3)}
 @media(max-width:900px){.sidebar .nav-item .nav-count{display:none!important}}
+
+/* Mobile navigation: keep Opportunités readable on the light glass bar */
+@media(max-width:760px){
+  .sidebar .nav-item[data-view="opportunities"]{color:#35557f!important}
+  .sidebar .nav-item[data-view="opportunities"] .nav-label-text{color:#35557f!important;text-shadow:0 1px 0 rgba(255,255,255,.72)}
+  .sidebar .nav-item[data-view="opportunities"] .nav-icon{background:linear-gradient(145deg,#e0e8ff,#9bb8ff)!important;color:#284c91!important;border:1px solid rgba(255,255,255,.9);box-shadow:0 4px 10px rgba(66,105,185,.2),inset 0 1px 0 rgba(255,255,255,.9)}
+  .sidebar .nav-item[data-view="opportunities"].active .nav-label-text{color:#244a8e!important;font-weight:800}
+  .sidebar .nav-item[data-view="opportunities"].active .nav-icon{background:linear-gradient(145deg,#a9c7ff,#638df3)!important;color:#173c7b!important;box-shadow:0 5px 13px rgba(65,112,216,.28),inset 0 1px 0 rgba(255,255,255,.9)}
+}
