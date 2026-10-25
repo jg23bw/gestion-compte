@@ -1088,3 +1088,48 @@ button:not(:disabled):hover{box-shadow:0 5px 18px rgba(56,83,145,.13)}
 .bank-logo{box-shadow:0 5px 14px rgba(41,62,101,.10),inset 0 1px 0 rgba(255,255,255,.92);backdrop-filter:blur(12px) saturate(145%);-webkit-backdrop-filter:blur(12px) saturate(145%)}
 :root[data-theme="dark"] .asset-logo,:root[data-theme="dark"] .opportunity-coin-logo{background:linear-gradient(145deg,rgba(53,74,105,.92),rgba(29,44,68,.82));border-color:rgba(201,221,250,.22);color:#e1e9f6}
 @media(max-width:600px){.asset-logo,.crypto-logo.asset-logo:not(.is-small),.stock-logo.asset-logo:not(.is-small),.opportunity-asset-logo.asset-logo,.opportunity-coin-logo{width:42px;height:42px;flex-basis:42px}}
+
+
+/* Refined blue-white Liquid Glass dashboard, inspired by the reference */
+:root{--glass-ink:#203b67;--glass-muted:#7185a7;--glass-blue:#438cff;--glass-line:rgba(255,255,255,.78);--glass-panel:rgba(255,255,255,.62);--glass-depth:0 12px 36px rgba(49,88,153,.10)}
+html,body{background:radial-gradient(ellipse at 78% 4%,rgba(193,220,255,.68),transparent 38%),radial-gradient(ellipse at 12% 42%,rgba(225,233,255,.75),transparent 42%),linear-gradient(145deg,#eef4ff 0%,#e8effb 48%,#f7f9ff 100%);color:#253b60}
+.app-shell{background:transparent}
+.sidebar{background:linear-gradient(155deg,rgba(244,248,255,.74),rgba(218,231,252,.54))!important;border-right:1px solid rgba(255,255,255,.68);box-shadow:8px 0 36px rgba(56,89,145,.07);backdrop-filter:blur(26px) saturate(155%);-webkit-backdrop-filter:blur(26px) saturate(155%)}
+.brand,.sidebar .nav-item,.sidebar .nav-item.active{color:#35557f!important}
+.sidebar .nav-item{border:1px solid transparent;border-radius:13px;transition:background .2s ease,box-shadow .2s ease,transform .2s ease}
+.sidebar .nav-item.active{background:linear-gradient(120deg,rgba(108,160,255,.27),rgba(180,207,255,.23))!important;border-color:rgba(255,255,255,.72);box-shadow:inset 0 1px rgba(255,255,255,.8),0 5px 15px rgba(64,116,203,.10)}
+.sidebar .nav-item:hover{background:rgba(255,255,255,.44)!important}
+.main-content{background:transparent}
+.panel,.kpi-card,.account-card,.opportunity-kpi,.modal-card,.toolbar,.table-wrap,.recurring-controls,.page-heading .heading-actions,.card,.stat-card,.transaction-card{background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(242,247,255,.54));border:1px solid rgba(255,255,255,.85);box-shadow:0 12px 32px rgba(51,83,141,.075),inset 0 1px 0 rgba(255,255,255,.92);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
+.panel,.kpi-card,.account-card,.opportunity-kpi{border-radius:22px}
+h1,h2,h3,.panel-heading h2,.page-heading h1{color:#243b63}
+p,.muted,.panel-heading p{color:#8092af}
+input,select,textarea{background:rgba(255,255,255,.68)!important;border:1px solid rgba(191,209,239,.72)!important;border-radius:12px!important;color:#2c4268!important;box-shadow:inset 0 1px 3px rgba(57,83,125,.035)}
+button:not(.nav-item){border-radius:12px}
+button.primary,.btn-primary,.opportunity-periods button.is-active{background:linear-gradient(135deg,#75b1ff,#4384f4)!important;border:1px solid rgba(255,255,255,.65)!important;color:#fff!important;box-shadow:0 5px 14px rgba(66,130,240,.23),inset 0 1px rgba(255,255,255,.4)}
+table thead th{background:rgba(228,237,252,.5);color:#6880a5}
+table tbody tr:hover{background:rgba(255,255,255,.45)}
+/* One logo language for every asset, crypto and bank: circular glass medallion */
+.bank-logo,.asset-logo,.crypto-logo.asset-logo,.stock-logo.asset-logo,.opportunity-asset-logo.asset-logo,.opportunity-coin-logo{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;width:46px;height:46px;flex:0 0 46px;border-radius:50%!important;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(220,233,255,.68))!important;border:1px solid rgba(255,255,255,.96)!important;box-shadow:0 5px 15px rgba(43,76,133,.14),inset 0 1px 0 #fff,inset 0 -2px 5px rgba(127,159,210,.09)!important;backdrop-filter:blur(14px) saturate(155%);-webkit-backdrop-filter:blur(14px) saturate(155%);color:#45618a}
+.bank-logo img,.asset-logo img,.crypto-logo.asset-logo img,.stock-logo.asset-logo img,.opportunity-asset-logo.asset-logo img,.opportunity-coin-logo img{position:relative;z-index:2;display:block;width:76%;height:76%;max-width:100%;max-height:100%;padding:0;object-fit:contain;border-radius:50%;background:transparent}
+.bank-logo.has-logo img{width:78%;height:78%;padding:0}
+.bank-logo>span:not([hidden]),.asset-logo-fallback{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:inherit;font-size:11px;font-weight:850;letter-spacing:-.04em;color:inherit}
+.bank-logo>span[hidden],.asset-logo-fallback[hidden]{display:none!important}
+.bank-logo:not(.has-logo)>span{position:relative}
+.bank-logo:not(.has-logo){font-size:11px;font-weight:850;letter-spacing:-.04em}
+.bank-logo[data-bank="lbp"]{color:#0759a5!important;background:linear-gradient(145deg,#f3f9ff,#c9e2ff)!important}
+.bank-logo[data-bank="fortuneo"]{color:#08794f!important;background:linear-gradient(145deg,#effff7,#b6efd4)!important}
+.bank-logo[data-bank="cic"]{color:#204d9b!important;background:linear-gradient(145deg,#f2f6ff,#b9ccff)!important}
+.bank-logo[data-bank="bourso"]{color:#6536b4!important;background:linear-gradient(145deg,#fbf6ff,#d9c4ff)!important}
+.bank-logo[data-bank="tiime"]{color:#925a12!important;background:linear-gradient(145deg,#fff9ec,#ffdb99)!important}
+.asset-logo.logo-failed .asset-logo-fallback,.opportunity-asset-logo.logo-failed .opportunity-fallback{display:flex}
+:root[data-theme="dark"] body{background:radial-gradient(ellipse at 75% 0%,rgba(43,72,123,.48),transparent 40%),linear-gradient(145deg,#101b2c,#17263b 58%,#111d30);color:#e7efff}
+:root[data-theme="dark"] .sidebar{background:linear-gradient(155deg,rgba(22,38,61,.82),rgba(17,30,49,.78))!important;border-color:rgba(186,210,247,.12)}
+:root[data-theme="dark"] .sidebar .nav-item,:root[data-theme="dark"] .brand{color:#d6e4ff!important}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .kpi-card,:root[data-theme="dark"] .account-card,:root[data-theme="dark"] .opportunity-kpi,:root[data-theme="dark"] .modal-card,:root[data-theme="dark"] .toolbar,:root[data-theme="dark"] .table-wrap,:root[data-theme="dark"] .recurring-controls{background:linear-gradient(145deg,rgba(29,47,73,.82),rgba(18,32,52,.78));border-color:rgba(194,215,247,.17);box-shadow:0 12px 32px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.06)}
+:root[data-theme="dark"] h1,:root[data-theme="dark"] h2,:root[data-theme="dark"] h3,:root[data-theme="dark"] .panel-heading h2{color:#e7efff}
+:root[data-theme="dark"] p,:root[data-theme="dark"] .muted,:root[data-theme="dark"] .panel-heading p{color:#a8bad8}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background:rgba(15,28,47,.66)!important;border-color:rgba(151,179,221,.24)!important;color:#e7efff!important}
+:root[data-theme="dark"] .bank-logo,:root[data-theme="dark"] .asset-logo,:root[data-theme="dark"] .opportunity-coin-logo{background:linear-gradient(145deg,rgba(64,86,120,.96),rgba(32,49,75,.9))!important;border-color:rgba(220,234,255,.25)!important;color:#eef5ff}
+@media(max-width:600px){.bank-logo,.asset-logo,.crypto-logo.asset-logo:not(.is-small),.stock-logo.asset-logo:not(.is-small),.opportunity-asset-logo.asset-logo,.opportunity-coin-logo{width:42px;height:42px;flex-basis:42px}}
+@media(prefers-reduced-motion:reduce){.sidebar .nav-item{transition:none!important}}
