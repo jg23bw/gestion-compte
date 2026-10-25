@@ -1241,7 +1241,7 @@ function stockLogoMarkup(symbol,extraClass=''){
   const palette=[['#eef2ff','#4e63cf'],['#eaf8f1','#1b8963'],['#fff3e7','#ac7128'],['#f4efff','#7053c2'],['#eef8fb','#2c7f9d']];
   let hash=0;for(const char of label)hash=(hash*31+char.charCodeAt(0))%palette.length;
   const colors=palette[hash];
-  const url='https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(raw)+'.png';
+  const url=raw==='SU'?'https://api.elbstream.com/logos/isin/FR0000121972':'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(raw)+'.png';
   return '<span class="stock-logo asset-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-label="'+escapeHtml(raw)+'"><span class="asset-logo-fallback stock-logo-fallback">'+escapeHtml(label)+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}"></span>';
 }
 function stockAccountOptionLabel(account){return account.name+' · '+kindLabel(account);}
@@ -1873,6 +1873,7 @@ function opportunityLogoUrl(asset){
     return 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/'+encodeURIComponent(coinSymbol)+'.png';
   }
   const ticker=String(asset.symbol||'').toUpperCase();
+  if(ticker==='SU'||/schneider electric/i.test(String(asset.name||'')))return 'https://api.elbstream.com/logos/isin/FR0000121972';
   return 'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(ticker)+'.png';
 }
 function opportunityLogoMarkup(asset){
