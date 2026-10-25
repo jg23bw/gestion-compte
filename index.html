@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=opportunity-console-fix-v12">
+  <link rel="stylesheet" href="styles.css?v=liquid-glass-opportunities-v13">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=opportunity-console-fix-v12" defer></script>
+  <script src="app.js?v=liquid-glass-opportunities-v13" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -121,7 +121,7 @@
         <div class="opportunity-kpis">
           <article class="opportunity-kpi"><span>Valeur des positions suivies</span><strong id="opportunity-total-value">—</strong><small id="opportunity-asset-count">Actions + cryptos</small></article>
           <article class="opportunity-kpi"><span>Variation pondérée disponible · 24 h</span><strong id="opportunity-crypto-day">—</strong><small id="opportunity-data-freshness">Données de marché des positions suivies</small></article>
-          <article class="opportunity-kpi"><span>Fear &amp; Greed crypto</span><strong id="opportunity-fear-greed">—</strong><small id="opportunity-fear-greed-label">Indice de sentiment du marché crypto</small></article>
+          <article class="opportunity-kpi"><span>Fear &amp; Greed crypto</span><strong id="opportunity-fear-greed">—</strong><small id="opportunity-fear-greed-label">Indice de sentiment crypto</small><div class="fear-greed-gauge" role="img" aria-label="Indice de peur et d’avidité, de 0 à 100"><div class="fear-greed-track"><span class="fear-greed-marker" id="opportunity-fear-greed-marker" style="left:50%"></span><span class="fear-greed-midpoint"></span></div><div class="fear-greed-scale"><span>Fear · 0</span><span>Neutre · 50</span><span>Greed · 100</span></div></div></article>
         </div>
         <section class="panel opportunity-market-panel">
           <div class="panel-heading opportunity-heatmap-heading"><div><h2>Classement des opportunités</h2><p>Actions et cryptomonnaies classées par variation. Les pourcentages proviennent des données de marché disponibles ; les données absentes restent signalées comme indisponibles.</p></div><div class="opportunity-periods" role="group" aria-label="Période de variation"><button type="button" class="is-active" data-op-period="24h">24 h</button><button type="button" data-op-period="7d">7 jours</button><button type="button" data-op-period="30d">30 jours</button></div></div>
@@ -133,23 +133,6 @@
           <div id="opportunity-chart-summary" class="opportunity-chart-summary"><span>En attente des données historiques…</span></div>
           <div id="opportunity-price-chart" class="opportunity-price-chart"><div class="empty-state">Le graphique se chargera avec l’historique réel de l’actif sélectionné.</div></div>
           <div class="opportunity-chart-legend"><span><i class="legend-price"></i> Prix</span><span><i class="legend-sma"></i> MM200</span><small>MM200 calculée uniquement si au moins 200 clôtures journalières sont disponibles.</small></div>
-        </section>
-        <section class="opportunity-planner-grid">
-          <section class="panel opportunity-planner">
-            <div class="panel-heading"><div><h2>Simuler un nouvel investissement</h2><p>Teste une somme à épargner sans modifier tes positions.</p></div></div>
-            <div class="opportunity-form">
-              <label class="opportunity-amount-label">Somme disponible (€)<div class="opportunity-amount-input"><span>€</span><input id="opportunity-amount" type="number" min="0" step="50" value="1000" inputmode="decimal"></div></label>
-              <label>Horizon d’investissement<select id="opportunity-horizon"><option value="long" selected>Long terme · 5 ans et plus</option><option value="medium">Moyen terme · 1 à 5 ans</option><option value="short">Court terme · moins d’un an</option></select></label>
-              <label>Tolérance au risque<select id="opportunity-risk"><option value="moderate">Modérée</option><option value="high" selected>Élevée</option><option value="low">Prudente</option></select></label>
-              <label>Priorité<select id="opportunity-strategy"><option value="balanced" selected>Équilibre opportunité / diversification</option><option value="momentum">Suivre le momentum confirmé</option><option value="underweight">Renforcer les positions sous-pondérées</option></select></label>
-              <button type="button" class="primary-button" id="opportunity-calculate">Calculer une répartition indicative</button>
-              <p class="opportunity-form-note">Le simulateur ne passe aucun ordre. Si les données sont insuffisantes, il doit privilégier une proposition partielle ou indiquer qu’il manque des informations plutôt que d’inventer un signal.</p>
-            </div>
-          </section>
-          <section class="panel opportunity-allocation-panel">
-            <div class="panel-heading"><div><h2>Répartition indicative</h2><p id="opportunity-allocation-subtitle">Renseigne une somme pour voir une simulation.</p></div></div>
-            <div id="opportunity-allocation" class="opportunity-allocation"><div class="empty-state">La répartition sera calculée à partir des actifs suivis et des indicateurs disponibles.</div></div>
-          </section>
         </section>
         <section class="panel opportunity-method-panel"><div class="panel-heading"><div><h2>Comment lire les signaux ?</h2><p>Les signaux restent séparés des faits de marché.</p></div></div><div class="opportunity-method-grid"><div><strong><span class="method-dot method-market"></span> Momentum</strong><p>Variations mesurées sur 24 h, 7 jours et 30 jours lorsqu’elles sont fournies par la source.</p></div><div><strong><span class="method-dot method-risk"></span> Risque</strong><p>Volatilité, concentration et données manquantes peuvent réduire le poids proposé, même si le momentum est positif.</p></div><div><strong><span class="method-dot method-neutral"></span> Prudence</strong><p>Les moyennes mobiles, supports/résistances et valorisations fondamentales seront ajoutés quand des historiques fiables seront disponibles.</p></div></div></section>
       </section>
