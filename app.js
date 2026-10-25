@@ -1856,10 +1856,9 @@ function opportunityLogoUrl(asset){
   return 'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(ticker)+'.png';
 }
 function opportunityLogoMarkup(asset){
-  // Affiche des initiales locales : les CDN de logos tiers renvoient souvent 404
-  // et les handlers inline peuvent échouer si le parent a déjà été démonté.
   const initials=escapeHtml(String(asset.symbol||'?').slice(0,3).toUpperCase());
-  return '<span class="opportunity-asset-logo" aria-label="Actif '+initials+'"><span class="opportunity-fallback">'+initials+'</span></span>';
+  const url=opportunityLogoUrl(asset);
+  return '<span class="opportunity-asset-logo" aria-label="Actif '+initials+'"><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\');}"><span class="opportunity-fallback">'+initials+'</span></span>';
 }
 function opportunitySma(values,period=200){
   const out=Array(values.length).fill(null);let sum=0;
@@ -2002,56 +2001,9 @@ function renderOpportunityAssets(filter='all'){
   assets.sort((a,b)=>(b.value||0)-(a.value||0));
   container.innerHTML=assets.map(asset=>{const signal=opportunitySignal(asset),change=opportunityChange(asset,'24h'),value=asset.value===null?'Cours indisponible':euro(asset.value);return '<article class="opportunity-asset-row"><div class="opportunity-asset-main">'+opportunityLogoMarkup(asset)+'<div><strong>'+escapeHtml(asset.name)+'</strong><small>'+escapeHtml(asset.symbol)+' · '+(asset.type==='crypto'?'Crypto':'Action / ETF')+'</small></div></div><div class="opportunity-asset-value"><strong>'+value+'</strong><small>Valeur détenue</small></div><div class="opportunity-asset-change '+(change===null?'muted':change>0?'positive':change<0?'negative':'')+'"><strong>'+(change===null?'—':opportunityPercent(change))+'</strong><small>24 h</small></div><div class="opportunity-asset-signal"><span class="opportunity-signal '+signal.tone+'">'+escapeHtml(signal.label)+'</span><small>'+escapeHtml(signal.reason)+'</small></div></article>';}).join('');
 }
-function renderOpportunityAllocation(){
-  const container=$('opportunity-allocation');if(!container)return;
-  const amount=Math.max(0,Number($('opportunity-amount')?.value)||0),risk=$('opportunity-risk')?.value||'high',horizon=$('opportunity-horizon')?.value||'long',strategy=$('opportunity-strategy')?.value||'balanced';
-  const subtitle=$('opportunity-allocation-subtitle');if(subtitle)subtitle.textContent=amount>0?'Simulation de '+euro(amount)+' · actions, ETF et cryptos · aucun ordre ne sera passé':'Saisis une somme positive pour simuler.';
-  if(amount<=0){container.innerHTML='<div class="empty-state">Saisis une somme supérieure à zéro.</div>';return;}
-  const assets=opportunityAssets().filter(a=>a.value!==null&&Number.isFinite(a.value)&&a.value>0);
-  if(!assets.length){container.innerHTML='<div class="empty-state">Aucune position valorisée disponible pour simuler.</div>';return;}
-  const heldTotal=assets.reduce((sum,a)=>sum+a.value,0)||1;
-  const maxRisk=risk==='low'?.12:risk==='moderate'?.22:.35;
-  const horizonFactor=horizon==='short'?.35:horizon==='medium'?.7:1;
-  const candidates=assets.map(a=>{
-    const signal=opportunitySignal(a),w=opportunityChange(a,'7d'),m=opportunityChange(a,'30d'),currentWeight=a.value/heldTotal;
-    // Valeur neutre quand la donnée de momentum manque : ne pas exclure silencieusement une action/ETF.
-    let raw=signal.score===null?.5:Math.max(.15,signal.score/100);
-    if(strategy==='momentum'){raw*=Math.max(.25,1+(Number.isFinite(w)?w:0)/20);if(a.type==='stock'&&!Number.isFinite(w))raw*=.85;}
-    if(strategy==='underweight')raw*=Math.max(.15,1-currentWeight*assets.length);
-    if(signal.tone==='risk')raw*=.35;
-    if(horizon==='short')raw*=Number.isFinite(w)&&w>0?1:.55;
-    // La MM200 est le filtre prioritaire lorsqu'un historique est déjà en cache.
-    const chartPeriod=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
-    const history=opportunityHistory[a.id+'|1y']||[];
-    if(history.length>=200){const closes=history.map(p=>p.c),sma=opportunitySma(closes,200),last=closes[closes.length-1],avg=sma[sma.length-1];if(Number.isFinite(avg)){if(last>avg)raw*=1.2;else raw*=.65;}}
-    return {...a,signal,raw,currentWeight,weekly:w,monthly:m};
-  }).filter(a=>a.raw>0).sort((a,b)=>b.raw-a.raw).slice(0,5);
-  if(!candidates.length){container.innerHTML='<div class="empty-state">Aucun actif valorisé ne peut être simulé.</div>';return;}
-  const rawTotal=candidates.reduce((sum,a)=>sum+a.raw,0),maxShare=risk==='low'?.2:risk==='moderate'?.3:.4;
-  let remaining=1,weights=candidates.map(a=>({...a,weight:0,active:true}));
-  // Plafonnement itératif pour éviter que la normalisation annule le plafond de risque.
-  for(let pass=0;pass<weights.length+1;pass++){
-    const pool=weights.filter(a=>a.active),poolTotal=pool.reduce((sum,a)=>sum+a.raw,0);
-    if(!pool.length||remaining<=0)break;
-    let cappedAny=false;
-    for(const item of pool){const proposed=remaining*item.raw/poolTotal;if(proposed>maxShare){item.weight=maxShare;item.active=false;remaining-=maxShare;cappedAny=true;}}
-    if(!cappedAny){for(const item of pool)item.weight=remaining*item.raw/poolTotal;remaining=0;break;}
-  }
-  const final=weights.filter(a=>a.weight>0).map(a=>({...a,euros:amount*a.weight})).sort((x,y)=>y.euros-x.euros);
-  const palette=['#536dfe','#f5a623','#17a673','#e45b67','#8e63d9'];
-  let angle=0;const stops=final.map((a,i)=>{const from=angle;angle+=a.weight*360;return palette[i%palette.length]+' '+from.toFixed(3)+'deg '+angle.toFixed(3)+'deg';}).join(',');
-  const donut='<div class="opportunity-donut" role="img" aria-label="Diagramme circulaire de la répartition simulée" style="background:conic-gradient('+stops+')"><div class="opportunity-donut-hole"><strong>'+euro(amount)+'</strong><span>à répartir</span></div></div>';
-  const legend=final.map((a,i)=>{const above=opportunityAboveSma(a);return '<div class="opportunity-allocation-row"><div class="opportunity-allocation-name"><span class="opportunity-allocation-swatch" style="background:'+palette[i%palette.length]+'"></span><div><strong>'+escapeHtml(a.symbol)+' · '+escapeHtml(a.name)+'</strong><small>'+(above===true?'Au-dessus MM200':above===false?'Sous MM200':'MM200 indisponible')+' · poids actuel '+(a.currentWeight*100).toLocaleString('fr-FR',{maximumFractionDigits:1})+' %</small></div></div><div class="opportunity-allocation-amount"><strong>'+euro(a.euros)+'</strong><span>'+a.weight.toLocaleString('fr-FR',{style:'percent',maximumFractionDigits:1})+'</span></div></div>';}).join('');
-  container.innerHTML='<div class="opportunity-allocation-total"><span>Simulation · '+final.length+' investissements maximum · aucun ordre passé</span><strong>'+euro(amount)+'</strong></div><div class="opportunity-allocation-visual">'+donut+'<div class="opportunity-allocation-legend">'+legend+'</div></div><p class="opportunity-allocation-warning">Sélection des '+final.length+' actifs les mieux classés par le score indicatif parmi les positions valorisées. Les données de momentum manquantes ne sont pas inventées ; la MM200 ne compte que si l’historique est suffisant. Simulation indicative, sans prise en compte des frais, de la fiscalité, de la dette, des réserves ou des fondamentaux ; ce n’est pas un ordre d’achat.</p>';
-}
-function opportunityAboveSma(asset){
-  const p=opportunityHistory[asset.id+'|1y']||[];
-  if(p.length<200)return null;const sma=opportunitySma(p.map(x=>x.c),200),avg=sma[sma.length-1],last=p[p.length-1].c;
-  return Number.isFinite(avg)?last>avg:null;
-}
 async function loadOpportunityFearGreed(){
   const valueEl=$('opportunity-fear-greed'),labelEl=$('opportunity-fear-greed-label');if(!valueEl)return;
-  try{const response=await fetch('https://api.alternative.me/fng/?limit=1&format=json',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error('API indisponible');const payload=await response.json(),row=payload.data?.[0],value=Number(row?.value);if(!Number.isFinite(value))throw new Error('Indice absent');valueEl.textContent=String(value)+'/100';if(labelEl)labelEl.textContent=String(row.value_classification||'Sentiment crypto')+' · indice crypto global';}
+  try{const response=await fetch('https://api.alternative.me/fng/?limit=1&format=json',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error('API indisponible');const payload=await response.json(),row=payload.data?.[0],value=Number(row?.value);if(!Number.isFinite(value))throw new Error('Indice absent');valueEl.textContent=String(value)+'/100';if(labelEl)labelEl.textContent=String(row.value_classification||'Sentiment crypto')+' · '+(value<45?'Fear dominant':value>55?'Greed dominant':'zone neutre');const marker=$('opportunity-fear-greed-marker');if(marker){marker.style.left=Math.max(0,Math.min(100,value))+'%';marker.setAttribute('aria-label','Score '+value+' sur 100');}}
   catch{valueEl.textContent='—';if(labelEl)labelEl.textContent='Indice indisponible (source externe)';}
 }
 function renderOpportunities(){
@@ -2065,7 +2017,7 @@ function renderOpportunities(){
   const fresh=$('opportunity-data-freshness');if(fresh)fresh.textContent=day.length+' position(s) avec variation 24 h disponible ; les autres sont signalées séparément.';
   const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
-  renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);renderOpportunityAllocation();setupOpportunityChart();loadOpportunityFearGreed();
+  renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);setupOpportunityChart();loadOpportunityFearGreed();
   // Charge l’historique de toutes les positions avec une concurrence limitée pour
   // éviter les limites des fournisseurs. Pas de drapeau global permanent : les
   // positions ajoutées plus tard et les échecs temporaires seront retentés au prochain rendu.
@@ -2081,7 +2033,6 @@ function renderOpportunities(){
     Promise.allSettled(Array.from({length:Math.min(2,queue.length)},()=>worker())).then(()=>{
       renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');
       renderOpportunityAssets(document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all');
-      renderOpportunityAllocation();
       const select=$('opportunity-chart-asset');
       const period=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
       if(select?.value)renderOpportunityChart(select.value,period);
@@ -2485,11 +2436,8 @@ $('stocks-add').addEventListener('click',()=>openStockEditor());
 $('stocks-refresh').addEventListener('click',loadStockPrices);
 
 $('opportunities-refresh').addEventListener('click',()=>{loadCryptoPrices();loadStockPrices();renderOpportunities();});
-$('opportunity-calculate').addEventListener('click',renderOpportunityAllocation);
 $('opportunity-chart-asset').addEventListener('change',()=>renderOpportunityChart($('opportunity-chart-asset').value,document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y'));
 document.querySelectorAll('[data-chart-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-chart-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityChart($('opportunity-chart-asset').value,button.dataset.chartPeriod);}));
-$('opportunity-amount').addEventListener('input',renderOpportunityAllocation);
-['opportunity-horizon','opportunity-risk','opportunity-strategy'].forEach(id=>$(id).addEventListener('change',renderOpportunityAllocation));
 document.querySelectorAll('[data-op-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityHeatmap(button.dataset.opPeriod);}));
 document.querySelectorAll('[data-op-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-filter]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityAssets(button.dataset.opFilter);}));
 ['stocks-account-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',renderStocks));
