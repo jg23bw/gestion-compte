@@ -1008,7 +1008,7 @@ async function loadCryptoPrices(){
         const price=Number(coin.current_price);
         if(Number.isFinite(price)&&price>0)values[coin.id]=price;
         if(typeof coin.image==='string'&&coin.image)images[coin.id]=coin.image;
-        const marketChanges={day:Number(coin.price_change_percentage_24h),week:Number(coin.price_change_percentage_7d_in_currency),month:Number(coin.price_change_percentage_30d_in_currency)};
+        const marketChanges={day:coin.price_change_percentage_24h===null?undefined:Number(coin.price_change_percentage_24h),week:coin.price_change_percentage_7d_in_currency===null?undefined:Number(coin.price_change_percentage_7d_in_currency),month:coin.price_change_percentage_30d_in_currency===null?undefined:Number(coin.price_change_percentage_30d_in_currency)};
         cryptoPrices.market[coin.id]=Object.fromEntries(Object.entries(marketChanges).filter(([,value])=>Number.isFinite(value)));
       }
       if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
@@ -1038,6 +1038,7 @@ async function loadCryptoPrices(){
     cryptoPrices.loading=false;
     renderCrypto();
     renderDashboard();
+    renderOpportunities();
   }
 }
 function renderCrypto(){
@@ -1387,6 +1388,7 @@ async function loadStockPrices(){
     stockPrices.loading=false;
     renderStocks();
     renderDashboard();
+    renderOpportunities();
     renderAccounts();
   }
 }
@@ -1817,7 +1819,7 @@ function opportunityAssets(){
   const stocks=(state.stockHoldings||[]).map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:{},updatedAt:stockPrices.updatedAt};});
   return [...crypto,...stocks];
 }
-function opportunityPercent(value){return Number.isFinite(Number(value))?((Number(value)>0?'+':'')+Number(value).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'):'—';}
+function opportunityPercent(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?((Number(value)>0?'+':'')+Number(value).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'):'—';}
 function opportunityChange(asset,period){const key=period==='24h'?'day':period==='7d'?'week':'month';return Number.isFinite(Number(asset.changes?.[key]))?Number(asset.changes[key]):null;}
 function opportunitySignal(asset){
   if(asset.type==='stock')return {label:'Données techniques à compléter',tone:'neutral',score:null,reason:'Historique de cours multi-périodes non disponible dans la source actuelle.'};
