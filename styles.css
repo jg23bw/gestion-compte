@@ -1075,3 +1075,7 @@ tbody tr:hover td{background:#fafbff}
 :root[data-theme="dark"] .opportunity-donut-hole{background:#18263b}
 :root[data-theme="dark"] .opportunity-allocation-row{border-color:#293f5b}
 @media(max-width:700px){.opportunity-allocation-visual{grid-template-columns:1fr;gap:16px}.opportunity-donut{width:190px}.opportunity-allocation-legend{width:100%}}
+
+/* Logos d'actifs sans dépendance à un CDN externe */
+.opportunity-asset-logo{display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:1px solid var(--border-color,#e5eaf3);border-radius:50%;background:var(--surface-muted,#f5f7fb);overflow:hidden}
+.opportunity-fallback{display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:11px;font-weight:800;letter-spacing:-.03em;color:var(--text-secondary,#53627a);overflow:hidden}
