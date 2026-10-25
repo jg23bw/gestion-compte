@@ -1823,7 +1823,16 @@ function opportunityAssets(){
   return [...crypto,...stocks];
 }
 function opportunityPercent(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?((Number(value)>0?'+':'')+Number(value).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'):'—';}
-function opportunityChange(asset,period){const key=period==='24h'?'day':period==='7d'?'week':'month';return Number.isFinite(Number(asset.changes?.[key]))?Number(asset.changes[key]):null;}
+function opportunityChange(asset,period){
+  const key=period==='24h'?'day':period==='7d'?'week':'month';
+  const reported=asset.changes?.[key];
+  if(reported!==null&&reported!==undefined&&reported!==''&&Number.isFinite(Number(reported)))return Number(reported);
+  if(asset.type==='stock'){
+    const history=opportunityHistory?.[asset.id+'|1y']||opportunityHistory?.[asset.id+'|5y']||[];
+    if(history.length>1){const last=history[history.length-1],days=period==='24h'?2:period==='7d'?7:30,cutoff=last.t-days*86400000;let prior=null;for(const p of history){if(p.t<=cutoff)prior=p;else break;}if(prior&&prior.c>0)return (last.c/prior.c-1)*100;}
+  }
+  return null;
+}
 function opportunitySignal(asset){
   const d=opportunityChange(asset,'24h'),w=opportunityChange(asset,'7d'),m=opportunityChange(asset,'30d');
   const available=[d,w,m].filter(v=>v!==null&&Number.isFinite(v));
@@ -2016,6 +2025,12 @@ function renderOpportunities(){
   const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
   renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);renderOpportunityAllocation();setupOpportunityChart();loadOpportunityFearGreed();
+  // Fetch history for every holding with a usable symbol so the heatmap and allocation can derive daily/weekly/monthly returns and MM200 from actual closes.
+  if(!window.__opportunityBulkHistoryStarted){
+    window.__opportunityBulkHistoryStarted=true;
+    const historyAssets=assets.filter(asset=>asset.type==='crypto'||asset.raw.priceId);
+    Promise.allSettled(historyAssets.map(asset=>loadOpportunityHistory(asset.id,'1y'))).then(()=>{renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');renderOpportunityAssets(document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all');renderOpportunityAllocation();});
+  }
 }
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
