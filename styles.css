@@ -1055,27 +1055,24 @@ tbody tr:hover td{background:#fafbff}
 @media(max-width:760px){.opportunity-chart-panel>.panel-heading{grid-template-columns:minmax(0,1fr);gap:12px;padding:17px 15px 12px}.opportunity-chart-controls{width:100%;justify-content:flex-start}.opportunity-chart-controls select{width:100%;max-width:none}.opportunity-chart-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;padding:0 15px 14px}.opportunity-chart-metric{min-width:0}.opportunity-chart-metric span{line-height:1.4}.opportunity-chart-metric strong{overflow-wrap:anywhere}.opportunity-ranking-table-wrap{padding:0 10px 12px}}
 @media(max-width:420px){.opportunity-chart-summary{grid-template-columns:1fr 1fr}.opportunity-chart-metric strong{font-size:13px}}
 
-/* Répartition indicative : diagramme circulaire et maximum de cinq lignes */
-.opportunity-allocation-visual{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1.5fr);align-items:center;gap:24px;padding:18px 0 8px}
-.opportunity-donut{width:min(100%,230px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;margin:0 auto;box-shadow:inset 0 0 0 1px rgba(40,55,80,.06)}
-.opportunity-donut-hole{width:62%;aspect-ratio:1;border-radius:50%;background:var(--panel-bg,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 0 0 1px rgba(40,55,80,.08)}
-.opportunity-donut-hole strong{font-size:clamp(14px,2vw,20px);color:var(--text,#253550);text-align:center}
-.opportunity-donut-hole span{font-size:10px;color:#8994a7}
-.opportunity-allocation-legend{min-width:0}
-.opportunity-allocation-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #edf0f5}
-.opportunity-allocation-name{display:flex;align-items:center;flex-direction:row;gap:10px;min-width:0}
-.opportunity-allocation-name>div{min-width:0}
-.opportunity-allocation-name strong{display:block;overflow-wrap:anywhere;font-size:12px}
-.opportunity-allocation-name small{display:block;font-size:10px;line-height:1.45}
-.opportunity-allocation-swatch{width:11px;height:11px;flex:0 0 11px;border-radius:3px}
-.opportunity-allocation-amount{display:flex;flex-direction:column;align-items:flex-end;gap:3px;white-space:nowrap}
-.opportunity-allocation-amount strong{font-size:13px;color:var(--text,#253550)}
-.opportunity-allocation-amount span{font-size:11px;color:#78859a}
-.opportunity-allocation-warning{margin:13px 0 0;padding:11px;border-radius:8px;background:#fff7e7;color:#876b36;font-size:10px;line-height:1.55}
-:root[data-theme="dark"] .opportunity-donut-hole{background:#18263b}
-:root[data-theme="dark"] .opportunity-allocation-row{border-color:#293f5b}
-@media(max-width:700px){.opportunity-allocation-visual{grid-template-columns:1fr;gap:16px}.opportunity-donut{width:190px}.opportunity-allocation-legend{width:100%}}
 
-/* Logos d'actifs sans dépendance à un CDN externe */
-.opportunity-asset-logo{display:inline-flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px;height:42px;border:1px solid var(--border-color,#e5eaf3);border-radius:50%;background:var(--surface-muted,#f5f7fb);overflow:hidden}
-.opportunity-fallback{display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:11px;font-weight:800;letter-spacing:-.03em;color:var(--text-secondary,#53627a);overflow:hidden}
+/* Fear & Greed : échelle équilibrée avec repère central neutre */
+.fear-greed-gauge{margin-top:14px;width:100%}.fear-greed-track{position:relative;height:12px;border-radius:999px;background:linear-gradient(90deg,#c94c50 0%,#e8a45b 35%,#aeb8c8 50%,#7dc7a1 68%,#249b70 100%);box-shadow:inset 0 1px 3px #0002}
+.fear-greed-marker{position:absolute;top:50%;width:18px;height:18px;border:3px solid rgba(255,255,255,.98);border-radius:50%;background:#263a5b;box-shadow:0 2px 8px #172b4d55;transform:translate(-50%,-50%);transition:left .35s ease;z-index:2}
+.fear-greed-midpoint{position:absolute;left:50%;top:-3px;height:18px;border-left:1px dashed rgba(255,255,255,.9)}
+.fear-greed-scale{display:flex;justify-content:space-between;gap:5px;margin-top:9px;font-size:10px;font-weight:700;color:var(--text-secondary,#68758a)}.fear-greed-scale span:nth-child(2){text-align:center}
+.fear-greed-scale span:last-child{text-align:right}
+/* Liquid Glass global surface system */
+:root{--glass-border:rgba(255,255,255,.72);--glass-sheen:rgba(255,255,255,.48);--glass-shadow:0 12px 34px rgba(37,56,91,.075)}
+.panel,.kpi-card,.account-card,.opportunity-kpi,.modal-card,.toolbar,.table-wrap,.recurring-controls,.page-heading .heading-actions,.nav-item.active{background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(245,248,255,.58));border:1px solid var(--glass-border);box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-sheen);backdrop-filter:blur(18px) saturate(145%);-webkit-backdrop-filter:blur(18px) saturate(145%)}
+.panel,.kpi-card,.account-card,.opportunity-kpi{border-radius:20px}
+button,input,select,textarea{transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+button:not(:disabled):hover{box-shadow:0 5px 18px rgba(56,83,145,.13)}
+:root[data-theme="dark"] .panel,:root[data-theme="dark"] .kpi-card,:root[data-theme="dark"] .account-card,:root[data-theme="dark"] .opportunity-kpi,:root[data-theme="dark"] .modal-card,:root[data-theme="dark"] .toolbar,:root[data-theme="dark"] .table-wrap,:root[data-theme="dark"] .recurring-controls{background:linear-gradient(145deg,rgba(27,43,65,.84),rgba(18,31,49,.76));border-color:rgba(180,204,240,.17);box-shadow:0 12px 34px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.08)}
+/* Asset logos larger and consistent throughout the app */
+.opportunity-asset-logo,.opportunity-coin-logo{width:48px;height:48px;flex:0 0 48px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(145deg,rgba(255,255,255,.9),rgba(224,233,250,.55));border:1px solid rgba(255,255,255,.82);box-shadow:0 5px 14px rgba(41,62,101,.13),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.opportunity-asset-logo img{width:74%;height:74%;object-fit:contain}.opportunity-asset-logo img[hidden]{display:none}.opportunity-asset-logo .opportunity-fallback{display:none}.opportunity-asset-logo.logo-failed .opportunity-fallback{display:inline-flex}
+.opportunity-coin-logo img{width:100%;height:100%;object-fit:contain}
+:root[data-theme="dark"] .opportunity-asset-logo,:root[data-theme="dark"] .opportunity-coin-logo{background:linear-gradient(145deg,rgba(53,74,105,.9),rgba(29,44,68,.8));border-color:rgba(201,221,250,.2)}
+@media(max-width:600px){.opportunity-asset-logo,.opportunity-coin-logo{width:42px;height:42px;flex-basis:42px}.fear-greed-scale{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
