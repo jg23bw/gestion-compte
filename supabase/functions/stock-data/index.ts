@@ -53,20 +53,19 @@ async function searchStocks(query: string) {
   return json({ data });
 }
 
-async function fetchStockHistory(id: string) {
-  const periods: Record<string,string> = { day: "1D", month: "1M", quarter: "3M", ytd: "YTD", year: "1Y", twoYears: "2Y", fiveYears: "5Y" };
-  const returns: Record<string,number> = {};
-  await Promise.all(Object.entries(periods).map(async ([key, period]) => {
-    try {
-      const response = await fetch(STOCK_CHART_URL + encodeURIComponent(id) + "/" + period + "/l", { headers: UPSTREAM_HEADERS, cache: "no-store" });
-      if (!response.ok) return;
-      const payload = await response.json().catch(() => null);
-      const rows = Array.isArray(payload?.data) ? payload.data : [];
-      const prices = rows.map((row: Record<string, unknown>) => Number(row?.c)).filter((price: number) => Number.isFinite(price) && price > 0);
-      if (prices.length >= 2) returns[key] = (prices[prices.length - 1] / prices[0] - 1) * 100;
-    } catch (_) { /* One missing period must not cancel the other periods. */ }
-  }));
-  return json({ id, returns });
+async function fetchStockHistory(id: string, period: string) {
+  const periods: Record<string,string> = { "1m": "1M", "3m": "3M", "1y": "1Y", "5y": "5Y" };
+  const selected = periods[period] ?? "1Y";
+  const response = await fetch(STOCK_CHART_URL + encodeURIComponent(id) + "/" + selected + "/l", { headers: UPSTREAM_HEADERS, cache: "no-store" });
+  if (!response.ok) return json({ error: response.status === 429 ? "limite de requêtes StockAnalysis atteinte, réessayez dans une minute" : "historique indisponible (HTTP " + response.status + ")" }, response.status === 429 ? 429 : 502);
+  const payload = await response.json().catch(() => null);
+  const rows = Array.isArray(payload?.data) ? payload.data : [];
+  const points = rows.map((row: Record<string, unknown>) => ({ t: Number(row?.t ?? row?.time ?? row?.date), c: Number(row?.c) }))
+    .filter((point: {t:number,c:number}) => Number.isFinite(point.t) && Number.isFinite(point.c) && point.c > 0)
+    .map((point: {t:number,c:number}) => ({ t: point.t < 100000000000 ? point.t * 1000 : point.t, c: point.c }));
+  const closes = points.map((point: {t:number,c:number}) => point.c);
+  const sma200 = closes.length >= 200 ? closes.map((_: number, i: number) => i >= 199 ? closes.slice(i - 199, i + 1).reduce((sum: number, n: number) => sum + n, 0) / 200 : null) : [];
+  return json({ id, period: selected, points, sma200 });
 }
 
 async function fetchStockPrice(id: string) {
@@ -112,7 +111,7 @@ Deno.serve(async (req) => {
     if (action === "history") {
       const id = String(body?.id ?? "").trim();
       if (!/^[A-Za-z0-9._-]{1,40}$/.test(id)) return json({ error: "Identifiant de titre invalide." }, 400);
-      return await fetchStockHistory(id);
+      return await fetchStockHistory(id, String(body?.period ?? "1y"));
     }
     if (action === "price") {
       const id = String(body?.id ?? "").trim();
