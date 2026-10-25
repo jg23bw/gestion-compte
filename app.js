@@ -963,7 +963,8 @@ function cryptoImage(holding){
   return typeof value==='string'?value:'';
 }
 function cryptoLogoMarkup(image,symbol,extraClass=''){
-  return '<span class="crypto-logo'+(extraClass?' '+extraClass:'')+'" aria-hidden="true">'+(image?'<img src="'+escapeHtml(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">':'')+'</span>';
+  const initials=escapeHtml(String(symbol||'?').slice(0,3).toUpperCase());
+  return '<span class="crypto-logo asset-logo'+(extraClass?' '+extraClass:'')+'" aria-label="'+initials+'"><span class="asset-logo-fallback">'+initials+'</span>'+(image?'<img src="'+escapeHtml(image)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}">':'')+'</span>';
 }
 function euroPrecise(value){
   const number=Number(value)||0;
@@ -1231,7 +1232,7 @@ function stockLogoMarkup(symbol,extraClass=''){
   let hash=0;for(const char of label)hash=(hash*31+char.charCodeAt(0))%palette.length;
   const colors=palette[hash];
   const url='https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(raw)+'.png';
-  return '<span class="stock-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-hidden="true"><span class="stock-logo-fallback">'+escapeHtml(label)+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="this.previousElementSibling.style.display=\'none\'" onerror="this.remove()"></span>';
+  return '<span class="stock-logo asset-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-label="'+escapeHtml(raw)+'"><span class="asset-logo-fallback stock-logo-fallback">'+escapeHtml(label)+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}"></span>';
 }
 function stockAccountOptionLabel(account){return account.name+' · '+kindLabel(account);}
 function defaultStockAccountId(){const eligible=state.accounts.filter(isInvestmentAccount);const filtered=$('stocks-account-filter')?.value;if(filtered&&filtered!=='all'&&eligible.some(a=>a.id===filtered))return filtered;return (eligible.find(a=>bankKeyForAccount(a)==='interactive-brokers'&&effectiveAccountType(a)==='cto')||eligible[0])?.id||'';}
@@ -1858,7 +1859,7 @@ function opportunityLogoUrl(asset){
 function opportunityLogoMarkup(asset){
   const initials=escapeHtml(String(asset.symbol||'?').slice(0,3).toUpperCase());
   const url=opportunityLogoUrl(asset);
-  return '<span class="opportunity-asset-logo" aria-label="Actif '+initials+'"><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\');}"><span class="opportunity-fallback">'+initials+'</span></span>';
+  return '<span class="opportunity-asset-logo asset-logo" aria-label="Actif '+initials+'"><span class="asset-logo-fallback opportunity-fallback">'+initials+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}"></span>';
 }
 function opportunitySma(values,period=200){
   const out=Array(values.length).fill(null);let sum=0;
