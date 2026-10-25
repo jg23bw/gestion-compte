@@ -1957,20 +1957,45 @@ function renderOpportunityAssets(filter='all'){
 function renderOpportunityAllocation(){
   const container=$('opportunity-allocation');if(!container)return;
   const amount=Math.max(0,Number($('opportunity-amount')?.value)||0),risk=$('opportunity-risk')?.value||'high',horizon=$('opportunity-horizon')?.value||'long',strategy=$('opportunity-strategy')?.value||'balanced';
-  const subtitle=$('opportunity-allocation-subtitle');if(subtitle)subtitle.textContent=amount>0?'Simulation de '+euro(amount)+' · aucun ordre ne sera passé':'Saisis une somme positive pour simuler.';
+  const subtitle=$('opportunity-allocation-subtitle');if(subtitle)subtitle.textContent=amount>0?'Simulation de '+euro(amount)+' · actions, ETF et cryptos · aucun ordre ne sera passé':'Saisis une somme positive pour simuler.';
   if(amount<=0){container.innerHTML='<div class="empty-state">Saisis une somme supérieure à zéro.</div>';return;}
-  const assets=opportunityAssets().filter(a=>a.type==='crypto'&&a.value!==null&&Number.isFinite(opportunityChange(a,'7d')));
-  if(!assets.length){container.innerHTML='<div class="empty-state">Pas assez de données de marché pour proposer une répartition défendable. Vérifie les cours et les variations, puis réessaie. Les actions restent exclues tant que leurs historiques ne sont pas disponibles.</div>';return;}
+  const assets=opportunityAssets().filter(a=>a.value!==null&&Number.isFinite(a.value)&&a.value>0);
+  if(!assets.length){container.innerHTML='<div class="empty-state">Aucune position valorisée disponible pour simuler.</div>';return;}
   const heldTotal=assets.reduce((sum,a)=>sum+a.value,0)||1;
   const maxRisk=risk==='low'?.12:risk==='moderate'?.22:.35;
   const horizonFactor=horizon==='short'?.35:horizon==='medium'?.7:1;
-  const candidates=assets.map(a=>{const signal=opportunitySignal(a),w=opportunityChange(a,'7d'),m=opportunityChange(a,'30d'),currentWeight=a.value/heldTotal;let raw=signal.score===null?0:Math.max(0.1,signal.score/100);if(strategy==='momentum')raw*=Math.max(.1,1+(w||0)/20);if(strategy==='underweight')raw*=Math.max(.1,1-currentWeight*assets.length);if(signal.tone==='risk')raw*=.2;if(horizon==='short')raw*=w>0?1:.35;return {...a,signal,raw,currentWeight};}).filter(a=>a.raw>0);
-  if(!candidates.length){container.innerHTML='<div class="empty-state">Aucun actif ne ressort avec un signal exploitable. Il est préférable de ne pas forcer une allocation.</div>';return;}
-  const rawTotal=candidates.reduce((sum,a)=>sum+a.raw,0),allocations=candidates.map(a=>({...a,weight:a.raw/rawTotal,euros:amount*a.raw/rawTotal})).sort((a,b)=>b.euros-a.euros);
-  const maxShare=risk==='low'?.2:risk==='moderate'?.3:.4;
-  const capped=allocations.map(a=>({...a,weight:Math.min(a.weight,maxShare)}));const cappedTotal=capped.reduce((sum,a)=>sum+a.weight,0);
-  const final=capped.map(a=>({...a,weight:a.weight/cappedTotal,euros:amount*a.weight/cappedTotal}));
-  container.innerHTML='<div class="opportunity-allocation-total"><span>Somme simulée</span><strong>'+euro(amount)+'</strong></div>'+final.map(a=>'<div class="opportunity-allocation-row"><div class="opportunity-allocation-name"><strong>'+escapeHtml(a.symbol)+'</strong><small>'+escapeHtml(a.signal.label)+' · exposition actuelle '+(a.currentWeight*100).toLocaleString('fr-FR',{maximumFractionDigits:1})+' % des cryptos retenues</small></div><strong>'+euro(a.euros)+'</strong><div class="opportunity-allocation-bar"><i style="width:'+(a.weight*100)+'%"></i></div><small>'+Math.round(a.weight*100)+' % de la somme</small></div>').join('')+'<p class="opportunity-allocation-warning">Simulation heuristique fondée sur le momentum disponible des cryptos détenues, pas sur une optimisation financière validée. Elle n’intègre pas encore les MM200, les valorisations fondamentales, les frais, la fiscalité, la dette Lombard ni une réserve de liquidités. Ne l’utilise pas seule pour passer un ordre.</p>';
+  const candidates=assets.map(a=>{
+    const signal=opportunitySignal(a),w=opportunityChange(a,'7d'),m=opportunityChange(a,'30d'),currentWeight=a.value/heldTotal;
+    // Valeur neutre quand la donnée de momentum manque : ne pas exclure silencieusement une action/ETF.
+    let raw=signal.score===null?.5:Math.max(.15,signal.score/100);
+    if(strategy==='momentum'){raw*=Math.max(.25,1+(Number.isFinite(w)?w:0)/20);if(a.type==='stock'&&!Number.isFinite(w))raw*=.85;}
+    if(strategy==='underweight')raw*=Math.max(.15,1-currentWeight*assets.length);
+    if(signal.tone==='risk')raw*=.35;
+    if(horizon==='short')raw*=Number.isFinite(w)&&w>0?1:.55;
+    // La MM200 est le filtre prioritaire lorsqu'un historique est déjà en cache.
+    const chartPeriod=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
+    const history=opportunityHistory[a.id+'|'+chartPeriod]||opportunityHistory[a.id+'|1y']||[];
+    if(history.length>=200){const closes=history.map(p=>p.c),sma=opportunitySma(closes,200),last=closes[closes.length-1],avg=sma[sma.length-1];if(Number.isFinite(avg)){if(last>avg)raw*=1.2;else raw*=.65;}}
+    return {...a,signal,raw,currentWeight,weekly:w,monthly:m};
+  }).filter(a=>a.raw>0);
+  if(!candidates.length){container.innerHTML='<div class="empty-state">Aucun actif valorisé ne peut être simulé.</div>';return;}
+  const rawTotal=candidates.reduce((sum,a)=>sum+a.raw,0),maxShare=risk==='low'?.2:risk==='moderate'?.3:.4;
+  let remaining=1,weights=candidates.map(a=>({...a,weight:0,active:true}));
+  // Plafonnement itératif pour éviter que la normalisation annule le plafond de risque.
+  for(let pass=0;pass<weights.length+1;pass++){
+    const pool=weights.filter(a=>a.active),poolTotal=pool.reduce((sum,a)=>sum+a.raw,0);
+    if(!pool.length||remaining<=0)break;
+    let cappedAny=false;
+    for(const item of pool){const proposed=remaining*item.raw/poolTotal;if(proposed>maxShare){item.weight=maxShare;item.active=false;remaining-=maxShare;cappedAny=true;}}
+    if(!cappedAny){for(const item of pool)item.weight=remaining*item.raw/poolTotal;remaining=0;break;}
+  }
+  const final=weights.filter(a=>a.weight>0).map(a=>({...a,euros:amount*a.weight})).sort((x,y)=>y.euros-x.euros);
+  container.innerHTML='<div class="opportunity-allocation-total"><span>Somme simulée · '+assets.length+' positions (actions/ETF + cryptos)</span><strong>'+euro(amount)+'</strong></div>'+final.map(a=>{const above=opportunityAboveSma(a);return '<div class="opportunity-allocation-row"><div class="opportunity-allocation-name">'+opportunityLogoMarkup(a)+'<div><strong>'+escapeHtml(a.symbol)+' · '+escapeHtml(a.name)+'</strong><small>'+(above===true?'Cours au-dessus MM200':above===false?'Cours sous MM200':'MM200 à confirmer')+' · poids actuel '+(a.currentWeight*100).toLocaleString('fr-FR',{maximumFractionDigits:1})+' % du portefeuille suivi</small></div></div><strong>'+euro(a.euros)+'</strong><div class="opportunity-allocation-bar"><i style="width:'+(a.weight*100)+'%"></i></div><small>'+a.weight.toLocaleString('fr-FR',{style:'percent',maximumFractionDigits:1})+'</small></div>';}).join('')+'<p class="opportunity-allocation-warning">Simulation indicative sur toutes les positions valorisées. Les actifs dont le momentum manque reçoivent un score neutre, pas une donnée inventée. Le bonus MM200 n’est appliqué que si un historique suffisant est en cache. Ne tient pas compte de la fiscalité, des frais, de la dette, des réserves ni des fondamentaux ; ce n’est pas un ordre d’achat.</p>';
+}
+function opportunityAboveSma(asset){
+  const p=opportunityHistory[asset.id+'|1y']||opportunityHistory[asset.id+'|5y']||[];
+  if(p.length<200)return null;const sma=opportunitySma(p.map(x=>x.c),200),avg=sma[sma.length-1],last=p[p.length-1].c;
+  return Number.isFinite(avg)?last>avg:null;
 }
 function renderOpportunities(){
   if(!$('opportunities-view'))return;
