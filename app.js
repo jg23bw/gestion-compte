@@ -1889,11 +1889,8 @@ async function loadOpportunityHistory(assetId,period){
         // Il faut au moins 200 observations journalières pour calculer une vraie MM200,
         // même lorsque l’utilisateur n’affiche que le mois ou le trimestre.
         const days=period==='5y'?1825:365;
-        const response=await fetch(CRYPTO_HISTORY_ENDPOINT+encodeURIComponent(asset.raw.coingeckoId)+'/market_chart?vs_currency=eur&days='+days,{headers:{Accept:'application/json'},cache:'no-store'});
-        if(!response.ok)throw new Error('Historique crypto indisponible (HTTP '+response.status+').');
-        const payload=await response.json(),rawPoints=(payload.prices||[]).map(p=>({t:Number(p[0]),c:Number(p[1])})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
-        const daily=new Map();for(const point of rawPoints){const day=new Date(point.t).toISOString().slice(0,10);daily.set(day,point);}
-        points=[...daily.values()].sort((a,b)=>a.t-b.t);
+        const payload=await stockFunction('crypto-history',{id:asset.raw.coingeckoId,days});
+        points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((a,b)=>a.t-b.t);
       }else{
         const payload=await stockFunction('history',{id:asset.raw.priceId,period:period==='5y'?'5y':'1y'});
         points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((x,y)=>x.t-y.t);
