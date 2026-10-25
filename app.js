@@ -1936,15 +1936,17 @@ function setupOpportunityChart(){
 }
 function renderOpportunityHeatmap(period='24h'){
   const container=$('opportunity-heatmap');if(!container)return;
-  const assets=opportunityAssets();
-  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions dans Crypto ou Actions pour afficher tous tes actifs.</div>';return;}
-  const rows=assets.map(a=>({asset:a,change:opportunityChange(a,period)})).sort((a,b)=>(b.change??-Infinity)-(a.change??-Infinity));
-  const periodLabel=period==='24h'?'24 h':period==='7d'?'7 j':'30 j';
+  const assets=opportunityAssets().filter(a=>a.value!==null&&Number.isFinite(a.value)&&a.value>0);
+  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions valorisées dans Actions ou Crypto pour afficher la carte.</div>';return;}
+  const rows=assets.map(a=>({asset:a,change:opportunityChange(a,period)})).sort((a,b)=>b.asset.value-a.asset.value);
+  const total=rows.reduce((sum,r)=>sum+r.asset.value,0)||1;
   container.innerHTML=rows.map(({asset,change})=>{
-    const tone=change===null?'missing':change>0?'up':change<0?'down':'flat';
-    const width=change===null?0:Math.min(100,Math.abs(change)*3.5);
-    const value=asset.value===null?'Valeur indisponible':euro(asset.value);
-    return '<article class="opportunity-heat-tile '+tone+'"><div class="opportunity-tile-head">'+opportunityLogoMarkup(asset)+'<div class="opportunity-tile-ident"><strong>'+escapeHtml(asset.symbol)+'</strong><span>'+escapeHtml(asset.name)+'</span></div><span class="opportunity-tile-type">'+(asset.type==='crypto'?'CRYPTO':'ACTION / ETF')+'</span></div><div class="opportunity-tile-bottom"><strong class="opportunity-tile-change">'+opportunityPercent(change)+'</strong><span>'+value+'</span></div><div class="opportunity-tile-track"><i style="width:'+width+'%"></i></div><small>'+periodLabel+' · '+(change===null?'variation indisponible':'variation de marché')+'</small></article>';
+    const tone=change===null?'missing':change>0.15?'up':change< -0.15?'down':'flat';
+    const share=asset.value/total;
+    // CSS grid treemap-like tiles: value controls span and minimum tile area.
+    const span=Math.max(1,Math.min(12,Math.round(Math.sqrt(share)*22)));
+    const value=euro(asset.value),label=change===null?'—':opportunityPercent(change);
+    return '<article class="opportunity-heat-tile '+tone+'" style="--tile-span:'+span+';--tile-share:'+share+'" title="'+escapeHtml(asset.name+' · '+value+' · '+(change===null?'variation indisponible':label))+'"><div class="opportunity-tile-head">'+opportunityLogoMarkup(asset)+'<div class="opportunity-tile-ident"><strong>'+escapeHtml(asset.symbol)+'</strong><span>'+escapeHtml(asset.name)+'</span></div><span class="opportunity-tile-type">'+(asset.type==='crypto'?'CRYPTO':'ACTION / ETF')+'</span></div><div class="opportunity-tile-bottom"><strong class="opportunity-tile-change">'+label+'</strong><span>'+value+'</span></div><div class="opportunity-tile-track"><i style="width:'+(change===null?0:Math.min(100,Math.abs(change)*3.5))+'%"></i></div></article>';
   }).join('');
 }
 function renderOpportunityAssets(filter='all'){
