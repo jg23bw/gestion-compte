@@ -1904,6 +1904,8 @@ const opportunityHistory={};
 const opportunityHistoryLoading={};
 function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
+  const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
+  if(asset.type==='stock'&&!asset.raw.priceId){chart.innerHTML='<div class="opportunity-chart-empty">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas d’identifiant de cours exploitable ; aucun prix historique n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
   const fullPoints=opportunityHistory[asset.id+'|'+period]||[];
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
   if(!fullPoints.length){loadOpportunityHistory(assetId,period);return;}
@@ -1925,7 +1927,7 @@ function renderOpportunityChart(assetId,period){
 }
 function setupOpportunityChart(){
   const select=$('opportunity-chart-asset');if(!select)return;
-  const assets=opportunityAssets().filter(a=>a.type==='crypto'||a.raw.priceId);
+  const assets=opportunityAssets();
   const current=select.value;
   select.innerHTML=assets.map(a=>'<option value="'+escapeHtml(a.id)+'">'+escapeHtml(a.symbol+' · '+a.name)+'</option>').join('');
   if(!assets.length){select.innerHTML='<option value="">Aucun actif disponible</option>';return;}
