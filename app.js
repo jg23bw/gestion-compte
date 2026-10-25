@@ -1907,7 +1907,6 @@ function renderOpportunityChart(assetId,period){
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
   if(asset.type==='stock'&&!asset.raw.priceId){chart.innerHTML='<div class="opportunity-chart-empty">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas d’identifiant de cours exploitable ; aucun prix historique n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
   const fullPoints=opportunityHistory[asset.id+'|'+period]||[];
-  const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
   if(!fullPoints.length){loadOpportunityHistory(assetId,period);return;}
   const latestTime=fullPoints[fullPoints.length-1].t;
   const rangeDays=period==='1m'?30:period==='3m'?90:period==='5y'?1825:365;
