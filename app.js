@@ -1862,7 +1862,16 @@ const OPPORTUNITY_LOGO_SYMBOLS={BTC:'btc',ETH:'eth',USDT:'usdt',BNB:'bnb',SOL:'s
 function opportunityLogoUrl(asset){
   const symbol=String(asset.symbol||'').toUpperCase();
   const coinSymbol=OPPORTUNITY_LOGO_SYMBOLS[symbol]||symbol.toLowerCase();
-  if(asset.type==='crypto')return 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/'+encodeURIComponent(coinSymbol)+'.png';
+  if(asset.type==='crypto'){
+    const coinId=String(asset.raw?.coingeckoId||'');
+    const cachedImage=coinId&&cryptoPrices.images?.[coinId];
+    if(cachedImage)return cachedImage;
+    // Render and Ondo ticker filenames are not consistently available in the static icon pack.
+    if(symbol==='RENDER')return 'https://assets.coingecko.com/coins/images/11636/large/rndr.png';
+    if(symbol==='RNDR')return 'https://assets.coingecko.com/coins/images/11636/large/rndr.png';
+    if(symbol==='ONDO')return 'https://assets.coingecko.com/coins/images/26580/large/ONDO.png';
+    return 'https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/'+encodeURIComponent(coinSymbol)+'.png';
+  }
   const ticker=String(asset.symbol||'').toUpperCase();
   return 'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(ticker)+'.png';
 }
