@@ -1180,3 +1180,8 @@ table tbody tr:hover{background:rgba(255,255,255,.45)}
 :root[data-theme="dark"] .user-chip-copy small{color:#a7bad8}
 :root[data-theme="dark"] .personal-logout{color:#d0ddf1;background:rgba(33,51,78,.6);border-color:rgba(201,220,249,.12)}
 @media(max-width:700px){.sidebar-bottom.personal-space{padding:10px 8px 12px}.personal-space .user-chip{padding:8px 6px;gap:8px}.personal-space .avatar{width:34px;height:34px;flex-basis:34px}.user-chip-copy small{max-width:135px}}
+
+/* Improve account-count badge contrast on the light Liquid Glass sidebar */
+.sidebar .nav-item .nav-count{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 auto;min-width:31px;height:28px;padding:0 8px;border:1px solid rgba(255,255,255,.68);border-radius:9px;background:linear-gradient(145deg,#4268a8,#294774)!important;color:#fff!important;font-size:12px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;box-shadow:inset 0 1px rgba(255,255,255,.25),0 3px 8px rgba(35,66,117,.18);text-shadow:0 1px 1px rgba(16,36,68,.25)}
+.sidebar .nav-item.active .nav-count{background:linear-gradient(145deg,#376ff0,#2554c8)!important;border-color:rgba(255,255,255,.8);box-shadow:inset 0 1px rgba(255,255,255,.3),0 3px 9px rgba(47,98,213,.3)}
+@media(max-width:900px){.sidebar .nav-item .nav-count{display:none!important}}
