@@ -1999,20 +1999,23 @@ function opportunityAboveSma(asset){
   if(p.length<200)return null;const sma=opportunitySma(p.map(x=>x.c),200),avg=sma[sma.length-1],last=p[p.length-1].c;
   return Number.isFinite(avg)?last>avg:null;
 }
+async function loadOpportunityFearGreed(){
+  const valueEl=$('opportunity-fear-greed'),labelEl=$('opportunity-fear-greed-label');if(!valueEl)return;
+  try{const response=await fetch('https://api.alternative.me/fng/?limit=1&format=json',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error('API indisponible');const payload=await response.json(),row=payload.data?.[0],value=Number(row?.value);if(!Number.isFinite(value))throw new Error('Indice absent');valueEl.textContent=String(value)+'/100';if(labelEl)labelEl.textContent=String(row.value_classification||'Sentiment crypto')+' · indice crypto global';}
+  catch{valueEl.textContent='—';if(labelEl)labelEl.textContent='Indice indisponible (source externe)';}
+}
 function renderOpportunities(){
   if(!$('opportunities-view'))return;
   const assets=opportunityAssets(),priced=assets.filter(a=>a.value!==null),total=priced.reduce((sum,a)=>sum+a.value,0);
   $('opportunity-total-value').textContent=euro(total);
   $('opportunity-asset-count').textContent=priced.length+' position(s) valorisée(s) sur '+assets.length+' suivie(s)';
-  const crypto=assets.filter(a=>a.type==='crypto'&&a.value!==null),cryptoTotal=crypto.reduce((sum,a)=>sum+a.value,0);
-  const day=crypto.filter(a=>Number.isFinite(opportunityChange(a,'24h')));
+  const day=assets.filter(a=>a.value!==null&&Number.isFinite(opportunityChange(a,'24h')));
   const weighted=day.length?day.reduce((sum,a)=>sum+a.value*opportunityChange(a,'24h'),0)/(day.reduce((sum,a)=>sum+a.value,0)||1):null;
-  const dayEl=$('opportunity-crypto-day');dayEl.textContent=opportunityPercent(weighted);dayEl.classList.toggle('positive',weighted!==null&&weighted>0);dayEl.classList.toggle('negative',weighted!==null&&weighted<0);
-  $('opportunity-covered').textContent=day.length+' / '+assets.length;
-  $('opportunity-data-freshness').textContent=cryptoPrices.updatedAt?'Dernière actualisation crypto : '+new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'}).format(new Date(cryptoPrices.updatedAt)):'Cours crypto non actualisés';
+  const dayEl=$('opportunity-crypto-day');if(dayEl){dayEl.textContent=opportunityPercent(weighted);dayEl.classList.toggle('positive',weighted!==null&&weighted>0);dayEl.classList.toggle('negative',weighted!==null&&weighted<0);}
+  const fresh=$('opportunity-data-freshness');if(fresh)fresh.textContent=day.length+' position(s) avec variation 24 h disponible ; les autres sont signalées séparément.';
   const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
-  renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);renderOpportunityAllocation();setupOpportunityChart();
+  renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);renderOpportunityAllocation();setupOpportunityChart();loadOpportunityFearGreed();
 }
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
