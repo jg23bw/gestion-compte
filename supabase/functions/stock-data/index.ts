@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const STOCK_SEARCH_URL = "https://stockanalysis.com/api/search";
+const COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/";
 const STOCK_CHART_URL = "https://stockanalysis.com/api/charts/a/";
 const UPSTREAM_HEADERS = {
   Accept: "application/json",
@@ -107,6 +108,20 @@ Deno.serve(async (req) => {
       const query = String(body?.query ?? "").trim();
       if (query.length < 2 || query.length > 80) return json({ error: "Recherche invalide." }, 400);
       return await searchStocks(query);
+    }
+    if (action === "crypto-history") {
+      const id = String(body?.id ?? "").trim();
+      const days = Number(body?.days ?? 365);
+      if (!/^[A-Za-z0-9-]{1,80}$/.test(id) || ![365, 1825].includes(days)) return json({ error: "Paramètres d’historique crypto invalides." }, 400);
+      const response = await fetch(COINGECKO_URL + encodeURIComponent(id) + "/market_chart?vs_currency=eur&days=" + days, { headers: { Accept: "application/json", ...UPSTREAM_HEADERS }, cache: "no-store" });
+      if (!response.ok) return json({ error: response.status === 429 ? "Limite CoinGecko atteinte ; réessaie dans une minute." : "CoinGecko n’a pas fourni l’historique (HTTP " + response.status + ")." }, response.status === 429 ? 429 : 502);
+      const payload = await response.json().catch(() => null);
+      const prices = Array.isArray(payload?.prices) ? payload.prices : [];
+      const daily = new Map();
+      for (const item of prices) { const t = Number(item?.[0]), price = Number(item?.[1]); if (Number.isFinite(t) && Number.isFinite(price) && price > 0) daily.set(new Date(t).toISOString().slice(0, 10), { t, c: price }); }
+      const points = [...daily.values()].sort((a, b) => a.t - b.t);
+      if (!points.length) return json({ error: "CoinGecko n’a renvoyé aucun cours historique." }, 502);
+      return json({ id, points });
     }
     if (action === "history") {
       const id = String(body?.id ?? "").trim();
