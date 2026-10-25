@@ -612,6 +612,9 @@ async function initCloud(){
       cloud.session=session;
       cloud.user=session?.user||null;
       if(!cloud.user){
+        $('cloud-open').hidden=false;
+        $('cloud-logout-sidebar').hidden=true;
+        $('personal-space-label').textContent='Gestion personnelle';
         cloud.loadedUserId=null;
         if(event==='SIGNED_OUT'){
           localStorage.removeItem(STORAGE_KEY);
@@ -620,7 +623,9 @@ async function initCloud(){
         lockApp(event==='SIGNED_OUT'?'Vous êtes déconnecté. Reconnectez-vous pour consulter vos données.':'Connectez-vous pour accéder à vos comptes.');
         return;
       }
-      $('cloud-open').textContent='Compte connecté';
+      $('cloud-open').hidden=true;
+      $('cloud-logout-sidebar').hidden=false;
+      $('personal-space-label').textContent=cloud.user.email||'Compte personnel';
       $('cloud-logout').hidden=false;
       if(previousUserId!==cloud.user.id||event==='SIGNED_IN'){
         if(previousUserId&&previousUserId!==cloud.user.id)lockApp('Changement de compte : chargement de vos données privées…');
@@ -631,10 +636,15 @@ async function initCloud(){
     });
 
     if(cloud.user){
-      $('cloud-open').textContent='Compte connecté';
+      $('cloud-open').hidden=true;
+      $('cloud-logout-sidebar').hidden=false;
+      $('personal-space-label').textContent=cloud.user.email||'Compte personnel';
       $('cloud-logout').hidden=false;
       await loadCloudState(cloud.user);
     }else{
+      $('cloud-open').hidden=false;
+      $('cloud-logout-sidebar').hidden=true;
+      $('personal-space-label').textContent='Gestion personnelle';
       lockApp('Connectez-vous pour accéder à vos comptes, opérations et récurrences.');
     }
   }catch(error){
@@ -2375,6 +2385,7 @@ $('cloud-signup').addEventListener('click',async()=>{
   }catch(error){cloudMessage(frenchAuthError(error));}
   finally{button.disabled=false;}
 });
+$('cloud-logout-sidebar').addEventListener('click',()=> $('cloud-logout').click());
 $('cloud-logout').addEventListener('click',async()=>{
   try{const {error}=await cloudClient().auth.signOut();if(error)throw error;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');if($('cloud-dialog').open)$('cloud-dialog').close();lockApp('Déconnexion effectuée. Reconnectez-vous pour accéder à vos données.');}
   catch(error){cloudMessage(error.message||'Déconnexion impossible.');}
