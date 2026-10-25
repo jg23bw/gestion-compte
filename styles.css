@@ -1008,3 +1008,20 @@ tbody tr:hover td{background:#fafbff}
 @media(max-width:800px){.opportunity-heatmap{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:minmax(90px,auto);padding:8px 12px 16px}.opportunity-heatmap-summary,.opportunity-heatmap-legend{padding-left:12px;padding-right:12px}.opportunity-heat-tile{grid-column:span min(6,var(--tile-span,2));min-height:96px;padding:10px}.opportunity-tile-type{display:none}}
 @media(max-width:480px){.opportunity-heatmap{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(82px,auto);gap:5px}.opportunity-heat-tile{grid-column:span min(4,var(--tile-span,2));min-height:88px;padding:9px;border-radius:8px}.opportunity-tile-head{gap:6px}.opportunity-asset-logo{flex-basis:30px;width:30px;height:30px}.opportunity-tile-ident strong{font-size:11px}.opportunity-tile-ident span{max-width:82px;font-size:8px}.opportunity-tile-change{font-size:16px}.opportunity-tile-bottom>span{font-size:9px}.opportunity-heatmap-summary{gap:8px 12px;font-size:10px}}
 @media(prefers-reduced-motion:reduce){.opportunity-heat-tile,.opportunity-loading-spinner{animation:none;transition:none}}
+
+
+/* Lisibilité prioritaire : grille régulière, informations toujours lisibles. */
+.opportunity-heatmap{grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-flow:row;grid-auto-rows:auto;gap:10px;padding:8px 18px 20px}
+.opportunity-heat-tile{grid-column:span 1!important;min-height:128px;padding:14px;border-radius:12px;overflow:visible;gap:12px}
+.opportunity-tile-head{align-items:center;gap:9px}
+.opportunity-tile-ident strong{font-size:14px;line-height:1.25}
+.opportunity-tile-ident span{font-size:11px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}
+.opportunity-tile-bottom{display:grid;grid-template-columns:1fr;align-items:start;gap:4px}
+.opportunity-tile-change{font-size:clamp(20px,2vw,28px);line-height:1.1}
+.opportunity-tile-bottom>span{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.opportunity-tile-bottom small{font-size:10px;line-height:1.35}
+.opportunity-heat-tile .opportunity-tile-track{margin-top:auto;height:4px}
+.opportunity-heat-tile .opportunity-tile-type{font-size:8px;letter-spacing:.04em}
+@media(max-width:1000px){.opportunity-heatmap{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.opportunity-heatmap{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:8px 12px 16px}.opportunity-heat-tile{min-height:118px;padding:12px}.opportunity-tile-change{font-size:22px}}
+@media(max-width:390px){.opportunity-heatmap{grid-template-columns:1fr}.opportunity-heat-tile{min-height:104px}.opportunity-tile-bottom{grid-template-columns:1fr auto;align-items:baseline}.opportunity-tile-bottom small{grid-column:1/-1}}

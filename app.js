@@ -1924,7 +1924,7 @@ const opportunityHistoryLoading={};
 function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
-  if(asset.type==='stock'&&!asset.raw.priceId){chart.innerHTML='<div class="opportunity-chart-empty">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas d’identifiant de cours exploitable ; aucun prix historique n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
+  if(!opportunityHasHistorySource(asset)){chart.innerHTML='<div class="opportunity-chart-empty" role="status">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas de source de cours historique exploitable ; aucun prix n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
   const historyPeriod=period==='5y'?'5y':'1y';
   const fullPoints=opportunityHistory[asset.id+'|'+historyPeriod]||[];
   if(!fullPoints.length){loadOpportunityHistory(assetId,period);return;}
@@ -1944,12 +1944,23 @@ function renderOpportunityChart(assetId,period){
   summary.innerHTML='<div class="opportunity-chart-metric"><span>Dernier cours</span><strong>'+escapeHtml(euro(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 (200 séances/jours)</span><strong>'+(lastSma===null||!Number.isFinite(lastSma)?'—':escapeHtml(euro(lastSma)))+'</strong></div><div class="opportunity-chart-metric"><span>Écart à MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(euro(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(euro(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours, pas des niveaux garantis. Indicateurs descriptifs, pas une recommandation d’achat/vente.</small></div>';
   chart.innerHTML=opportunityChartSvg(points,period,fullPoints);
 }
+function opportunityHasHistorySource(asset){
+  return asset.type==='crypto' ? !!asset.raw?.coingeckoId : !!asset.raw?.priceId;
+}
 function setupOpportunityChart(){
   const select=$('opportunity-chart-asset');if(!select)return;
-  const assets=opportunityAssets();
+  // Ne pas sélectionner une position manuelle ou sans identifiant de cours
+  // comme premier actif : elle ne peut pas produire de courbe historique.
+  const assets=opportunityAssets().filter(opportunityHasHistorySource);
   const current=select.value;
   select.innerHTML=assets.map(a=>'<option value="'+escapeHtml(a.id)+'">'+escapeHtml(a.symbol+' · '+a.name)+'</option>').join('');
-  if(!assets.length){select.innerHTML='<option value="">Aucun actif disponible</option>';return;}
+  if(!assets.length){
+    select.innerHTML='<option value="">Aucun historique disponible</option>';
+    const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');
+    if(chart)chart.innerHTML='<div class="opportunity-chart-empty" role="status">Aucun actif ne possède actuellement de source d’historique exploitable. Vérifie les identifiants de cours dans Actions ou les identifiants CoinGecko dans Crypto.</div>';
+    if(summary)summary.innerHTML='<span>Historique indisponible pour les positions actuelles.</span>';
+    return;
+  }
   select.value=assets.some(a=>a.id===current)?current:assets[0].id;
   const period=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
   renderOpportunityChart(select.value,period);
@@ -2046,7 +2057,7 @@ function renderOpportunities(){
   // Charge l’historique de toutes les positions avec une concurrence limitée pour
   // éviter les limites des fournisseurs. Pas de drapeau global permanent : les
   // positions ajoutées plus tard et les échecs temporaires seront retentés au prochain rendu.
-  const historyAssets=assets.filter(asset=>asset.type==='crypto'||asset.raw.priceId);
+  const historyAssets=assets.filter(opportunityHasHistorySource);
   const queue=historyAssets.filter(asset=>!opportunityHistory[asset.id+'|1y']&&!opportunityHistoryLoading[asset.id+'|1y']);
   const worker=async()=>{
     while(queue.length){

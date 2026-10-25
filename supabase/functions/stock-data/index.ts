@@ -61,9 +61,17 @@ async function fetchStockHistory(id: string, period: string) {
   if (!response.ok) return json({ error: response.status === 429 ? "limite de requêtes StockAnalysis atteinte, réessayez dans une minute" : "historique indisponible (HTTP " + response.status + ")" }, response.status === 429 ? 429 : 502);
   const payload = await response.json().catch(() => null);
   const rows = Array.isArray(payload?.data) ? payload.data : [];
-  const points = rows.map((row: Record<string, unknown>) => ({ t: Number(row?.t ?? row?.time ?? row?.date), c: Number(row?.c) }))
+  const points = rows.map((row: Record<string, unknown>) => {
+    const rawTime = row?.t ?? row?.time ?? row?.date;
+    const numericTime = typeof rawTime === "number" || /^\d+(?:\.\d+)?$/.test(String(rawTime ?? ""))
+      ? Number(rawTime)
+      : Date.parse(String(rawTime ?? ""));
+    const price = Number(row?.c ?? row?.close);
+    return { t: numericTime, c: price };
+  })
     .filter((point: {t:number,c:number}) => Number.isFinite(point.t) && Number.isFinite(point.c) && point.c > 0)
-    .map((point: {t:number,c:number}) => ({ t: point.t < 100000000000 ? point.t * 1000 : point.t, c: point.c }));
+    .map((point: {t:number,c:number}) => ({ t: point.t < 100000000000 ? point.t * 1000 : point.t, c: point.c }))
+    .sort((a: {t:number,c:number}, b: {t:number,c:number}) => a.t - b.t);
   const closes = points.map((point: {t:number,c:number}) => point.c);
   const sma200 = closes.length >= 200 ? closes.map((_: number, i: number) => i >= 199 ? closes.slice(i - 199, i + 1).reduce((sum: number, n: number) => sum + n, 0) / 200 : null) : [];
   return json({ id, period: selected, points, sma200 });
