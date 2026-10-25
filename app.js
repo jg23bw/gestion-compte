@@ -1310,7 +1310,11 @@ async function stockFunction(action,payload={}){
         if(body?.error)message=body.error;
       }
     }catch(parseError){}
-    if(error instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(message))message='réseau indisponible';
+    const status=Number(error.context?.status||error.status||0);
+    if(status===429||/rate limit|too many requests|limite.*atteinte/i.test(message))message='Limite du fournisseur de données atteinte (HTTP 429). Attends une minute avant de réessayer.';
+    else if(status>=500)message='Service de données temporairement indisponible (HTTP '+status+'). Réessaie plus tard.';
+    else if(status===404)message='Historique indisponible pour cet actif (HTTP 404).';
+    else if(error instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(message))message='réseau indisponible';
     throw new Error(message);
   }
   if(data?.error)throw new Error(data.error);
@@ -1852,8 +1856,10 @@ function opportunityLogoUrl(asset){
   return 'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(ticker)+'.png';
 }
 function opportunityLogoMarkup(asset){
+  // Affiche des initiales locales : les CDN de logos tiers renvoient souvent 404
+  // et les handlers inline peuvent échouer si le parent a déjà été démonté.
   const initials=escapeHtml(String(asset.symbol||'?').slice(0,3).toUpperCase());
-  return '<span class="opportunity-asset-logo"><img src="'+escapeHtml(opportunityLogoUrl(asset))+'" alt="" loading="lazy" onerror="this.remove();this.parentElement.innerHTML=\'<span class=&quot;opportunity-fallback&quot;>'+initials+'</span>\'"></span>';
+  return '<span class="opportunity-asset-logo" aria-label="Actif '+initials+'"><span class="opportunity-fallback">'+initials+'</span></span>';
 }
 function opportunitySma(values,period=200){
   const out=Array(values.length).fill(null);let sum=0;
