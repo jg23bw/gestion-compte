@@ -1230,7 +1230,8 @@ function stockLogoMarkup(symbol,extraClass=''){
   const palette=[['#eef2ff','#4e63cf'],['#eaf8f1','#1b8963'],['#fff3e7','#ac7128'],['#f4efff','#7053c2'],['#eef8fb','#2c7f9d']];
   let hash=0;for(const char of label)hash=(hash*31+char.charCodeAt(0))%palette.length;
   const colors=palette[hash];
-  return '<span class="stock-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-hidden="true"><span>'+escapeHtml(label)+'</span></span>';
+  const url='https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(raw)+'.png';
+  return '<span class="stock-logo'+(extraClass?' '+extraClass:'')+'" style="background:'+colors[0]+';color:'+colors[1]+'" aria-hidden="true"><span class="stock-logo-fallback">'+escapeHtml(label)+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="this.previousElementSibling.style.display=\'none\'" onerror="this.remove()"></span>';
 }
 function stockAccountOptionLabel(account){return account.name+' · '+kindLabel(account);}
 function defaultStockAccountId(){const eligible=state.accounts.filter(isInvestmentAccount);const filtered=$('stocks-account-filter')?.value;if(filtered&&filtered!=='all'&&eligible.some(a=>a.id===filtered))return filtered;return (eligible.find(a=>bankKeyForAccount(a)==='interactive-brokers'&&effectiveAccountType(a)==='cto')||eligible[0])?.id||'';}
@@ -1824,18 +1825,15 @@ function opportunityAssets(){
 function opportunityPercent(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?((Number(value)>0?'+':'')+Number(value).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'):'—';}
 function opportunityChange(asset,period){const key=period==='24h'?'day':period==='7d'?'week':'month';return Number.isFinite(Number(asset.changes?.[key]))?Number(asset.changes[key]):null;}
 function opportunitySignal(asset){
-  if(asset.type==='stock')return {label:'Données techniques à compléter',tone:'neutral',score:null,reason:'Historique de cours multi-périodes non disponible dans la source actuelle.'};
   const d=opportunityChange(asset,'24h'),w=opportunityChange(asset,'7d'),m=opportunityChange(asset,'30d');
-  const available=[d,w,m].filter(Number.isFinite);
-  if(!available.length)return {label:'Données insuffisantes',tone:'neutral',score:null,reason:'Les variations multi-périodes ne sont pas disponibles.'};
-  const score=50+(d||0)*.35+(w||0)*.9+(m||0)*.35;
-  const bounded=Math.max(0,Math.min(100,Math.round(score)));
-  if((w!==null&&w< -12)||(m!==null&&m< -25))return {label:'Risque élevé',tone:'risk',score:bounded,reason:'Baisse importante sur au moins une période : vérifier la thèse et le risque avant tout renforcement.'};
-  if(w!==null&&m!==null&&w>0&&m>0&&d!==null&&d>-3)return {label:'Momentum positif',tone:'positive',score:bounded,reason:'Tendance positive sur 7 et 30 jours ; vérifier la volatilité et la valorisation avant d’acheter.'};
-  if(w!==null&&w<0&&m!==null&&m>0)return {label:'Repli à surveiller',tone:'watch',score:bounded,reason:'Repli court terme dans une tendance mensuelle positive : pas un signal d’achat à lui seul.'};
-  return {label:'À surveiller',tone:'neutral',score:bounded,reason:'Le momentum ne donne pas de signal suffisamment convergent.'};
+  const available=[d,w,m].filter(v=>v!==null&&Number.isFinite(v));
+  if(!available.length)return {label:'Données insuffisantes',tone:'neutral',score:null,reason:'Variation de marché indisponible ; aucun signal fiable ne peut être établi.'};
+  const score=Math.max(0,Math.min(100,Math.round(50+(d||0)*.25+(w||0)*.6+(m||0)*.25)));
+  if((w!==null&&w< -12)||(m!==null&&m< -25))return {label:'Risque / momentum faible',tone:'risk',score,reason:'Repli marqué sur une période : contrôler la thèse, la volatilité et la taille de position.'};
+  if(w!==null&&m!==null&&w>0&&m>0&&(d===null||d>-3))return {label:'Momentum positif',tone:'positive',score,reason:'Variations hebdomadaire et mensuelle positives ; ce n’est pas à lui seul un signal d’achat.'};
+  if(w!==null&&w<0&&m!==null&&m>0)return {label:'Repli à surveiller',tone:'watch',score,reason:'Repli court terme alors que le mois reste positif ; attendre une confirmation technique.'};
+  return {label:'Signal mixte',tone:'neutral',score,reason:'Les horizons ne convergent pas suffisamment pour qualifier une tendance.'};
 }
-
 const OPPORTUNITY_LOGO_SYMBOLS={BTC:'btc',ETH:'eth',USDT:'usdt',BNB:'bnb',SOL:'sol',XRP:'xrp',USDC:'usdc',DOGE:'doge',ADA:'ada',AVAX:'avax',LINK:'link',DOT:'dot',TRX:'trx',LTC:'ltc',BCH:'bch',XLM:'xlm',SHIB:'shib',NEAR:'near',UNI:'uni',RNDR:'rndr',RENDER:'rndr',AAVE:'aave',ONDO:'ondo',SUI:'sui',APT:'apt',TON:'ton',ATOM:'atom',HBAR:'hbar',ICP:'icp',ETC:'etc',XMR:'xmr',KAS:'kas',PEPE:'pepe',ARB:'arb',OP:'op',MKR:'mkr',GRT:'grt',RSR:'rsr'};
 function opportunityLogoUrl(asset){
   const symbol=String(asset.symbol||'').toUpperCase();
@@ -1853,57 +1851,77 @@ function opportunitySma(values,period=200){
   for(let i=0;i<values.length;i++){sum+=values[i];if(i>=period)sum-=values[i-period];if(i>=period-1)out[i]=sum/period;}
   return out;
 }
-function opportunityChartSvg(points,period){
+function opportunityChartSvg(points,period,fullPoints=points){
   const usable=points.filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
+  const baseline=fullPoints.filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
   if(usable.length<2)return '<div class="opportunity-chart-empty">Historique réel insuffisant pour tracer la courbe.</div>';
-  const closes=usable.map(p=>p.c),sma=opportunitySma(closes,200),all=[...closes,...sma.filter(Number.isFinite)];
+  const fullSma=opportunitySma(baseline.map(p=>p.c),200),smaByTime=new Map(baseline.map((p,i)=>[p.t,fullSma[i]]));
+  const closes=usable.map(p=>p.c),sma=usable.map(p=>smaByTime.get(p.t)??null),all=[...closes,...sma.filter(Number.isFinite)];
   const min=Math.min(...all),max=Math.max(...all),range=max-min||Math.max(max*.02,1);
-  const width=900,height=300,padL=64,padR=20,padT=20,padB=30,innerW=width-padL-padR,innerH=height-padT-padB;
+  const width=900,height=320,padL=64,padR=20,padT=20,padB=32,innerW=width-padL-padR,innerH=height-padT-padB;
   const x=i=>padL+i/(usable.length-1)*innerW,y=v=>padT+(max-v)/range*innerH;
   const line=closes.map((v,i)=>(i?'L':'M')+x(i).toFixed(2)+' '+y(v).toFixed(2)).join(' ');
-  const smaPath=sma.map((v,i)=>v===null?null:{x:x(i),y:y(v)}).filter(Boolean).map((p,i)=>(i?'L':'M')+p.x.toFixed(2)+' '+p.y.toFixed(2)).join(' ');
+  let started=false;const smaPath=sma.map((v,i)=>{if(!Number.isFinite(v)){started=false;return null;}const path=(started?'L':'M')+x(i).toFixed(2)+' '+y(v).toFixed(2);started=true;return path;}).filter(Boolean).join(' ');
   const grid=[0,1,2,3].map(i=>{const v=max-(range*i/3),yy=padT+innerH*i/3;return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(width-padR)+'" y2="'+yy+'" stroke="currentColor" opacity=".10"/><text x="'+(padL-9)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(new Intl.NumberFormat('fr-FR',{notation:'compact',maximumFractionDigits:2}).format(v))+'</text>';}).join('');
   const area=line+' L'+x(usable.length-1)+' '+(height-padB)+' L'+x(0)+' '+(height-padB)+' Z';
   const dateLabel=index=>{const d=new Date(usable[index].t);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('fr-FR',{month:'short',year:period==='5y'?'2-digit':undefined}).format(d);};
-  return '<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Cours historique et moyenne mobile 200 jours">'+grid+'<path d="'+area+'" fill="#526ff0" opacity=".08"/><path d="'+line+'" fill="none" stroke="#526ff0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+(smaPath?'<path d="'+smaPath+'" fill="none" stroke="#e7a844" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>':'')+'<text x="'+padL+'" y="'+(height-6)+'" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(0))+'</text><text x="'+(width-padR)+'" y="'+(height-6)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(usable.length-1))+'</text></svg>';
+  return '<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Cours historique et moyenne mobile 200 jours">'+grid+'<path d="'+area+'" fill="#526ff0" opacity=".08"/><path d="'+line+'" fill="none" stroke="#526ff0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+(smaPath?'<path d="'+smaPath+'" fill="none" stroke="#e7a844" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>':'')+'<text x="'+padL+'" y="'+(height-6)+'" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(0))+'</text><text x="'+(width-padR)+'" y="'+(height-6)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(usable.length-1))+'</text></svg>';
 }
 async function loadOpportunityHistory(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   const key=asset.id+'|'+period;
-  const container=$('opportunity-price-chart');if(container)container.innerHTML='<div class="opportunity-chart-empty">Chargement de l’historique…</div>';
-  try{
-    let points=[];
-    if(asset.type==='crypto'){
-      const days=period==='1m'?30:period==='3m'?90:period==='5y'?1825:365;
-      const response=await fetch(CRYPTO_HISTORY_ENDPOINT+encodeURIComponent(asset.raw.coingeckoId)+'/market_chart?vs_currency=eur&days='+days,{headers:{Accept:'application/json'},cache:'no-store'});
-      if(!response.ok)throw new Error('Historique crypto indisponible (HTTP '+response.status+')');
-      const payload=await response.json();
-      const rawPoints=(payload.prices||[]).map(p=>({t:Number(p[0]),c:Number(p[1])})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
-      const daily=new Map();for(const point of rawPoints){const day=new Date(point.t).toISOString().slice(0,10);daily.set(day,point);}
-      points=[...daily.values()].sort((a,b)=>a.t-b.t);
-    }else{
-      const payload=await stockFunction('history',{id:asset.raw.priceId,period});
-      points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)}));
-    }
-    if(!points.length)throw new Error('Aucun historique de cours reçu pour cet actif.');
-    opportunityHistory[key]=points;
-    renderOpportunityChart(assetId,period);
-  }catch(error){
-    console.warn('Opportunity history unavailable',error);
-    if(container)container.innerHTML='<div class="opportunity-chart-empty">'+escapeHtml(error.message||'Historique indisponible')+'<br>Les données n’ont pas été remplacées par des valeurs estimées.</div>';
-    const summary=$('opportunity-chart-summary');if(summary)summary.innerHTML='<span>MM200 indisponible</span>';
-  }
+  if(opportunityHistory[key]){renderOpportunityChart(assetId,period);return;}
+  if(opportunityHistoryLoading[key])return opportunityHistoryLoading[key];
+  const container=$('opportunity-price-chart');if(container)container.innerHTML='<div class="opportunity-chart-empty">Chargement de l’historique de cours…</div>';
+  opportunityHistoryLoading[key]=(async()=>{
+    try{
+      let points=[];
+      if(asset.type==='crypto'){
+        // Il faut au moins 200 observations journalières pour calculer une vraie MM200,
+        // même lorsque l’utilisateur n’affiche que le mois ou le trimestre.
+        const days=period==='5y'?1825:365;
+        const response=await fetch(CRYPTO_HISTORY_ENDPOINT+encodeURIComponent(asset.raw.coingeckoId)+'/market_chart?vs_currency=eur&days='+days,{headers:{Accept:'application/json'},cache:'no-store'});
+        if(!response.ok)throw new Error('Historique crypto indisponible (HTTP '+response.status+').');
+        const payload=await response.json(),rawPoints=(payload.prices||[]).map(p=>({t:Number(p[0]),c:Number(p[1])})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
+        const daily=new Map();for(const point of rawPoints){const day=new Date(point.t).toISOString().slice(0,10);daily.set(day,point);}
+        points=[...daily.values()].sort((a,b)=>a.t-b.t);
+      }else{
+        const payload=await stockFunction('history',{id:asset.raw.priceId,period:period==='5y'?'5y':'1y'});
+        points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((x,y)=>x.t-y.t);
+      }
+      if(!points.length)throw new Error('La source n’a renvoyé aucun cours historique pour cet actif.');
+      opportunityHistory[key]=points;
+      renderOpportunityChart(assetId,period);
+    }catch(error){
+      console.warn('Opportunity history unavailable',error);
+      if(container)container.innerHTML='<div class="opportunity-chart-empty">'+escapeHtml(error.message||'Historique indisponible')+'<br>Les données ne sont pas remplacées par des estimations.</div>';
+      const summary=$('opportunity-chart-summary');if(summary)summary.innerHTML='<span>MM200 non calculable : historique indisponible.</span>';
+    }finally{delete opportunityHistoryLoading[key];}
+  })();
+  return opportunityHistoryLoading[key];
 }
 const opportunityHistory={};
+const opportunityHistoryLoading={};
 function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
-  const points=opportunityHistory[asset.id+'|'+period]||[];
+  const fullPoints=opportunityHistory[asset.id+'|'+period]||[];
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
-  if(!points.length){loadOpportunityHistory(assetId,period);return;}
-  const sma=opportunitySma(points.map(p=>p.c),200),last=points[points.length-1],lastSma=sma[sma.length-1],first=points[0],change=(last.c/first.c-1)*100;
-  const distance=Number.isFinite(lastSma)?(last.c/lastSma-1)*100:null;
-  summary.innerHTML='<div class="opportunity-chart-metric"><span>Dernier cours</span><strong>'+escapeHtml(euro(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation sur la période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200</span><strong>'+(lastSma===null||!Number.isFinite(lastSma)?'—':escapeHtml(euro(lastSma)))+'</strong></div><div class="opportunity-chart-metric"><span>Écart à la MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div>';
-  chart.innerHTML=opportunityChartSvg(points,period);
+  if(!fullPoints.length){loadOpportunityHistory(assetId,period);return;}
+  const latestTime=fullPoints[fullPoints.length-1].t;
+  const rangeDays=period==='1m'?30:period==='3m'?90:period==='5y'?1825:365;
+  const visibleFrom=latestTime-rangeDays*86400000;
+  const points=fullPoints.filter(p=>p.t>=visibleFrom);
+  const smaFull=opportunitySma(fullPoints.map(p=>p.c),200),last=fullPoints[fullPoints.length-1],lastSma=smaFull[smaFull.length-1];
+  const first=points[0]||fullPoints[0],change=(last.c/first.c-1)*100,distance=Number.isFinite(lastSma)?(last.c/lastSma-1)*100:null;
+  const recent=fullPoints.filter(p=>p.t>=latestTime-30*86400000).map(p=>p.c);
+  const older=fullPoints.filter(p=>p.t>=latestTime-60*86400000&&p.t<latestTime-30*86400000).map(p=>p.c);
+  const momentum=recent.length>1&&older.length>1?(recent[recent.length-1]/older[0]-1)*100:null;
+  const window=fullPoints.filter(p=>p.t>=latestTime-90*86400000).map(p=>p.c);
+  const support=window.length?Math.min(...window):null,resistance=window.length?Math.max(...window):null;
+  const trend=distance===null?'MM200 non calculable':distance>=0?'Cours au-dessus de la MM200':'Cours sous la MM200';
+  const signal=distance===null?'Historique insuffisant pour confirmer la tendance longue':distance>3&&momentum!==null&&momentum>0?'Biais haussier à confirmer':distance< -3&&momentum!==null&&momentum<0?'Biais baissier / prudence':'Signal technique neutre ou mixte';
+  summary.innerHTML='<div class="opportunity-chart-metric"><span>Dernier cours</span><strong>'+escapeHtml(euro(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 (200 séances/jours)</span><strong>'+(lastSma===null||!Number.isFinite(lastSma)?'—':escapeHtml(euro(lastSma)))+'</strong></div><div class="opportunity-chart-metric"><span>Écart à MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(euro(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(euro(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours, pas des niveaux garantis. Indicateurs descriptifs, pas une recommandation d’achat/vente.</small></div>';
+  chart.innerHTML=opportunityChartSvg(points,period,fullPoints);
 }
 function setupOpportunityChart(){
   const select=$('opportunity-chart-asset');if(!select)return;
@@ -1917,10 +1935,16 @@ function setupOpportunityChart(){
 }
 function renderOpportunityHeatmap(period='24h'){
   const container=$('opportunity-heatmap');if(!container)return;
-  const assets=opportunityAssets().filter(a=>a.type==='crypto');
-  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions dans Crypto pour afficher la carte du marché.</div>';return;}
+  const assets=opportunityAssets();
+  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions dans Crypto ou Actions pour afficher tous tes actifs.</div>';return;}
   const rows=assets.map(a=>({asset:a,change:opportunityChange(a,period)})).sort((a,b)=>(b.change??-Infinity)-(a.change??-Infinity));
-  container.innerHTML=rows.map(({asset,change})=>{const tone=change===null?'missing':change>0?'up':change<0?'down':'flat';const width=change===null?0:Math.min(100,Math.abs(change)*4);return '<article class="opportunity-heat-tile '+tone+'"><div class="opportunity-tile-head"><img class="opportunity-coin-logo" src="'+escapeHtml(opportunityLogoUrl(asset))+'" alt="" loading="lazy" onerror="this.style.display=\'none\'"><div class="opportunity-tile-ident"><strong>'+escapeHtml(asset.symbol)+'</strong><span>'+escapeHtml(asset.name)+'</span></div></div><strong class="opportunity-tile-change">'+opportunityPercent(change)+'</strong><div class="opportunity-tile-track"><i style="width:'+width+'%"></i></div><small>'+escapeHtml(period==='24h'?'24 dernières heures':period==='7d'?'7 derniers jours':'30 derniers jours')+'</small></article>';}).join('');
+  const periodLabel=period==='24h'?'24 h':period==='7d'?'7 j':'30 j';
+  container.innerHTML=rows.map(({asset,change})=>{
+    const tone=change===null?'missing':change>0?'up':change<0?'down':'flat';
+    const width=change===null?0:Math.min(100,Math.abs(change)*3.5);
+    const value=asset.value===null?'Valeur indisponible':euro(asset.value);
+    return '<article class="opportunity-heat-tile '+tone+'"><div class="opportunity-tile-head">'+opportunityLogoMarkup(asset)+'<div class="opportunity-tile-ident"><strong>'+escapeHtml(asset.symbol)+'</strong><span>'+escapeHtml(asset.name)+'</span></div><span class="opportunity-tile-type">'+(asset.type==='crypto'?'CRYPTO':'ACTION / ETF')+'</span></div><div class="opportunity-tile-bottom"><strong class="opportunity-tile-change">'+opportunityPercent(change)+'</strong><span>'+value+'</span></div><div class="opportunity-tile-track"><i style="width:'+width+'%"></i></div><small>'+periodLabel+' · '+(change===null?'variation indisponible':'variation de marché')+'</small></article>';
+  }).join('');
 }
 function renderOpportunityAssets(filter='all'){
   const container=$('opportunity-assets');if(!container)return;
