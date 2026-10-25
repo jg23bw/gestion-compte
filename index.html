@@ -8,10 +8,10 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=portfolio-history-proxy-v7">
+  <link rel="stylesheet" href="styles.css?v=opportunity-heatmap-reliable-v8">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=portfolio-history-proxy-v7" defer></script>
+  <script src="app.js?v=opportunity-heatmap-reliable-v8" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -124,7 +124,9 @@
           <article class="opportunity-kpi"><span>Fear &amp; Greed crypto</span><strong id="opportunity-fear-greed">—</strong><small id="opportunity-fear-greed-label">Indice de sentiment du marché crypto</small></article>
         </div>
         <section class="panel opportunity-market-panel">
-          <div class="panel-heading"><div><h2>Carte du marché</h2><p>Taille des cases = poids de tes positions ; couleur = variation de marché. Les données absentes restent neutres.</p></div><div class="opportunity-periods" role="group" aria-label="Période de variation"><button type="button" class="is-active" data-op-period="24h">24 h</button><button type="button" data-op-period="7d">7 jours</button><button type="button" data-op-period="30d">30 jours</button></div></div>
+          <div class="panel-heading opportunity-heatmap-heading"><div><h2>Carte du marché</h2><p>La taille représente le poids de chaque position dans le portefeuille ; la couleur indique sa variation sur la période choisie.</p></div><div class="opportunity-periods" role="group" aria-label="Période de variation"><button type="button" class="is-active" data-op-period="24h">24 h</button><button type="button" data-op-period="7d">7 jours</button><button type="button" data-op-period="30d">30 jours</button></div></div>
+          <div id="opportunity-heatmap-summary" class="opportunity-heatmap-summary" aria-live="polite"><span>Préparation des données du portefeuille…</span></div>
+          <div class="opportunity-heatmap-legend" aria-label="Légende de la carte"><span><i class="legend-up"></i> Hausse</span><span><i class="legend-down"></i> Baisse</span><span><i class="legend-flat"></i> Variation faible</span><span><i class="legend-missing"></i> Donnée indisponible</span><small>Les couleurs décrivent la variation, pas un conseil d’achat ou de vente.</small></div>
           <div id="opportunity-heatmap" class="opportunity-heatmap"><div class="empty-state">Chargement des indicateurs de marché…</div></div>
         </section>
         <section class="panel opportunity-chart-panel">
