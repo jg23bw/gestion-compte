@@ -52,7 +52,7 @@ const DEFAULT_RECURRING_TEMPLATES = [];
 const CRYPTO_PRICE_CACHE_KEY='gestion-comptes-crypto-prices-v2';
 const CRYPTO_MARKET_ENDPOINT='https://api.coingecko.com/api/v3/coins/markets';
 const CRYPTO_FALLBACK_ENDPOINT='https://api.coincap.io/v2/assets';
-const COINCAP_IDS={bitcoin:'bitcoin',ethereum:'ethereum',tether:'tether',binancecoin:'binance-coin',solana:'solana',ripple:'xrp',usd-coin:'usd-coin',dogecoin:'dogecoin',cardano:'cardano',avalanche-2:'avalanche',chainlink:'chainlink',polkadot:'polkadot',tron:'tron',litecoin:'litecoin',bitcoin-cash:'bitcoin-cash',stellar:'stellar',shiba-inu:'shiba-inu',near:'near-protocol',uniswap:'uniswap',render-token:'render-token',aave:'aave',ondo-finance:'ondo',bittensor:'bittensor',sui:'sui',aptos:'aptos',toncoin:'toncoin',cosmos:'cosmos',hedera-hashgraph:'hedera-hashgraph',internet-computer:'internet-computer',ethereum-classic:'ethereum-classic',monero:'monero',kaspa:'kaspa',pepe:'pepe',arbitrum:'arbitrum',optimism:'optimism',maker:'maker',the-graph:'the-graph'};
+const COINCAP_IDS={'bitcoin':'bitcoin','ethereum':'ethereum','tether':'tether','binancecoin':'binance-coin','solana':'solana','ripple':'xrp','usd-coin':'usd-coin','dogecoin':'dogecoin','cardano':'cardano','avalanche-2':'avalanche','chainlink':'chainlink','polkadot':'polkadot','tron':'tron','litecoin':'litecoin','bitcoin-cash':'bitcoin-cash','stellar':'stellar','shiba-inu':'shiba-inu','near':'near-protocol','uniswap':'uniswap','render-token':'render-token','aave':'aave','ondo-finance':'ondo','bittensor':'bittensor','sui':'sui','aptos':'aptos','toncoin':'toncoin','cosmos':'cosmos','hedera-hashgraph':'hedera-hashgraph','internet-computer':'internet-computer','ethereum-classic':'ethereum-classic','monero':'monero','kaspa':'kaspa','pepe':'pepe','arbitrum':'arbitrum','optimism':'optimism','maker':'maker','the-graph':'the-graph'};
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const CRYPTO_REFRESH_MS=60000;
 const cryptoSearch={timer:null,controller:null,results:[]};
@@ -177,7 +177,7 @@ function undoLastAction(){
 
 const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),pendingAccountDeletes:new Set(),accountTypesDirty:false,accountPledgesDirty:false,stockHoldingsDirty:false,authReady:false};
 let cryptoTableReady=null;
-const cryptoPrices={values:{},images:{},updatedAt:0,error:'',loading:false};
+const cryptoPrices={values:{},images:{},market:{},updatedAt:0,error:'',loading:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function frenchAuthError(error){
   const message=String(error?.message||'').trim();
@@ -984,6 +984,7 @@ function hydrateCryptoPrices(){
     if(saved&&saved.values&&typeof saved.values==='object'){
       cryptoPrices.values=saved.values;
       cryptoPrices.images=saved.images&&typeof saved.images==='object'?saved.images:{};
+      cryptoPrices.market=saved.market&&typeof saved.market==='object'?saved.market:{};
       cryptoPrices.updatedAt=Number(saved.updatedAt)||0;
     }
   }catch(error){console.warn('Cache des prix crypto illisible',error);}
@@ -999,7 +1000,7 @@ async function loadCryptoPrices(){
   try{
     let values={},images={},sourceError='';
     try{
-      const response=await fetch(CRYPTO_MARKET_ENDPOINT+'?vs_currency=eur&ids='+encodeURIComponent(ids.join(','))+'&sparkline=false&per_page=250',{headers:{Accept:'application/json'},cache:'no-store'});
+      const response=await fetch(CRYPTO_MARKET_ENDPOINT+'?vs_currency=eur&ids='+encodeURIComponent(ids.join(','))+'&sparkline=false&per_page=250&price_change_percentage=24h%2C7d%2C30d',{headers:{Accept:'application/json'},cache:'no-store'});
       if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
       const data=await response.json();
       for(const coin of Array.isArray(data)?data:[]){
@@ -1007,6 +1008,8 @@ async function loadCryptoPrices(){
         const price=Number(coin.current_price);
         if(Number.isFinite(price)&&price>0)values[coin.id]=price;
         if(typeof coin.image==='string'&&coin.image)images[coin.id]=coin.image;
+        const marketChanges={day:Number(coin.price_change_percentage_24h),week:Number(coin.price_change_percentage_7d_in_currency),month:Number(coin.price_change_percentage_30d_in_currency)};
+        cryptoPrices.market[coin.id]=Object.fromEntries(Object.entries(marketChanges).filter(([,value])=>Number.isFinite(value)));
       }
       if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
     }catch(error){sourceError=error.message||'CoinGecko indisponible';}
@@ -1027,7 +1030,7 @@ async function loadCryptoPrices(){
     cryptoPrices.values={...cryptoPrices.values,...values};
     cryptoPrices.images={...cryptoPrices.images,...images};
     cryptoPrices.updatedAt=Date.now();
-    try{localStorage.setItem(CRYPTO_PRICE_CACHE_KEY,JSON.stringify({values:cryptoPrices.values,images:cryptoPrices.images,updatedAt:cryptoPrices.updatedAt}));}catch(error){}
+    try{localStorage.setItem(CRYPTO_PRICE_CACHE_KEY,JSON.stringify({values:cryptoPrices.values,images:cryptoPrices.images,market:cryptoPrices.market,updatedAt:cryptoPrices.updatedAt}));}catch(error){}
   }catch(error){
     console.error('Crypto price fetch failed',error);
     cryptoPrices.error=error.message||'prix indisponible';
@@ -1585,7 +1588,7 @@ function deleteStockHolding(id){
   renderAll();
   showToast('Position actions supprimée.',true);
 }
-function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();saveState();}
+function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();if($('opportunities-view'))renderOpportunities();saveState();}
 function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.setAttribute('aria-label','Annuler la dernière action');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();try{undoLastAction();}catch(error){console.error('Undo failed',error);showToast('Impossible d’annuler cette action : '+(error.message||'erreur inconnue.'));}},{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},10000);}
 
 function wealthSnapshot(){
@@ -1808,15 +1811,83 @@ function renderWealthViews(){
  $('lombard-scenarios').innerHTML=[{label:'Aucun BTC vendu',v:0},{label:'Vente de 25 % des BTC',v:totalBtcValue*.25},{label:'Vente de 50 % des BTC',v:totalBtcValue*.5},{label:'Vente de 100 % des BTC',v:totalBtcValue}].map(x=>'<div><span>'+x.label+'</span><strong>'+euro(x.v)+'</strong><small>Après remboursement de la dette : '+(x.v>=remaining?euro(x.v-remaining):'reste '+euro(remaining-x.v)+' de dette')+'</small></div>').join('');
 }
 
+
+function opportunityAssets(){
+  const crypto=(state.cryptoHoldings||[]).map(h=>{const price=Number(cryptoPrices.values[h.coingeckoId]);const value=Number.isFinite(price)&&price>0?price*Number(h.quantity||0):null;return {id:'c-'+h.id,type:'crypto',symbol:String(h.symbol||h.coingeckoId||'').toUpperCase(),name:h.name||h.symbol||h.coingeckoId,price,value,invested:Number(h.invested)||0,changes:cryptoPrices.market[h.coingeckoId]||{},updatedAt:cryptoPrices.updatedAt};});
+  const stocks=(state.stockHoldings||[]).map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:{},updatedAt:stockPrices.updatedAt};});
+  return [...crypto,...stocks];
+}
+function opportunityPercent(value){return Number.isFinite(Number(value))?((Number(value)>0?'+':'')+Number(value).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'):'—';}
+function opportunityChange(asset,period){const key=period==='24h'?'day':period==='7d'?'week':'month';return Number.isFinite(Number(asset.changes?.[key]))?Number(asset.changes[key]):null;}
+function opportunitySignal(asset){
+  if(asset.type==='stock')return {label:'Données techniques à compléter',tone:'neutral',score:null,reason:'Historique de cours multi-périodes non disponible dans la source actuelle.'};
+  const d=opportunityChange(asset,'24h'),w=opportunityChange(asset,'7d'),m=opportunityChange(asset,'30d');
+  const available=[d,w,m].filter(Number.isFinite);
+  if(!available.length)return {label:'Données insuffisantes',tone:'neutral',score:null,reason:'Les variations multi-périodes ne sont pas disponibles.'};
+  const score=50+(d||0)*.35+(w||0)*.9+(m||0)*.35;
+  const bounded=Math.max(0,Math.min(100,Math.round(score)));
+  if((w!==null&&w< -12)||(m!==null&&m< -25))return {label:'Risque élevé',tone:'risk',score:bounded,reason:'Baisse importante sur au moins une période : vérifier la thèse et le risque avant tout renforcement.'};
+  if(w!==null&&m!==null&&w>0&&m>0&&d!==null&&d>-3)return {label:'Momentum positif',tone:'positive',score:bounded,reason:'Tendance positive sur 7 et 30 jours ; vérifier la volatilité et la valorisation avant d’acheter.'};
+  if(w!==null&&w<0&&m!==null&&m>0)return {label:'Repli à surveiller',tone:'watch',score:bounded,reason:'Repli court terme dans une tendance mensuelle positive : pas un signal d’achat à lui seul.'};
+  return {label:'À surveiller',tone:'neutral',score:bounded,reason:'Le momentum ne donne pas de signal suffisamment convergent.'};
+}
+function renderOpportunityHeatmap(period='24h'){
+  const container=$('opportunity-heatmap');if(!container)return;
+  const assets=opportunityAssets().filter(a=>a.type==='crypto');
+  if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions dans Crypto pour afficher la carte du marché.</div>';return;}
+  const rows=assets.map(a=>({asset:a,change:opportunityChange(a,period)})).sort((a,b)=>(b.change??-Infinity)-(a.change??-Infinity));
+  container.innerHTML=rows.map(({asset,change})=>{const tone=change===null?'missing':change>0?'up':change<0?'down':'flat';const width=change===null?0:Math.min(100,Math.abs(change)*4);return '<article class="opportunity-heat-tile '+tone+'"><div class="opportunity-tile-head"><strong>'+escapeHtml(asset.symbol)+'</strong><span>'+escapeHtml(asset.name)+'</span></div><strong class="opportunity-tile-change">'+opportunityPercent(change)+'</strong><div class="opportunity-tile-track"><i style="width:'+width+'%"></i></div><small>'+escapeHtml(period==='24h'?'24 dernières heures':period==='7d'?'7 derniers jours':'30 derniers jours')+'</small></article>';}).join('');
+}
+function renderOpportunityAssets(filter='all'){
+  const container=$('opportunity-assets');if(!container)return;
+  const assets=opportunityAssets().filter(a=>filter==='all'||a.type===filter);
+  if(!assets.length){container.innerHTML='<div class="empty-state">Aucun actif dans cette catégorie. Ajoute une position dans Crypto ou Actions.</div>';return;}
+  assets.sort((a,b)=>(b.value||0)-(a.value||0));
+  container.innerHTML=assets.map(asset=>{const signal=opportunitySignal(asset),change=opportunityChange(asset,'24h'),value=asset.value===null?'Cours indisponible':euro(asset.value);return '<article class="opportunity-asset-row"><div class="opportunity-asset-main"><span class="opportunity-asset-icon '+asset.type+'">'+(asset.type==='crypto'?'₿':'↗')+'</span><div><strong>'+escapeHtml(asset.name)+'</strong><small>'+escapeHtml(asset.symbol)+' · '+(asset.type==='crypto'?'Crypto':'Action / ETF')+'</small></div></div><div class="opportunity-asset-value"><strong>'+value+'</strong><small>Valeur détenue</small></div><div class="opportunity-asset-change '+(change===null?'muted':change>0?'positive':change<0?'negative':'')+'"><strong>'+(change===null?'—':opportunityPercent(change))+'</strong><small>24 h</small></div><div class="opportunity-asset-signal"><span class="opportunity-signal '+signal.tone+'">'+escapeHtml(signal.label)+'</span><small>'+escapeHtml(signal.reason)+'</small></div></article>';}).join('');
+}
+function renderOpportunityAllocation(){
+  const container=$('opportunity-allocation');if(!container)return;
+  const amount=Math.max(0,Number($('opportunity-amount')?.value)||0),risk=$('opportunity-risk')?.value||'high',horizon=$('opportunity-horizon')?.value||'long',strategy=$('opportunity-strategy')?.value||'balanced';
+  const subtitle=$('opportunity-allocation-subtitle');if(subtitle)subtitle.textContent=amount>0?'Simulation de '+euro(amount)+' · aucun ordre ne sera passé':'Saisis une somme positive pour simuler.';
+  if(amount<=0){container.innerHTML='<div class="empty-state">Saisis une somme supérieure à zéro.</div>';return;}
+  const assets=opportunityAssets().filter(a=>a.type==='crypto'&&a.value!==null&&Number.isFinite(opportunityChange(a,'7d')));
+  if(!assets.length){container.innerHTML='<div class="empty-state">Pas assez de données de marché pour proposer une répartition défendable. Vérifie les cours et les variations, puis réessaie. Les actions restent exclues tant que leurs historiques ne sont pas disponibles.</div>';return;}
+  const heldTotal=assets.reduce((sum,a)=>sum+a.value,0)||1;
+  const maxRisk=risk==='low'?.12:risk==='moderate'?.22:.35;
+  const horizonFactor=horizon==='short'?.35:horizon==='medium'?.7:1;
+  const candidates=assets.map(a=>{const signal=opportunitySignal(a),w=opportunityChange(a,'7d'),m=opportunityChange(a,'30d'),currentWeight=a.value/heldTotal;let raw=signal.score===null?0:Math.max(0.1,signal.score/100);if(strategy==='momentum')raw*=Math.max(.1,1+(w||0)/20);if(strategy==='underweight')raw*=Math.max(.1,1-currentWeight*assets.length);if(signal.tone==='risk')raw*=.2;if(horizon==='short')raw*=w>0?1:.35;return {...a,signal,raw,currentWeight};}).filter(a=>a.raw>0);
+  if(!candidates.length){container.innerHTML='<div class="empty-state">Aucun actif ne ressort avec un signal exploitable. Il est préférable de ne pas forcer une allocation.</div>';return;}
+  const rawTotal=candidates.reduce((sum,a)=>sum+a.raw,0),allocations=candidates.map(a=>({...a,weight:a.raw/rawTotal,euros:amount*a.raw/rawTotal})).sort((a,b)=>b.euros-a.euros);
+  const maxShare=risk==='low'?.2:risk==='moderate'?.3:.4;
+  const capped=allocations.map(a=>({...a,weight:Math.min(a.weight,maxShare)}));const cappedTotal=capped.reduce((sum,a)=>sum+a.weight,0);
+  const final=capped.map(a=>({...a,weight:a.weight/cappedTotal,euros:amount*a.weight/cappedTotal}));
+  container.innerHTML='<div class="opportunity-allocation-total"><span>Somme simulée</span><strong>'+euro(amount)+'</strong></div>'+final.map(a=>'<div class="opportunity-allocation-row"><div class="opportunity-allocation-name"><strong>'+escapeHtml(a.symbol)+'</strong><small>'+escapeHtml(a.signal.label)+' · exposition actuelle '+(a.currentWeight*100).toLocaleString('fr-FR',{maximumFractionDigits:1})+' % des cryptos retenues</small></div><strong>'+euro(a.euros)+'</strong><div class="opportunity-allocation-bar"><i style="width:'+(a.weight*100)+'%"></i></div><small>'+Math.round(a.weight*100)+' % de la somme</small></div>').join('')+'<p class="opportunity-allocation-warning">Simulation heuristique fondée sur le momentum disponible des cryptos détenues, pas sur une optimisation financière validée. Elle n’intègre pas encore les MM200, les valorisations fondamentales, les frais, la fiscalité, la dette Lombard ni une réserve de liquidités. Ne l’utilise pas seule pour passer un ordre.</p>';
+}
+function renderOpportunities(){
+  if(!$('opportunities-view'))return;
+  const assets=opportunityAssets(),priced=assets.filter(a=>a.value!==null),total=priced.reduce((sum,a)=>sum+a.value,0);
+  $('opportunity-total-value').textContent=euro(total);
+  $('opportunity-asset-count').textContent=priced.length+' position(s) valorisée(s) sur '+assets.length+' suivie(s)';
+  const crypto=assets.filter(a=>a.type==='crypto'&&a.value!==null),cryptoTotal=crypto.reduce((sum,a)=>sum+a.value,0);
+  const day=crypto.filter(a=>Number.isFinite(opportunityChange(a,'24h')));
+  const weighted=day.length?day.reduce((sum,a)=>sum+a.value*opportunityChange(a,'24h'),0)/(day.reduce((sum,a)=>sum+a.value,0)||1):null;
+  const dayEl=$('opportunity-crypto-day');dayEl.textContent=opportunityPercent(weighted);dayEl.classList.toggle('positive',weighted!==null&&weighted>0);dayEl.classList.toggle('negative',weighted!==null&&weighted<0);
+  $('opportunity-covered').textContent=day.length+' / '+assets.length;
+  $('opportunity-data-freshness').textContent=cryptoPrices.updatedAt?'Dernière actualisation crypto : '+new Intl.DateTimeFormat('fr-FR',{hour:'2-digit',minute:'2-digit'}).format(new Date(cryptoPrices.updatedAt)):'Cours crypto non actualisés';
+  const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
+  const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
+  renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);renderOpportunityAllocation();
+}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',recurring:'Récurrences',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',opportunities:'Opportunités',recurring:'Récurrences',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
   if(['dashboard','fire','comparisons','lombard'].includes(view))renderWealthViews();
   if(view==='recurring')renderRecurring();
   if(view==='accounts')renderAccounts();if(view==='transactions')renderTransactions();if(view==='history')renderMonthlyHistory();
   if(view==='crypto'){renderCrypto();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();}
   if(view==='stocks'){renderStocks();if(Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();}
+  if(view==='opportunities'){renderOpportunities();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();if(Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();}
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function openTransaction(accountId=null,transaction=null){
@@ -2202,6 +2273,13 @@ $('crypto-form').addEventListener('submit',event=>{
 });
 $('stocks-add').addEventListener('click',()=>openStockEditor());
 $('stocks-refresh').addEventListener('click',loadStockPrices);
+
+$('opportunities-refresh').addEventListener('click',()=>{loadCryptoPrices();loadStockPrices();renderOpportunities();});
+$('opportunity-calculate').addEventListener('click',renderOpportunityAllocation);
+$('opportunity-amount').addEventListener('input',renderOpportunityAllocation);
+['opportunity-horizon','opportunity-risk','opportunity-strategy'].forEach(id=>$(id).addEventListener('change',renderOpportunityAllocation));
+document.querySelectorAll('[data-op-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityHeatmap(button.dataset.opPeriod);}));
+document.querySelectorAll('[data-op-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-filter]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityAssets(button.dataset.opFilter);}));
 ['stocks-account-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',renderStocks));
 $('stocks-search').addEventListener('input',renderStocks);
 $('stock-search').addEventListener('input',event=>{
