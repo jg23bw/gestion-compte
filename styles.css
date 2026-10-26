@@ -1429,7 +1429,7 @@ input,select,textarea{accent-color:#536dff}
 }
 
 /* Mobile navigation fix: keep desktop sidebar vertical only on desktop */
-@media(max-width:760px){
+@media(max-width:1024px){
  .app-shell{min-width:0;width:100%;overflow-x:clip}
  .sidebar{
   position:fixed!important;inset:auto 0 0 0!important;width:100%!important;height:auto!important;
@@ -1440,6 +1440,7 @@ input,select,textarea{accent-color:#536dff}
   border-right:0!important;box-shadow:0 -8px 24px rgba(31,55,91,.09);backdrop-filter:blur(18px);z-index:50;
  }
  .sidebar .brand,.sidebar>.nav-label,.sidebar .sidebar-bottom,.sidebar .privacy-card{display:none!important}
+ .sidebar .nav-item .nav-label-text{display:block!important}
  .sidebar .nav-item{
   flex:1 0 44px!important;min-width:44px!important;width:auto!important;max-width:90px!important;
   height:54px!important;margin:0!important;padding:5px 3px!important;border-radius:13px!important;
@@ -1455,8 +1456,8 @@ input,select,textarea{accent-color:#536dff}
  .view{min-width:0!important;max-width:100%!important}
  .table-wrap,.table-scroll,.crypto-table-wrap,.opportunity-ranking-table-wrap{max-width:100%;overscroll-behavior-x:contain}
 }
-@media(max-width:760px){:root[data-theme="dark"] .sidebar{background:rgba(16,26,43,.97)!important;color:#e6eefc!important;border-top-color:#34465f}:root[data-theme="dark"] .sidebar .nav-item{color:#b9c7dc}:root[data-theme="dark"] .sidebar .nav-item.active{background:#263a5a!important;color:#f1f5ff!important}}
-@media(max-width:420px){
+@media(max-width:1024px){:root[data-theme="dark"] .sidebar{background:rgba(16,26,43,.97)!important;color:#e6eefc!important;border-top-color:#34465f}:root[data-theme="dark"] .sidebar .nav-item{color:#b9c7dc}:root[data-theme="dark"] .sidebar .nav-item.active{background:#263a5a!important;color:#f1f5ff!important}}
+@media(max-width:480px){
  .sidebar{justify-content:flex-start!important}
  .sidebar .nav-item{flex:1 0 48px!important;max-width:72px!important}
 }
