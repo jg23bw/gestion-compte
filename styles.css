@@ -1364,3 +1364,21 @@ input,select,textarea{accent-color:#536dff}
 .topbar .local-status{border-radius:999px}
 .topbar .icon-button{border-radius:14px}
 @media(max-width:760px){.toolbar.table-filters>.history-month-select{flex:1 1 100%;width:100%}.topbar{padding-inline:16px;border-radius:0 0 18px 18px}}
+
+/* Shared table action styles: include stocks and crypto holdings */
+.row-actions button[data-edit-crypto],.row-actions button[data-edit-stock],.row-actions button[data-edit-transaction],.row-actions button[data-edit-account]{background:rgba(83,109,255,.08);color:#3f5fd0;border-color:rgba(83,109,255,.22)}
+.row-actions button[data-edit-crypto]:hover,.row-actions button[data-edit-stock]:hover,.row-actions button[data-edit-transaction]:hover,.row-actions button[data-edit-account]:hover{background:#e8edff;color:#2949bc;border-color:#aebeff}
+.row-actions button[data-delete-crypto],.row-actions button[data-delete-stock],.row-actions button[data-delete-transaction],.row-actions button[data-delete-account],.row-actions button[data-delete-asset],.row-actions button[data-delete-recurring]{color:#c6283d!important;background:#fff4f5!important;border-color:#f4cbd1!important}
+.row-actions button[data-delete-crypto]:hover,.row-actions button[data-delete-stock]:hover,.row-actions button[data-delete-transaction]:hover,.row-actions button[data-delete-account]:hover,.row-actions button[data-delete-asset]:hover,.row-actions button[data-delete-recurring]:hover{color:#a5162a!important;background:#ffe3e7!important;border-color:#eaaab5!important}
+:root[data-theme="dark"] .row-actions button[data-edit-crypto],:root[data-theme="dark"] .row-actions button[data-edit-stock],:root[data-theme="dark"] .row-actions button[data-edit-transaction],:root[data-theme="dark"] .row-actions button[data-edit-account]{background:#202f50;color:#b8c7ff;border-color:#3a4d78}
+:root[data-theme="dark"] .row-actions button[data-edit-crypto]:hover,:root[data-theme="dark"] .row-actions button[data-edit-stock]:hover,:root[data-theme="dark"] .row-actions button[data-edit-transaction]:hover,:root[data-theme="dark"] .row-actions button[data-edit-account]:hover{background:#2a3d66;color:#edf1ff;border-color:#627db5}
+:root[data-theme="dark"] .row-actions button[data-delete-crypto],:root[data-theme="dark"] .row-actions button[data-delete-stock],:root[data-theme="dark"] .row-actions button[data-delete-transaction],:root[data-theme="dark"] .row-actions button[data-delete-account],:root[data-theme="dark"] .row-actions button[data-delete-asset],:root[data-theme="dark"] .row-actions button[data-delete-recurring]{color:#ff9aa7!important;background:#38202b!important;border-color:#60303e!important}
+:root[data-theme="dark"] .row-actions button[data-delete-crypto]:hover,:root[data-theme="dark"] .row-actions button[data-delete-stock]:hover,:root[data-theme="dark"] .row-actions button[data-delete-transaction]:hover,:root[data-theme="dark"] .row-actions button[data-delete-account]:hover,:root[data-theme="dark"] .row-actions button[data-delete-asset]:hover,:root[data-theme="dark"] .row-actions button[data-delete-recurring]:hover{color:#ffdce1!important;background:#512634!important;border-color:#874252!important}
+/* Table headers must remain clearly readable in dark mode across every screen */
+:root[data-theme="dark"] table thead th,:root[data-theme="dark"] table th{
+ background:#1b2b43!important;color:#e4ecfa!important;border-color:#34465f!important;
+ text-shadow:none!important;opacity:1!important
+}
+:root[data-theme="dark"] .crypto-table th{background:#1b2b43!important;color:#e4ecfa!important}
+:root[data-theme="dark"] table tbody td{border-color:#2b3c55}
+:root[data-theme="dark"] table tbody tr:hover td{background:rgba(115,145,198,.08)}
