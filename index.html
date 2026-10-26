@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css?v=mobile-opportunities-contrast-v20">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=performance-columns-v1" defer></script>
+  <script src="app.js?v=history-month-ux-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -94,7 +94,12 @@
 
       <section class="view" id="history-view">
         <div class="page-heading"><div><p class="eyebrow">CONSULTATION DES MOUVEMENTS</p><h1>Historique mensuel</h1><p class="subtitle">Consultez les opérations mois par mois, avec les totaux des entrées et des sorties.</p></div></div>
-        <div class="toolbar table-filters"><label class="history-month-control">Mois<input type="month" id="history-month" aria-label="Choisir le mois de l’historique"></label><div class="search-box"><span>⌕</span><input id="history-search" placeholder="Rechercher dans le mois…" aria-label="Rechercher dans l’historique mensuel"></div><select id="history-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="history-type-filter" aria-label="Filtrer par type"><option value="all">Entrées et sorties</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="history-sort" aria-label="Trier l’historique"><option value="date-asc">Date croissante</option><option value="date-desc">Date décroissante</option><option value="label">Libellé A → Z</option><option value="account">Compte</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
+        <div class="toolbar table-filters"><div class="history-month-picker" role="group" aria-label="Navigation entre les mois">
+            <button type="button" class="history-month-nav" id="history-month-prev" aria-label="Mois précédent" title="Mois précédent">‹</button>
+            <label class="history-month-control"><span>Mois consulté</span><input type="month" id="history-month" aria-label="Choisir le mois de l’historique"></label>
+            <button type="button" class="history-month-nav" id="history-month-next" aria-label="Mois suivant" title="Mois suivant">›</button>
+            <button type="button" class="history-month-current" id="history-month-current">Ce mois-ci</button>
+          </div><div class="search-box"><span>⌕</span><input id="history-search" placeholder="Rechercher dans le mois…" aria-label="Rechercher dans l’historique mensuel"></div><select id="history-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="history-type-filter" aria-label="Filtrer par type"><option value="all">Entrées et sorties</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="history-sort" aria-label="Trier l’historique"><option value="date-asc">Date croissante</option><option value="date-desc">Date décroissante</option><option value="label">Libellé A → Z</option><option value="account">Compte</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <div class="history-summary-grid"><article class="history-summary-card"><span>Entrées</span><strong id="history-incoming">0,00 €</strong></article><article class="history-summary-card"><span>Sorties</span><strong id="history-outgoing">0,00 €</strong></article><article class="history-summary-card"><span>Solde net du mois</span><strong id="history-net">0,00 €</strong></article></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Date</th><th>Opération</th><th>Compte</th><th>Montant</th><th>Pointage</th></tr></thead><tbody id="history-rows"></tbody></table></div><div class="table-footer" id="history-footer">Choisissez un mois pour consulter son historique.</div></section>
       </section>
