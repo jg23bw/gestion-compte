@@ -1230,3 +1230,38 @@ table tbody tr:hover{background:rgba(255,255,255,.45)}
 .history-month-control select{min-height:40px;width:100%;padding:9px 34px 9px 12px;border:1px solid var(--border,#dce3ee);border-radius:10px;background:var(--panel,#fff);color:var(--text,#20283a);font:inherit;font-size:13px;cursor:pointer}
 .history-month-control select:disabled{opacity:.65;cursor:not-allowed}
 @media(max-width:640px){.history-month-control{min-width:0;width:100%}}
+
+/* Theme contrast pass: consistent semantic colors and dark surfaces */
+:root{--surface:#ffffff;--surface-soft:#f4f7fc;--text-strong:#202b40;--text-body:#46536b;--text-secondary:#75829a;--border-soft:#e0e6f0;--positive:#168765;--positive-bg:#e8f7f0;--negative:#c83e4d;--negative-bg:#fff0f1;--accent:#4968e8;--accent-soft:#edf1ff}
+:root[data-theme="dark"]{--surface:#17243a;--surface-soft:#111d30;--text-strong:#edf3ff;--text-body:#c5d0e2;--text-secondary:#9aaac2;--border-soft:#2b3a53;--positive:#4bd2a4;--positive-bg:#12382f;--negative:#ff7a86;--negative-bg:#3b202b;--accent:#91a8ff;--accent-soft:#202f52}
+:root[data-theme="dark"] .crypto-summary-grid .summary-card,
+:root[data-theme="dark"] .crypto-table,
+:root[data-theme="dark"] .crypto-table-wrap,
+:root[data-theme="dark"] .crypto-toolbar,
+:root[data-theme="dark"] .crypto-filters{background-color:var(--surface)!important;color:var(--text-body);border-color:var(--border-soft)!important}
+:root[data-theme="dark"] .crypto-summary-grid .summary-card{box-shadow:0 8px 24px rgba(0,0,0,.14)}
+:root[data-theme="dark"] .crypto-summary-grid .summary-card .card-top,
+:root[data-theme="dark"] .crypto-summary-grid .summary-card .metric,
+:root[data-theme="dark"] .crypto-price,
+:root[data-theme="dark"] .crypto-quantity{color:var(--text-strong)!important}
+:root[data-theme="dark"] .crypto-coin-results{background:var(--surface)!important;border-color:var(--border-soft);box-shadow:0 12px 30px rgba(0,0,0,.28)}
+:root[data-theme="dark"] .crypto-coin-option{color:var(--text-body);border-bottom-color:var(--border-soft)}
+:root[data-theme="dark"] .crypto-coin-option:hover,:root[data-theme="dark"] .crypto-coin-option:focus{background:var(--surface-soft)}
+:root[data-theme="dark"] .crypto-coin-symbol{color:var(--text-strong)}
+:root[data-theme="dark"] .crypto-coin-rank,:root[data-theme="dark"] .crypto-coin-message{color:var(--text-secondary)}
+:root[data-theme="dark"] .crypto-table th{background:#111d30;color:#aebdd3;border-color:var(--border-soft)}
+:root[data-theme="dark"] .crypto-table td{background:transparent;color:var(--text-body);border-color:var(--border-soft)}
+:root[data-theme="dark"] .crypto-performance{color:var(--positive)}
+:root[data-theme="dark"] .crypto-performance.negative,:root[data-theme="dark"] .negative{color:var(--negative)}
+:root[data-theme="dark"] input,:root[data-theme="dark"] select,:root[data-theme="dark"] textarea{background-color:#111d30;color:var(--text-strong);border-color:var(--border-soft)}
+:root[data-theme="dark"] input::placeholder,:root[data-theme="dark"] textarea::placeholder{color:#8b9bb5;opacity:1}
+:root[data-theme="dark"] .history-month-control select,:root[data-theme="dark"] .opportunity-column-settings{background:var(--surface);color:var(--text-strong);border-color:var(--border-soft)}
+:root[data-theme="dark"] .opportunity-column-option{color:var(--text-body)}
+:root[data-theme="dark"] .opportunity-ranking-change.positive{background:#12382f;color:#62e0b6}
+:root[data-theme="dark"] .opportunity-ranking-change.negative{background:#3b202b;color:#ff8b96}
+:root[data-theme="dark"] .opportunity-ranking-change.neutral,:root[data-theme="dark"] .opportunity-ranking-change.missing{background:#25344a;color:#b0bdd0}
+:root[data-theme="dark"] .topbar{background:rgba(13,22,37,.94);color:var(--text-body)}
+:root[data-theme="dark"] .sync-status{background:#17243a;color:#dce5f3;border-color:#2b3a53}
+:root[data-theme="dark"] .modal-backdrop{background:rgba(4,10,20,.72)}
+:root[data-theme="dark"] .positive{color:var(--positive)}
+:root[data-theme="dark"] .negative{color:var(--negative)}
