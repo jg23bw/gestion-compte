@@ -814,7 +814,7 @@ function renderTransactions(){
 function renderMonthlyHistory(){
   if(!$('history-rows'))return;
   const monthSelect=$('history-month');
-  const availableMonths=[...new Set((state.transactions||[]).map(t=>String(t.date||'').slice(0,7)).filter(m=>/^\\d{4}-\\d{2}$/.test(m)))].sort((a,b)=>b.localeCompare(a));
+  const availableMonths=[...new Set((state.transactions||[]).map(t=>String(t.date||'').slice(0,7)).filter(m=>/^\d{4}-\d{2}$/.test(m)))].sort((a,b)=>b.localeCompare(a));
   const previousMonth=monthSelect.value;
   monthSelect.innerHTML=availableMonths.length?availableMonths.map(m=>'<option value="'+m+'">'+escapeHtml(monthName(m))+'</option>').join(''):'<option value="">Aucun mois disponible</option>';
   monthSelect.disabled=!availableMonths.length;
