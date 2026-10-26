@@ -1999,21 +1999,64 @@ function opportunityMovingAverageStatus(asset){
   const distance=(last/avg-1)*100;
   return {label:distance>=0?'Au-dessus MM200':'Sous MM200',tone:distance>=0?'positive':'negative',distance};
 }
+const OPPORTUNITY_COLUMNS_KEY='gestion-comptes-opportunity-columns-v1';
+const OPPORTUNITY_SORT_KEY='gestion-comptes-opportunity-sort-v1';
+const OPPORTUNITY_COLUMN_DEFS=[
+  {id:'asset',label:'Actif',locked:true},
+  {id:'type',label:'Type'},
+  {id:'value',label:'Valeur détenue'},
+  {id:'24h',label:'24 h'},
+  {id:'7d',label:'7 jours'},
+  {id:'30d',label:'30 jours'},
+  {id:'mm200',label:'Tendance MM200'}
+];
+function opportunityVisibleColumns(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(OPPORTUNITY_COLUMNS_KEY)||'null');
+    if(Array.isArray(saved)){const valid=saved.filter(id=>OPPORTUNITY_COLUMN_DEFS.some(c=>c.id===id));return ['asset',...valid.filter(id=>id!=='asset')];}
+  }catch(_){}
+  return OPPORTUNITY_COLUMN_DEFS.map(c=>c.id);
+}
+function saveOpportunityColumns(ids){
+  const clean=['asset',...OPPORTUNITY_COLUMN_DEFS.map(c=>c.id).filter(id=>id!=='asset'&&ids.includes(id))];
+  try{localStorage.setItem(OPPORTUNITY_COLUMNS_KEY,JSON.stringify(clean));}catch(_){}
+}
+function renderOpportunityColumnSettings(){
+  const panel=$('opportunity-column-settings');if(!panel)return;
+  const visible=opportunityVisibleColumns();
+  panel.innerHTML='<div class="opportunity-column-settings-title">Colonnes visibles</div>'+OPPORTUNITY_COLUMN_DEFS.map(c=>'<label class="opportunity-column-option"><input type="checkbox" data-op-column="'+c.id+'" '+(visible.includes(c.id)?'checked ':'')+(c.locked?'disabled ':'')+'><span>'+c.label+'</span></label>').join('')+'<button type="button" class="opportunity-column-reset" data-op-columns-reset>Tout afficher</button>';
+}
 function renderOpportunityHeatmap(period='24h'){
   const container=$('opportunity-heatmap');if(!container)return;
   const assets=opportunityAssets();
   if(!assets.length){container.innerHTML='<div class="empty-state">Ajoute des positions dans Actions ou Crypto pour afficher le classement.</div>';return;}
-  const rows=assets.map(asset=>({asset,change:opportunityChange(asset,period),mm:opportunityMovingAverageStatus(asset)}));
-  rows.sort((a,b)=>{if(a.change===null&&b.change!==null)return 1;if(b.change===null&&a.change!==null)return -1;if(a.change===null&&b.change===null)return String(a.asset.symbol).localeCompare(String(b.asset.symbol),'fr');return b.change-a.change;});
-  const positive=rows.filter(r=>r.change!==null&&r.change>0).length,negative=rows.filter(r=>r.change!==null&&r.change<0).length,missing=rows.filter(r=>r.change===null).length;
+  const columns=opportunityVisibleColumns();
+  const sortState=(()=>{try{return JSON.parse(localStorage.getItem(OPPORTUNITY_SORT_KEY)||'null')||{column:period,direction:'desc'};}catch(_){return {column:period,direction:'desc'};}})();
+  const rows=assets.map(asset=>({asset,changes:{'24h':opportunityChange(asset,'24h'),'7d':opportunityChange(asset,'7d'),'30d':opportunityChange(asset,'30d')},mm:opportunityMovingAverageStatus(asset)}));
+  const sortValue=row=>sortState.column==='asset'?String(row.asset.name||row.asset.symbol).toLocaleLowerCase('fr'):sortState.column==='type'?row.asset.type:sortState.column==='value'?row.asset.value:sortState.column==='mm200'?row.mm.distance:row.changes[sortState.column];
+  rows.sort((a,b)=>{
+    const av=sortValue(a),bv=sortValue(b);
+    if(av===null||av===undefined)return bv===null||bv===undefined?String(a.asset.symbol).localeCompare(String(b.asset.symbol),'fr'):1;
+    if(bv===null||bv===undefined)return -1;
+    const cmp=typeof av==='string'?av.localeCompare(bv,'fr'):(av-bv);
+    return cmp*(sortState.direction==='asc'?1:-1);
+  });
+  const allChanges=rows.flatMap(r=>Object.values(r.changes));
+  const positive=allChanges.filter(v=>v!==null&&v>0).length,negative=allChanges.filter(v=>v!==null&&v<0).length,missing=allChanges.filter(v=>v===null).length;
   const summary=$('opportunity-heatmap-summary');
-  if(summary)summary.innerHTML='<span><strong>'+rows.length+'</strong> actifs suivis</span><span class="opportunity-heatmap-summary-up"><strong>'+positive+'</strong> en hausse</span><span class="opportunity-heatmap-summary-down"><strong>'+negative+'</strong> en baisse</span><span><strong>'+missing+'</strong> variation indisponible</span>';
-  const periodLabel=period==='24h'?'24 h':period==='7d'?'7 jours':'30 jours';
-  container.innerHTML='<table class="opportunity-ranking-table"><thead><tr><th>Actif</th><th>Type</th><th>Valeur détenue</th><th>Variation · '+periodLabel+'</th><th>Tendance MM200</th></tr></thead><tbody>'+rows.map(({asset,change,mm})=>{
-    const changeClass=change===null?'missing':change>0?'positive':change<0?'negative':'neutral';
-    const mmText=mm.distance===null?mm.label:mm.label+' · '+opportunityPercent(mm.distance);
-    return '<tr><td><div class="opportunity-ranking-asset">'+opportunityLogoMarkup(asset)+'<span><strong>'+escapeHtml(asset.symbol)+'</strong><small>'+escapeHtml(asset.name)+'</small></span></div></td><td><span class="opportunity-ranking-type">'+(asset.type==='crypto'?'Crypto':'Action / ETF')+'</span></td><td class="opportunity-ranking-value">'+(asset.value===null?'—':escapeHtml(euro(asset.value)))+'</td><td><span class="opportunity-ranking-change '+changeClass+'">'+(change===null?'Indisponible':escapeHtml(opportunityPercent(change)))+'</span></td><td><span class="opportunity-ranking-mm '+mm.tone+'">'+escapeHtml(mmText)+'</span></td></tr>';
-  }).join('')+'</tbody></table>';
+  if(summary)summary.innerHTML='<span><strong>'+rows.length+'</strong> actifs suivis</span><span class="opportunity-heatmap-summary-up"><strong>'+positive+'</strong> performances positives</span><span class="opportunity-heatmap-summary-down"><strong>'+negative+'</strong> performances négatives</span><span><strong>'+missing+'</strong> variations indisponibles</span>';
+  const labels={'asset':'Actif','type':'Type','value':'Valeur détenue','24h':'24 h','7d':'7 jours','30d':'30 jours','mm200':'Tendance MM200'};
+  const header=columns.map(id=>'<th><button type="button" class="opportunity-sort-button" data-op-sort="'+id+'" aria-label="Trier par '+labels[id]+'">'+labels[id]+' <span aria-hidden="true">'+(sortState.column===id?(sortState.direction==='asc'?'↑':'↓'):'↕')+'</span></button></th>').join('');
+  const cell=(id,row)=>{
+    const asset=row.asset;
+    if(id==='asset')return '<td><div class="opportunity-ranking-asset">'+opportunityLogoMarkup(asset)+'<span><strong>'+escapeHtml(asset.symbol)+'</strong><small>'+escapeHtml(asset.name)+'</small></span></div></td>';
+    if(id==='type')return '<td><span class="opportunity-ranking-type">'+(asset.type==='crypto'?'Crypto':'Action / ETF')+'</span></td>';
+    if(id==='value')return '<td class="opportunity-ranking-value">'+(asset.value===null?'—':escapeHtml(euro(asset.value)))+'</td>';
+    if(['24h','7d','30d'].includes(id)){const change=row.changes[id],cls=change===null?'missing':change>0?'positive':change<0?'negative':'neutral';return '<td><span class="opportunity-ranking-change '+cls+'">'+(change===null?'Indisponible':escapeHtml(opportunityPercent(change)))+'</span></td>';}
+    const mm=row.mm,mmText=mm.distance===null?mm.label:mm.label+' · '+opportunityPercent(mm.distance);
+    return '<td><span class="opportunity-ranking-mm '+mm.tone+'">'+escapeHtml(mmText)+'</span></td>';
+  };
+  container.innerHTML='<table class="opportunity-ranking-table"><thead><tr>'+header+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+columns.map(id=>cell(id,row)).join('')+'</tr>').join('')+'</tbody></table>';
 }
 function renderOpportunityAssets(filter='all'){
   const container=$('opportunity-assets');if(!container)return;
@@ -2427,6 +2470,13 @@ $('crypto-coin-results').addEventListener('click',event=>{
 });
 $('crypto-dialog').addEventListener('close',closeCryptoCoinResults);
 document.addEventListener('click',event=>{
+  const columnToggle=event.target.closest('#opportunity-columns-toggle');
+  if(columnToggle){const panel=$('opportunity-column-settings');if(panel){panel.hidden=!panel.hidden;columnToggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)renderOpportunityColumnSettings();}return;}
+  const resetColumns=event.target.closest('[data-op-columns-reset]');
+  if(resetColumns){saveOpportunityColumns(OPPORTUNITY_COLUMN_DEFS.map(c=>c.id));renderOpportunityColumnSettings();renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');return;}
+  const sortButton=event.target.closest('[data-op-sort]');
+  if(sortButton){const col=sortButton.dataset.opSort;let current={column:col,direction:'desc'};try{const old=JSON.parse(localStorage.getItem(OPPORTUNITY_SORT_KEY)||'null');if(old?.column===col)current.direction=old.direction==='desc'?'asc':'desc';}catch(_){}try{localStorage.setItem(OPPORTUNITY_SORT_KEY,JSON.stringify(current));}catch(_){}renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');return;}
+
   if(!event.target.closest('#crypto-coin-search')&&!event.target.closest('#crypto-coin-results'))closeCryptoCoinResults();
 });
 $('crypto-form').addEventListener('submit',event=>{
@@ -2605,6 +2655,9 @@ $('edit-account-name').addEventListener('input',updateAccountBankPreview);
 $('edit-account-bank').addEventListener('change',updateAccountBankPreview);
 $('edit-account-pledged').addEventListener('change',updateAccountPledgeFields);
 document.addEventListener('change',event=>{
+  const columnCheckbox=event.target.closest('[data-op-column]');
+  if(columnCheckbox){const ids=opportunityVisibleColumns();const id=columnCheckbox.dataset.opColumn;const next=columnCheckbox.checked?[...ids,id]:ids.filter(x=>x!==id);saveOpportunityColumns(next);renderOpportunityColumnSettings();renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');return;}
+
   const paid=event.target.closest('[data-toggle-paid]');
   if(!paid)return;
   const transaction=state.transactions.find(t=>t.id===paid.dataset.togglePaid);
