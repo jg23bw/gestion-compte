@@ -1321,3 +1321,17 @@ input,select,textarea{accent-color:#536dff}
  .toolbar .search-box{flex:1 1 100%;min-width:0}
  .toolbar>select{flex:1 1 calc(50% - 9px);min-width:0}
 }
+
+/* Actions de ligne : boutons modernes, compacts et hiérarchisés */
+.row-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;white-space:nowrap}
+.row-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:34px;padding:0 12px;border:1px solid var(--ui-border,rgba(127,146,178,.22));border-radius:999px;background:rgba(255,255,255,.72);color:var(--text-body,#46536b);font:600 12px/1 'DM Sans',sans-serif;letter-spacing:.005em;cursor:pointer;box-shadow:0 1px 2px rgba(18,34,62,.035);transition:background .16s ease,color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+.row-actions button:hover{background:#edf2ff;border-color:#c6d2ff;color:#3558ce;box-shadow:0 3px 10px rgba(53,88,206,.10);transform:translateY(-1px)}
+.row-actions button:active{transform:translateY(0);box-shadow:none}
+.row-actions button:focus-visible{outline:3px solid rgba(83,109,255,.3);outline-offset:2px}
+.row-actions button[data-delete-transaction],.row-actions button[data-delete-account],.row-actions button[data-delete-asset]{background:transparent;color:#8b6470;border-color:transparent;box-shadow:none}
+.row-actions button[data-delete-transaction]:hover,.row-actions button[data-delete-account]:hover,.row-actions button[data-delete-asset]:hover{background:#fff0f1;border-color:#ffd7dc;color:#b42332;box-shadow:0 3px 10px rgba(180,35,50,.08)}
+:root[data-theme="dark"] .row-actions button{background:#1a2a43;color:#d1dced;border-color:#344660;box-shadow:none}
+:root[data-theme="dark"] .row-actions button:hover{background:#263a5a;border-color:#5873a2;color:#f0f5ff}
+:root[data-theme="dark"] .row-actions button[data-delete-transaction],:root[data-theme="dark"] .row-actions button[data-delete-account],:root[data-theme="dark"] .row-actions button[data-delete-asset]{background:transparent;color:#c5a1aa;border-color:transparent}
+:root[data-theme="dark"] .row-actions button[data-delete-transaction]:hover,:root[data-theme="dark"] .row-actions button[data-delete-account]:hover,:root[data-theme="dark"] .row-actions button[data-delete-asset]:hover{background:#422631;border-color:#693643;color:#ff9aa5}
+@media(max-width:640px){.row-actions{gap:6px}.row-actions button{min-height:36px;padding:0 10px;font-size:12px}}
