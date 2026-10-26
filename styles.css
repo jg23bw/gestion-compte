@@ -1455,7 +1455,7 @@ input,select,textarea{accent-color:#536dff}
  .view{min-width:0!important;max-width:100%!important}
  .table-wrap,.table-scroll,.crypto-table-wrap,.opportunity-ranking-table-wrap{max-width:100%;overscroll-behavior-x:contain}
 }
-:root[data-theme="dark"] @media(max-width:760px){.sidebar{background:rgba(16,26,43,.97)!important;color:#e6eefc!important;border-top-color:#34465f}}
+@media(max-width:760px){:root[data-theme="dark"] .sidebar{background:rgba(16,26,43,.97)!important;color:#e6eefc!important;border-top-color:#34465f}:root[data-theme="dark"] .sidebar .nav-item{color:#b9c7dc}:root[data-theme="dark"] .sidebar .nav-item.active{background:#263a5a!important;color:#f1f5ff!important}}
 @media(max-width:420px){
  .sidebar{justify-content:flex-start!important}
  .sidebar .nav-item{flex:1 0 48px!important;max-width:72px!important}
