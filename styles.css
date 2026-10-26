@@ -1461,3 +1461,29 @@ input,select,textarea{accent-color:#536dff}
  .sidebar{justify-content:flex-start!important}
  .sidebar .nav-item{flex:1 0 48px!important;max-width:72px!important}
 }
+
+/* Mobile layout correction: icon-only bottom nav, no desktop sidebar remnants */
+@media(max-width:1024px){
+ html,body{width:100%;min-width:320px;max-width:100%;overflow-x:hidden}
+ .app-shell{display:block!important;width:100%!important;max-width:100vw!important;min-width:0!important;margin:0!important;overflow-x:hidden!important}
+ .sidebar{position:fixed!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;height:72px!important;min-height:72px!important;max-height:72px!important;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))!important;margin:0!important;display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;overflow-x:auto!important;overflow-y:hidden!important;gap:6px!important;border:0!important;border-top:1px solid #d9e3f3!important;border-radius:0!important;background:rgba(246,249,255,.97)!important;box-shadow:0 -6px 22px rgba(34,55,91,.10)!important;z-index:999!important;scrollbar-width:none!important}
+ .sidebar::-webkit-scrollbar{display:none!important}
+ .sidebar .brand,.sidebar>.nav-label,.sidebar .sidebar-bottom,.sidebar .privacy-card{display:none!important}
+ .sidebar .nav-item{display:flex!important;flex:0 0 48px!important;width:48px!important;min-width:48px!important;max-width:48px!important;height:48px!important;min-height:48px!important;margin:0!important;padding:0!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:0!important;border-radius:14px!important;white-space:normal!important;overflow:hidden!important;font-size:0!important;line-height:0!important}
+ .sidebar .nav-item .nav-icon{display:block!important;width:auto!important;font-size:20px!important;line-height:1.2!important}
+ .sidebar .nav-item .nav-label-text,.sidebar .nav-item .nav-count{display:none!important}
+ .main-content{display:block!important;margin:0!important;padding:0 16px calc(88px + env(safe-area-inset-bottom,0px))!important;width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:hidden!important}
+ .topbar{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0 2px!important}
+ .view,.view.active{width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;overflow-x:hidden!important}
+ .page-heading{width:100%;max-width:100%;min-width:0;flex-wrap:wrap}
+ .page-heading h1{overflow-wrap:anywhere}
+ .toolbar{width:100%!important;max-width:100%!important;min-width:0!important;display:flex!important;flex-wrap:wrap!important;align-items:stretch!important}
+ .toolbar>*{min-width:0!important;max-width:100%!important}
+ .toolbar .search-box{flex:1 1 100%!important;width:100%!important}
+ .toolbar>select,.toolbar .history-month-select{flex:1 1 calc(50% - 8px)!important;width:auto!important;min-width:0!important}
+ .table-panel,.table-scroll{max-width:100%!important;min-width:0!important}
+ .table-scroll{display:block!important;width:100%!important;overflow-x:auto!important;overscroll-behavior-x:contain!important}
+ .table-scroll table{min-width:760px}
+}
+@media(max-width:1024px){:root[data-theme="dark"] .sidebar{background:rgba(15,26,43,.98)!important;border-top-color:#334761!important}:root[data-theme="dark"] .sidebar .nav-item{color:#c5d2e8!important}:root[data-theme="dark"] .sidebar .nav-item.active{background:#293d60!important;color:#fff!important}}
+@media(max-width:480px){.main-content{padding-left:12px!important;padding-right:12px!important}.page-heading .primary-button{max-width:100%;white-space:normal}.toolbar>select,.toolbar .history-month-select{flex:1 1 100%!important}}
