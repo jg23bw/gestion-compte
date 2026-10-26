@@ -1335,3 +1335,32 @@ input,select,textarea{accent-color:#536dff}
 :root[data-theme="dark"] .row-actions button[data-delete-transaction],:root[data-theme="dark"] .row-actions button[data-delete-account],:root[data-theme="dark"] .row-actions button[data-delete-asset]{background:transparent;color:#c5a1aa;border-color:transparent}
 :root[data-theme="dark"] .row-actions button[data-delete-transaction]:hover,:root[data-theme="dark"] .row-actions button[data-delete-account]:hover,:root[data-theme="dark"] .row-actions button[data-delete-asset]:hover{background:#422631;border-color:#693643;color:#ff9aa5}
 @media(max-width:640px){.row-actions{gap:6px}.row-actions button{min-height:36px;padding:0 10px;font-size:12px}}
+
+/* Ajustements ciblés après revue visuelle : actions destructives, filtres et en-tête */
+.row-actions button[data-delete-transaction],.row-actions button[data-delete-account],.row-actions button[data-delete-asset],
+.row-actions button[aria-label*="Supprimer"],.row-actions button.delete-button{
+ color:#c6283d!important;background:#fff4f5!important;border-color:#f4cbd1!important;
+}
+.row-actions button[data-delete-transaction]:hover,.row-actions button[data-delete-account]:hover,.row-actions button[data-delete-asset]:hover,
+.row-actions button[aria-label*="Supprimer"]:hover,.row-actions button.delete-button:hover{
+ color:#a5162a!important;background:#ffe3e7!important;border-color:#eaaab5!important;
+}
+:root[data-theme="dark"] .row-actions button[data-delete-transaction],:root[data-theme="dark"] .row-actions button[data-delete-account],:root[data-theme="dark"] .row-actions button[data-delete-asset],
+:root[data-theme="dark"] .row-actions button[aria-label*="Supprimer"],:root[data-theme="dark"] .row-actions button.delete-button{
+ color:#ff9aa7!important;background:#38202b!important;border-color:#60303e!important;
+}
+:root[data-theme="dark"] .row-actions button[data-delete-transaction]:hover,:root[data-theme="dark"] .row-actions button[data-delete-account]:hover,:root[data-theme="dark"] .row-actions button[data-delete-asset]:hover,
+:root[data-theme="dark"] .row-actions button[aria-label*="Supprimer"]:hover,:root[data-theme="dark"] .row-actions button.delete-button:hover{
+ color:#ffdce1!important;background:#512634!important;border-color:#874252!important;
+}
+/* Le mois est un filtre comme les autres : même hauteur et même alignement */
+.toolbar.table-filters{align-items:center}
+.toolbar.table-filters>.history-month-select{height:var(--ui-control-height);min-height:var(--ui-control-height);align-self:center;flex:0 0 235px;width:235px;margin:0;padding:0 38px 0 13px;border:1px solid var(--ui-border);border-radius:var(--ui-radius-sm);background:var(--control-bg,#fff);color:var(--text-strong,#202b40);font-size:13px;font-weight:600;line-height:normal}
+.toolbar.table-filters>.search-box{align-self:center}
+:root[data-theme="dark"] .toolbar.table-filters>.history-month-select{background:var(--control-bg);color:var(--text-strong);border-color:var(--ui-border)}
+/* En-tête : surface plus douce, sans grand rectangle anguleux */
+.topbar{border:1px solid var(--ui-border,rgba(127,146,178,.22));border-radius:0 0 22px 22px;background:rgba(248,250,255,.88);box-shadow:0 8px 28px rgba(18,34,62,.045);padding-inline:28px}
+:root[data-theme="dark"] .topbar{background:rgba(16,26,43,.88);border-color:rgba(142,164,200,.16);border-radius:0 0 22px 22px;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+.topbar .local-status{border-radius:999px}
+.topbar .icon-button{border-radius:14px}
+@media(max-width:760px){.toolbar.table-filters>.history-month-select{flex:1 1 100%;width:100%}.topbar{padding-inline:16px;border-radius:0 0 18px 18px}}
