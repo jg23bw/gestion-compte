@@ -1384,24 +1384,24 @@ input,select,textarea{accent-color:#536dff}
 :root[data-theme="dark"] table tbody tr:hover td{background:rgba(115,145,198,.08)}
 
 /* Récurrences : actions d'en-tête sans panneau gris parasite */
-#view-recurring .page-heading{align-items:center;gap:28px;margin-bottom:28px}
-#view-recurring .page-heading .heading-actions{
+#recurring-view .page-heading{align-items:center;gap:28px;margin-bottom:28px}
+#recurring-view .page-heading .heading-actions{
  display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:10px;
  min-width:min(100%,360px);padding:0!important;background:transparent!important;border:0!important;
  border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;
 }
-#view-recurring .heading-actions button{min-height:48px;border-radius:16px;padding:12px 20px;white-space:normal}
-#view-recurring #recurring-add-template{background:rgba(255,255,255,.06);color:var(--text-strong,#26334b);border:1px solid var(--ui-border,rgba(127,146,178,.25))}
-#view-recurring #recurring-add-month{box-shadow:0 8px 20px rgba(72,98,220,.2)}
-#view-recurring .recurring-controls{border-radius:16px;padding:14px 18px;line-height:1.55}
-#view-recurring .recurring-table{border-radius:20px;overflow:hidden}
-#view-recurring .recurring-table thead th{font-size:12px;letter-spacing:.045em}
-#view-recurring .recurring-table tbody td{padding-top:17px;padding-bottom:17px}
-#view-recurring .recurring-table .recurring-actions{display:flex;align-items:center;gap:8px;white-space:nowrap}
-#view-recurring .recurring-actions button{min-height:38px;padding:0 15px;border-radius:999px;font-size:12px;font-weight:650}
-#view-recurring .recurring-actions [data-edit-recurring]{background:rgba(83,109,255,.09);border:1px solid rgba(83,109,255,.22);color:#3f5fd0}
-#view-recurring .recurring-actions [data-delete-recurring]{background:#fff0f1!important;border:1px solid #f2c7ce!important;color:#bd263b!important}
-#view-recurring .recurring-actions [data-delete-recurring]:hover{background:#ffe0e4!important;color:#94172a!important}
+#recurring-view .heading-actions button{min-height:48px;border-radius:16px;padding:12px 20px;white-space:normal}
+#recurring-view #recurring-add-template{background:rgba(255,255,255,.06);color:var(--text-strong,#26334b);border:1px solid var(--ui-border,rgba(127,146,178,.25))}
+#recurring-view #recurring-add-month{box-shadow:0 8px 20px rgba(72,98,220,.2)}
+#recurring-view .recurring-controls{border-radius:16px;padding:14px 18px;line-height:1.55}
+#recurring-view .recurring-table{border-radius:20px;overflow:hidden}
+#recurring-view .recurring-table thead th{font-size:12px;letter-spacing:.045em}
+#recurring-view .recurring-table tbody td{padding-top:17px;padding-bottom:17px}
+#recurring-view .recurring-table .recurring-actions{display:flex;align-items:center;gap:8px;white-space:nowrap}
+#recurring-view .recurring-actions button{min-height:38px;padding:0 15px;border-radius:999px;font-size:12px;font-weight:650}
+#recurring-view .recurring-actions [data-edit-recurring]{background:rgba(83,109,255,.09);border:1px solid rgba(83,109,255,.22);color:#3f5fd0}
+#recurring-view .recurring-actions [data-delete-recurring]{background:#fff0f1!important;border:1px solid #f2c7ce!important;color:#bd263b!important}
+#recurring-view .recurring-actions [data-delete-recurring]:hover{background:#ffe0e4!important;color:#94172a!important}
 .transaction-current-balance{background:#edf3ff!important}
 .transaction-current-balance td{color:#243755!important}
 .transaction-current-balance .balance-date{color:#5f6f8c!important}
@@ -1413,17 +1413,17 @@ input,select,textarea{accent-color:#536dff}
 :root[data-theme="dark"] .transaction-current-balance .balance-date{color:#b4c3dc!important}
 :root[data-theme="dark"] .transaction-current-balance .table-balance,
 :root[data-theme="dark"] .transaction-current-balance .table-balance strong{color:#f1f5ff!important}
-:root[data-theme="dark"] #view-recurring #recurring-add-template{background:#1a2a43;color:#e1e9f7;border-color:#3b4d68}
-:root[data-theme="dark"] #view-recurring .recurring-actions [data-edit-recurring]{background:#202f50;color:#c1ceff;border-color:#3a4d78}
-:root[data-theme="dark"] #view-recurring .recurring-actions [data-delete-recurring]{background:#38202b!important;color:#ff9aa7!important;border-color:#60303e!important}
-:root[data-theme="dark"] #view-recurring .recurring-actions [data-delete-recurring]:hover{background:#512634!important;color:#ffdce1!important;border-color:#874252!important}
+:root[data-theme="dark"] #recurring-view #recurring-add-template{background:#1a2a43;color:#e1e9f7;border-color:#3b4d68}
+:root[data-theme="dark"] #recurring-view .recurring-actions [data-edit-recurring]{background:#202f50;color:#c1ceff;border-color:#3a4d78}
+:root[data-theme="dark"] #recurring-view .recurring-actions [data-delete-recurring]{background:#38202b!important;color:#ff9aa7!important;border-color:#60303e!important}
+:root[data-theme="dark"] #recurring-view .recurring-actions [data-delete-recurring]:hover{background:#512634!important;color:#ffdce1!important;border-color:#874252!important}
 @media(max-width:900px){
- #view-recurring .page-heading{align-items:stretch;flex-direction:column}
- #view-recurring .page-heading .heading-actions{min-width:0;width:100%;display:grid;grid-template-columns:1fr 1.35fr}
- #view-recurring .heading-actions button{height:100%}
+ #recurring-view .page-heading{align-items:stretch;flex-direction:column}
+ #recurring-view .page-heading .heading-actions{min-width:0;width:100%;display:grid;grid-template-columns:1fr 1.35fr}
+ #recurring-view .heading-actions button{height:100%}
 }
 @media(max-width:580px){
- #view-recurring .page-heading .heading-actions{grid-template-columns:1fr}
- #view-recurring .recurring-table .recurring-actions{flex-wrap:wrap}
- #view-recurring .recurring-table tbody td{padding-top:13px;padding-bottom:13px}
+ #recurring-view .page-heading .heading-actions{grid-template-columns:1fr}
+ #recurring-view .recurring-table .recurring-actions{flex-wrap:wrap}
+ #recurring-view .recurring-table tbody td{padding-top:13px;padding-bottom:13px}
 }
