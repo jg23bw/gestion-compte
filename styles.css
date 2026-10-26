@@ -1223,3 +1223,10 @@ table tbody tr:hover{background:rgba(255,255,255,.45)}
 .history-month-nav:hover,.history-month-current:hover{border-color:#667cff;background:rgba(83,109,255,.08)}
 .history-month-current{height:42px;padding:0 12px;border:1px solid var(--border,#dce3ee);border-radius:12px;background:var(--panel,#fff);color:var(--text,#20283a);font-size:12px;font-weight:750;cursor:pointer;white-space:nowrap}
 @media(max-width:640px){.history-month-picker{width:100%;gap:6px}.history-month-control{flex:1;min-width:0}.history-month-control input[type="month"]{width:100%;min-width:0}.history-month-nav{width:36px;flex:0 0 36px}.history-month-current{flex:1}}
+
+/* Historique : sélecteur de mois simple, cohérent avec les autres filtres */
+.history-month-picker,.history-month-nav,.history-month-current{display:none!important}
+.history-month-control{display:flex;flex-direction:column;gap:6px;min-width:170px;font-size:12px;font-weight:650;color:var(--muted,#7b879b)}
+.history-month-control select{min-height:40px;width:100%;padding:9px 34px 9px 12px;border:1px solid var(--border,#dce3ee);border-radius:10px;background:var(--panel,#fff);color:var(--text,#20283a);font:inherit;font-size:13px;cursor:pointer}
+.history-month-control select:disabled{opacity:.65;cursor:not-allowed}
+@media(max-width:640px){.history-month-control{min-width:0;width:100%}}
