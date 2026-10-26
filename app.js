@@ -2470,6 +2470,21 @@ $('crypto-coin-results').addEventListener('click',event=>{
 });
 $('crypto-dialog').addEventListener('close',closeCryptoCoinResults);
 document.addEventListener('click',event=>{
+  const monthNav=event.target.closest('#history-month-prev, #history-month-next, #history-month-current');
+  if(monthNav){
+    const input=$('history-month');
+    if(input){
+      if(monthNav.id==='history-month-current')input.value=monthValueNow();
+      else{
+        const current=input.value||monthValueNow(),parts=current.split('-').map(Number);
+        const date=new Date(parts[0],parts[1]-1+(monthNav.id==='history-month-prev'?-1:1),1);
+        input.value=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
+      }
+      renderMonthlyHistory();
+    }
+    return;
+  }
+
   const columnToggle=event.target.closest('#opportunity-columns-toggle');
   if(columnToggle){const panel=$('opportunity-column-settings');if(panel){panel.hidden=!panel.hidden;columnToggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)renderOpportunityColumnSettings();}return;}
   const resetColumns=event.target.closest('[data-op-columns-reset]');
