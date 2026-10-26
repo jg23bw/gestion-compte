@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="styles.css?v=mobile-opportunities-contrast-v20">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=schneider-electric-logo-v22" defer></script>
+  <script src="app.js?v=performance-columns-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -126,6 +126,7 @@
         </div>
         <section class="panel opportunity-market-panel">
           <div class="panel-heading opportunity-heatmap-heading"><div><h2>Classement des opportunités</h2><p>Actions et cryptomonnaies classées par variation. Les pourcentages proviennent des données de marché disponibles ; les données absentes restent signalées comme indisponibles.</p></div><div class="opportunity-periods" role="group" aria-label="Période de variation"><button type="button" class="is-active" data-op-period="24h">24 h</button><button type="button" data-op-period="7d">7 jours</button><button type="button" data-op-period="30d">30 jours</button></div></div>
+          <div class="opportunity-table-tools"><button type="button" class="secondary-button opportunity-columns-toggle" id="opportunity-columns-toggle" aria-expanded="false" aria-controls="opportunity-column-settings">⚙ Colonnes</button><div id="opportunity-column-settings" class="opportunity-column-settings" hidden></div></div>
           <div id="opportunity-heatmap-summary" class="opportunity-heatmap-summary" aria-live="polite"><span>Préparation des données du portefeuille…</span></div>
           <div id="opportunity-heatmap" class="opportunity-ranking-table-wrap"><div class="empty-state">Chargement des indicateurs de marché…</div></div>
         </section>
