@@ -1194,3 +1194,23 @@ table tbody tr:hover{background:rgba(255,255,255,.45)}
   .sidebar .nav-item[data-view="opportunities"].active .nav-label-text{color:#244a8e!important;font-weight:800}
   .sidebar .nav-item[data-view="opportunities"].active .nav-icon{background:linear-gradient(145deg,#a9c7ff,#638df3)!important;color:#173c7b!important;box-shadow:0 5px 13px rgba(65,112,216,.28),inset 0 1px 0 rgba(255,255,255,.9)}
 }
+
+/* Tableau de performances configurable */
+.opportunity-table-tools{display:flex;justify-content:flex-end;position:relative;padding:0 18px 12px;z-index:4}
+.opportunity-columns-toggle{font-size:12px;padding:8px 12px}
+.opportunity-column-settings{position:absolute;right:18px;top:calc(100% - 4px);width:min(260px,calc(100vw - 48px));padding:14px;background:var(--panel,#fff);border:1px solid var(--border,#e2e8f0);border-radius:14px;box-shadow:0 12px 34px #10182824;z-index:20}
+.opportunity-column-settings[hidden]{display:none}
+.opportunity-column-settings-title{font-weight:800;font-size:13px;margin-bottom:10px}
+.opportunity-column-option{display:flex;align-items:center;gap:9px;padding:8px 2px;font-size:12px;cursor:pointer}
+.opportunity-column-option input{accent-color:#536dff;width:15px;height:15px}
+.opportunity-column-option input:disabled{opacity:.55}
+.opportunity-column-reset{margin-top:8px;border:0;background:transparent;color:#536dff;font-weight:700;font-size:12px;cursor:pointer}
+.opportunity-sort-button{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:inherit;font:inherit;white-space:nowrap;cursor:pointer;padding:0}
+.opportunity-sort-button span{opacity:.55;font-size:13px}
+.opportunity-ranking-table{min-width:580px}
+.opportunity-ranking-change{display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:5px 7px;border-radius:8px;font-weight:750;font-size:12px;white-space:nowrap}
+.opportunity-ranking-change.positive{color:#12805c;background:#e7f7ef}
+.opportunity-ranking-change.negative{color:#d64045;background:#fff0f0}
+.opportunity-ranking-change.neutral{color:#78859a;background:#f1f4f8}
+.opportunity-ranking-change.missing{color:#8992a5;background:#f1f4f8;font-weight:500}
+@media(max-width:640px){.opportunity-table-tools{padding-right:12px}.opportunity-column-settings{right:12px}.opportunity-ranking-table th,.opportunity-ranking-table td{padding:10px 9px}.opportunity-ranking-table{min-width:540px}}
