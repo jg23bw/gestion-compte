@@ -813,7 +813,14 @@ function renderTransactions(){
 }
 function renderMonthlyHistory(){
   if(!$('history-rows'))return;
-  const month=$('history-month').value||monthValueNow(),accountFilter=$('history-account-filter').value||'all',typeFilter=$('history-type-filter').value||'all',query=$('history-search').value.trim().toLocaleLowerCase('fr'),sort=$('history-sort').value||'date-asc';
+  const monthSelect=$('history-month');
+  const availableMonths=[...new Set((state.transactions||[]).map(t=>String(t.date||'').slice(0,7)).filter(m=>/^\\d{4}-\\d{2}$/.test(m)))].sort((a,b)=>b.localeCompare(a));
+  const previousMonth=monthSelect.value;
+  monthSelect.innerHTML=availableMonths.length?availableMonths.map(m=>'<option value="'+m+'">'+escapeHtml(monthName(m))+'</option>').join(''):'<option value="">Aucun mois disponible</option>';
+  monthSelect.disabled=!availableMonths.length;
+  const selectedMonth=availableMonths.includes(previousMonth)?previousMonth:(availableMonths.includes(monthValueNow())?monthValueNow():(availableMonths[0]||''));
+  monthSelect.value=selectedMonth;
+  const month=selectedMonth,accountFilter=$('history-account-filter').value||'all',typeFilter=$('history-type-filter').value||'all',query=$('history-search').value.trim().toLocaleLowerCase('fr'),sort=$('history-sort').value||'date-asc';
   let rows=state.transactions.filter(t=>{const ac=accountById(t.accountId);return String(t.date||'').slice(0,7)===month&&(accountFilter==='all'||t.accountId===accountFilter)&&(typeFilter==='all'||(typeFilter==='income'?Number(t.amount)>=0:Number(t.amount)<0))&&((t.label+' '+(ac?.name||'')).toLocaleLowerCase('fr').includes(query));});
   rows.sort((a,b)=>{if(sort==='date-desc')return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;if(sort==='label')return a.label.localeCompare(b.label,'fr');if(sort==='amount-asc')return Number(a.amount)-Number(b.amount);if(sort==='amount-desc')return Number(b.amount)-Number(a.amount);if(sort==='account')return (accountById(a.accountId)?.name||'').localeCompare(accountById(b.accountId)?.name||'','fr')||a.date.localeCompare(b.date);return a.date.localeCompare(b.date)||a.createdAt-b.createdAt;});
   const incoming=rows.filter(t=>Number(t.amount)>0).reduce((sum,t)=>sum+Number(t.amount),0),outgoing=rows.filter(t=>Number(t.amount)<0).reduce((sum,t)=>sum+Number(t.amount),0);
@@ -2470,20 +2477,6 @@ $('crypto-coin-results').addEventListener('click',event=>{
 });
 $('crypto-dialog').addEventListener('close',closeCryptoCoinResults);
 document.addEventListener('click',event=>{
-  const monthNav=event.target.closest('#history-month-prev, #history-month-next, #history-month-current');
-  if(monthNav){
-    const input=$('history-month');
-    if(input){
-      if(monthNav.id==='history-month-current')input.value=monthValueNow();
-      else{
-        const current=input.value||monthValueNow(),parts=current.split('-').map(Number);
-        const date=new Date(parts[0],parts[1]-1+(monthNav.id==='history-month-prev'?-1:1),1);
-        input.value=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0');
-      }
-      renderMonthlyHistory();
-    }
-    return;
-  }
 
   const columnToggle=event.target.closest('#opportunity-columns-toggle');
   if(columnToggle){const panel=$('opportunity-column-settings');if(panel){panel.hidden=!panel.hidden;columnToggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)renderOpportunityColumnSettings();}return;}
