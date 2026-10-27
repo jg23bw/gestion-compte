@@ -117,6 +117,15 @@ Deno.serve(async (req) => {
       if (query.length < 2 || query.length > 80) return json({ error: "Recherche invalide." }, 400);
       return await searchStocks(query);
     }
+    if (action === "crypto-market") {
+      const ids = Array.isArray(body?.ids) ? [...new Set(body.ids.map((id: unknown) => String(id).trim()).filter((id: string) => /^[a-z0-9-]{1,80}$/.test(id)))].slice(0, 50) : [];
+      if (!ids.length) return json({ error: "Identifiants crypto invalides." }, 400);
+      const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=" + encodeURIComponent(ids.join(",")) + "&sparkline=false&per_page=250&price_change_percentage=24h%2C7d%2C30d";
+      const response = await fetch(url, { headers: { Accept: "application/json", ...UPSTREAM_HEADERS }, cache: "no-store" });
+      if (!response.ok) return json({ error: response.status === 429 ? "Limite CoinGecko atteinte ; réessaie dans une minute." : "CoinGecko indisponible (HTTP " + response.status + ")." }, response.status === 429 ? 429 : 502);
+      const data = await response.json().catch(() => null);
+      return json({ data: Array.isArray(data) ? data : [] });
+    }
     if (action === "crypto-history") {
       const id = String(body?.id ?? "").trim();
       const days = Number(body?.days ?? 365);
