@@ -2693,10 +2693,32 @@ document.addEventListener('change',event=>{
   if(!paid)return;
   const transaction=state.transactions.find(t=>t.id===paid.dataset.togglePaid);
   if(!transaction)return;
-  prepareUndo();
-  transaction.isPaid=paid.checked;
-  renderAll();
-  showToast(transaction.isPaid?'Opération marquée comme débitée / pointée.':'Opération remise à pointer.',true);
+  if(!paid.checked){
+    prepareUndo();transaction.isPaid=false;renderAll();
+    showToast('Opération remise à pointer.',true);return;
+  }
+  const dateDialog=document.getElementById('point-date-dialog');
+  const dateInput=document.getElementById('point-date-value');
+  const dateForm=document.getElementById('point-date-form');
+  if(!dateDialog||!dateInput||!dateForm){paid.checked=false;showToast('Impossible d’ouvrir la sélection de date.',false);return;}
+  dateInput.max=today();dateInput.value=transaction.date<=today()?transaction.date:today();
+  dateDialog.returnValue='';
+  dateDialog.showModal();
+  dateForm.onsubmit=(submitEvent)=>{
+    submitEvent.preventDefault();
+    const chosenDate=dateInput.value;
+    if(!chosenDate||chosenDate>today()){showToast('Choisissez aujourd’hui ou une date passée.',false);return;}
+    prepareUndo();
+    transaction.date=chosenDate;
+    transaction.isPaid=true;
+    dateDialog.close('confirm');
+    renderAll();
+    showToast('Opération pointée et repositionnée à la date choisie.',true);
+  };
+  dateDialog.addEventListener('close',function onPointDateClose(){
+    dateDialog.removeEventListener('close',onPointDateClose);
+    if(dateDialog.returnValue!=='confirm'){paid.checked=false;}
+  });
 });
 document.addEventListener('click',event=>{
   const move=event.target.closest('[data-move-transaction]');
