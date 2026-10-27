@@ -321,6 +321,15 @@
       </section>
     </form>
   </dialog>
+  <dialog id="point-date-dialog" class="app-dialog point-date-dialog">
+    <form id="point-date-form" method="dialog">
+      <h2>Pointer l’opération</h2>
+      <p class="form-help">Choisissez la date réelle de pointage. Les dates futures ne sont pas autorisées.</p>
+      <label for="point-date-value">Date de pointage</label>
+      <input id="point-date-value" type="date" required>
+      <div class="modal-actions"><button type="button" class="secondary-button" id="point-date-cancel" onclick="document.getElementById('point-date-dialog').close('cancel')">Annuler</button><button type="submit" class="primary-button">Valider et pointer</button></div>
+    </form>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
