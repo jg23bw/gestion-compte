@@ -690,7 +690,30 @@ function pledgeNoteMarkup(id){
 function transactionOrder(a,b){const ao=Number.isFinite(Number(a.sortOrder))&&a.sortOrder!==null?Number(a.sortOrder):null,bo=Number.isFinite(Number(b.sortOrder))&&b.sortOrder!==null?Number(b.sortOrder):null;if(ao!==null&&bo!==null&&ao!==bo)return ao-bo;if(ao!==null&&bo===null)return -1;if(ao===null&&bo!==null)return 1;return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;}
 function accountTransactions(accountId){return state.transactions.filter(t=>t.accountId===accountId).sort(transactionOrder);}
 function normalizeTransactionOrder(){for(const account of state.accounts){const rows=state.transactions.filter(t=>t.accountId===account.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);rows.forEach((t,index)=>{if(!Number.isFinite(Number(t.sortOrder))||t.sortOrder===null)t.sortOrder=index+1;});}}
-function moveTransaction(id,direction){const current=state.transactions.find(t=>t.id===id);if(!current)return;const rows=accountTransactions(current.accountId);const index=rows.findIndex(t=>t.id===id);const targetIndex=index+Number(direction);if(index<0||targetIndex<0||targetIndex>=rows.length)return;prepareUndo();const reordered=rows.slice();const [moved]=reordered.splice(index,1);reordered.splice(targetIndex,0,moved);reordered.forEach((transaction,position)=>{transaction.sortOrder=position+1;});renderAll();showToast('Ordre des opérations mis à jour.',true);}
+function moveTransaction(id,direction){
+  const current=state.transactions.find(t=>t.id===id);if(!current)return;
+  const accountId=current.accountId;
+  const sortSelect=$('transaction-sort');
+  const currentSort=sortSelect?.value||'date-asc';
+  const rows=state.transactions.filter(t=>t.accountId===accountId);
+  const visibleOrder=rows.slice().sort((a,b)=>{
+    if(currentSort==='date-asc')return a.date.localeCompare(b.date)||a.createdAt-b.createdAt;
+    if(currentSort==='date-desc')return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;
+    if(currentSort==='label')return a.label.localeCompare(b.label,'fr');
+    if(currentSort==='amount-asc')return Number(a.amount)-Number(b.amount);
+    if(currentSort==='amount-desc')return Number(b.amount)-Number(a.amount);
+    if(currentSort==='pointed')return Number(b.isPaid===true)-Number(a.isPaid===true)||transactionOrder(a,b);
+    return transactionOrder(a,b);
+  });
+  const index=visibleOrder.findIndex(t=>t.id===id),targetIndex=index+Number(direction);
+  if(index<0||targetIndex<0||targetIndex>=visibleOrder.length)return;
+  prepareUndo();
+  const [moved]=visibleOrder.splice(index,1);visibleOrder.splice(targetIndex,0,moved);
+  visibleOrder.forEach((transaction,position)=>{transaction.sortOrder=position+1;});
+  if(sortSelect)sortSelect.value='manual';
+  renderAll();
+  showToast('Ordre manuel des opérations mis à jour.',true);
+}
 function balanceAt(accountId,untilDate=null){
   const a=accountById(accountId);if(!a)return 0;
   return Number(a.opening||0)+accountTransactions(accountId).filter(t=>!untilDate||t.date<=untilDate).reduce((sum,t)=>sum+Number(t.amount),0);
