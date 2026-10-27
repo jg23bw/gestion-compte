@@ -1043,10 +1043,9 @@ async function loadCryptoPrices(){
   try{
     let values={},images={},sourceError='';
     try{
-      const response=await fetch(CRYPTO_MARKET_ENDPOINT+'?vs_currency=eur&ids='+encodeURIComponent(ids.join(','))+'&sparkline=false&per_page=250&price_change_percentage=24h%2C7d%2C30d',{headers:{Accept:'application/json'},cache:'no-store'});
-      if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
-      const data=await response.json();
-      for(const coin of Array.isArray(data)?data:[]){
+      const payload=await stockFunction('crypto-market',{ids});
+      const data=Array.isArray(payload?.data)?payload.data:[];
+      for(const coin of data){
         if(!coin?.id)continue;
         const price=Number(coin.current_price);
         if(Number.isFinite(price)&&price>0)values[coin.id]=price;
@@ -1340,7 +1339,9 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:nativePrice===null||rate===null?null:nativePrice*rate};
 }
+let stockProviderCooldownUntil=0;
 async function stockFunction(action,payload={}){
+  if(Date.now()<stockProviderCooldownUntil)throw new Error('Fournisseur temporairement limité : réessaie dans une minute.');
   if(!cloud.client)throw new Error('connexion cloud requise pour les données boursières');
   const {data,error}=await cloud.client.functions.invoke(STOCK_FUNCTION_NAME,{body:{action,...payload}});
   if(error){
@@ -1352,7 +1353,7 @@ async function stockFunction(action,payload={}){
       }
     }catch(parseError){}
     const status=Number(error.context?.status||error.status||0);
-    if(status===429||/rate limit|too many requests|limite.*atteinte/i.test(message))message='Limite du fournisseur de données atteinte (HTTP 429). Attends une minute avant de réessayer.';
+    if(status===429||/rate limit|too many requests|limite.*atteinte/i.test(message)){stockProviderCooldownUntil=Date.now()+60000;message='Limite du fournisseur de données atteinte (HTTP 429). Les nouvelles requêtes sont suspendues pendant une minute.';}
     else if(status>=500)message='Service de données temporairement indisponible (HTTP '+status+'). Réessaie plus tard.';
     else if(status===404)message='Historique indisponible pour cet actif (HTTP 404).';
     else if(error instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(message))message='réseau indisponible';
