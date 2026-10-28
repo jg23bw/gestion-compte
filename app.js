@@ -2546,7 +2546,7 @@ $('cloud-logout').addEventListener('click',async()=>{
 });
 $('crypto-add').addEventListener('click',()=>openCryptoEditor());
 $('crypto-refresh').addEventListener('click',loadCryptoPrices);
-['crypto-sort'].forEach(id=>$(id).addEventListener('change',renderCrypto));
+['crypto-sort'].forEach(id=>$(id).addEventListener('change',()=>{try{localStorage.removeItem(MARKET_SORT_KEYS.crypto);}catch(_){}renderCrypto();}));
 $('crypto-search').addEventListener('input',renderCrypto);
 $('crypto-coin-search').addEventListener('input',event=>{
   const query=event.target.value.trim();
@@ -2630,7 +2630,7 @@ $('opportunity-chart-asset').addEventListener('change',()=>{
 document.querySelectorAll('[data-chart-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-chart-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityChart($('opportunity-chart-asset').value,button.dataset.chartPeriod);}));
 document.querySelectorAll('[data-op-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityHeatmap(button.dataset.opPeriod);}));
 document.querySelectorAll('[data-op-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-filter]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityAssets(button.dataset.opFilter);}));
-['stocks-account-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',renderStocks));
+['stocks-account-filter','stocks-sort'].forEach(id=>$(id).addEventListener('change',()=>{if(id==='stocks-sort'){try{localStorage.removeItem(MARKET_SORT_KEYS.stocks);}catch(_){}}renderStocks();}));
 $('stocks-search').addEventListener('input',renderStocks);
 $('stock-search').addEventListener('input',event=>{
   const query=event.target.value.trim();
