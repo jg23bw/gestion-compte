@@ -1539,12 +1539,12 @@ input,select,textarea{accent-color:#536dff}
 .market-columns-control .opportunity-column-settings{position:absolute;z-index:1000;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));max-width:calc(100vw - 24px);max-height:min(65vh,420px);overflow:auto;overscroll-behavior:contain}
 .crypto-toolbar .toolbar-note,.stocks-toolbar .toolbar-note{flex:1 1 180px;min-width:0;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:760px){
-  #crypto-view .crypto-toolbar,#stocks-view .stocks-toolbar{display:flex!important;flex-flow:row wrap!important;align-items:center!important;gap:8px!important}
+  #crypto-view .crypto-toolbar,#stocks-view .stocks-toolbar{display:flex!important;flex-flow:row wrap!important;align-items:center!important;gap:8px!important;position:relative;overflow:visible!important}
   #crypto-view .crypto-toolbar .toolbar-note,#stocks-view .stocks-toolbar .toolbar-note{order:3;flex:1 1 100%!important;width:100%;margin:0;text-align:left}
-  #crypto-view .market-columns-control,#stocks-view .market-columns-control{margin-left:auto}
-  #crypto-view .table-panel,#stocks-view .table-panel{min-width:0;max-width:100%;overflow:hidden}
+  #crypto-view .market-columns-control,#stocks-view .market-columns-control{margin-left:auto;position:relative;z-index:120;flex:0 0 auto}
+  #crypto-view .table-panel,#stocks-view .table-panel{min-width:0;max-width:100%;overflow:visible}
   #crypto-view .table-scroll,#stocks-view .table-scroll{width:100%;max-width:100%;overflow-x:auto!important;overflow-y:visible!important}
-  .market-columns-control .opportunity-column-settings{position:fixed;right:12px;left:auto;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:min(300px,calc(100vw - 24px));max-height:60vh}
+  #crypto-view .market-columns-control .opportunity-column-settings,#stocks-view .market-columns-control .opportunity-column-settings{position:absolute!important;right:0!important;left:auto!important;top:calc(100% + 8px)!important;bottom:auto!important;width:min(300px,calc(100vw - 32px))!important;max-height:60vh;z-index:1000}
 }
 @media(max-width:420px){
   .crypto-table,.stocks-table{min-width:1040px}
