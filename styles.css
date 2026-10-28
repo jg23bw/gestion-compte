@@ -1550,3 +1550,14 @@ input,select,textarea{accent-color:#536dff}
   .crypto-table,.stocks-table{min-width:1040px}
   .market-columns-control .secondary-button{padding-inline:12px;white-space:nowrap}
 }
+
+
+/* Performance globale mise en valeur dans les synthèses Actions/Crypto. */
+.market-performance-card{position:relative;overflow:hidden;border:1px solid #cbd8ff;background:linear-gradient(135deg,#f1f5ff 0%,#ffffff 75%);box-shadow:0 8px 24px rgba(48,83,160,.08)}
+.market-performance-card:before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:#5279ed}
+.market-performance-card span{color:#536a9e;font-weight:700;letter-spacing:.02em}
+.market-performance-card strong{font-size:clamp(24px,2.2vw,30px);line-height:1.2;color:#294b9b}
+.market-performance-card strong.positive{color:#12976b}
+.market-performance-card strong.negative{color:#d94f43}
+.market-column-settings-floating{z-index:99999;box-sizing:border-box;padding:14px;background:var(--panel,#fff);color:var(--text-strong,#25334b);border:1px solid var(--border,#dbe3f0);border-radius:14px;box-shadow:0 16px 44px rgba(20,35,65,.22);overflow:auto;overscroll-behavior:contain}
+.market-column-settings-floating[hidden]{display:none!important}
