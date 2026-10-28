@@ -1561,3 +1561,16 @@ input,select,textarea{accent-color:#536dff}
 .market-performance-card strong.negative{color:#d94f43}
 .market-column-settings-floating{z-index:99999;box-sizing:border-box;padding:14px;background:var(--panel,#fff);color:var(--text-strong,#25334b);border:1px solid var(--border,#dbe3f0);border-radius:14px;box-shadow:0 16px 44px rgba(20,35,65,.22);overflow:auto;overscroll-behavior:contain}
 .market-column-settings-floating[hidden]{display:none!important}
+
+
+/* Variation du jour : repère visuel prioritaire dans Actions et Crypto. */
+.stocks-table th[data-market-head="stocks:24h"],.crypto-table th[data-market-head="crypto:24h"]{background:linear-gradient(180deg,#e3ebff 0%,#edf2ff 100%);box-shadow:inset 0 3px 0 #5279ed}
+.stocks-table th[data-market-head="stocks:24h"] .opportunity-sort-button,.crypto-table th[data-market-head="crypto:24h"] .opportunity-sort-button{color:#284b9a;font-weight:850}
+.market-daily-change-cell{background:rgba(82,121,237,.045)}
+.market-daily-change-pill{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;min-width:76px;padding:8px 10px!important;border:1px solid transparent;border-radius:10px!important;font-size:14px!important;font-weight:850!important;font-variant-numeric:tabular-nums;letter-spacing:-.015em;box-shadow:0 2px 7px rgba(28,45,80,.06)}
+.market-daily-change-pill.positive{color:#087b55!important;background:#dcf8eb!important;border-color:#a8e8cb!important}
+.market-daily-change-pill.negative{color:#b83228!important;background:#ffebe8!important;border-color:#ffc4bc!important}
+.market-daily-change-pill.neutral{color:#52627b!important;background:#edf1f7!important;border-color:#d8e0eb!important}
+.market-daily-change-pill.missing{color:#8792a5!important;background:#f1f3f7!important;border-color:#e0e5ed!important;box-shadow:none}
+.market-daily-change-arrow{font-size:10px;line-height:1}
+@media(max-width:760px){.market-daily-change-pill{min-width:70px;padding:7px 8px!important;font-size:13px!important}}
