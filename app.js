@@ -1149,8 +1149,9 @@ function renderCrypto(){
   const filtered=query!=='';
   $('crypto-rows').innerHTML=holdings.length?holdings.map(h=>{
     const m=metrics.get(h.id);
-    return '<tr><td><div class="crypto-coin">'+cryptoLogoMarkup(cryptoImage(h),h.symbol)+'<div class="crypto-coin-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.')+'</div></td></tr>';
+    const changes=marketChangeForHolding('crypto',h);const extraColumns=marketVisibleColumns('crypto').map(id=>marketChangeCell(changes[id])).join('');
+    return '<tr><td><div class="crypto-coin">'+cryptoLogoMarkup(cryptoImage(h),h.symbol)+'<div class="crypto-coin-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="crypto-quantity">'+numberFr(m.quantity)+'</td><td class="crypto-price">'+(m.price===null?'—':euroPrecise(m.price))+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="crypto-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td>'+extraColumns+'<td><div class="row-actions"><button type="button" data-edit-crypto="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-crypto="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="'+(8+marketVisibleColumns('crypto').length)+'"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.')+'</div></td></tr>';
 
   const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
   let footer=holdings.length+' position(s) affichée(s)'+(filtered?' sur '+allHoldings.length:'')+' · prix convertis en euros via CoinGecko';
@@ -1519,9 +1520,9 @@ function renderStocks(){
     const account=accountById(h.accountId)||{id:'',name:'Compte supprimé',kind:'bank'};
     const market=String(h.market||stockMarketInfo(h.priceId).label);
     const nativeLabel=m.nativePrice!==null&&normalizeStockCurrency(h.currency)!=='EUR'?'<small>'+escapeHtml(nativeMoney(m.nativePrice,h.currency))+'</small>':'';
-    const manual=isManualValueHolding(h);
-    return '<tr><td><div class="stock-title">'+stockLogoMarkup(h.symbol)+'<div class="stock-title-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small><span class="stock-meta"><span class="stock-meta-text">'+escapeHtml(account.name)+' · '+escapeHtml(market)+'</span>'+pledgeBadgeMarkup(account.id)+'</span></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="stock-quantity">'+(manual?'—':numberFr(m.quantity))+'</td><td class="stock-price">'+(manual?'—':m.price===null?'—':euroPrecise(m.price))+nativeLabel+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="stock-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td><td><div class="row-actions"><button type="button" data-edit-stock="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-stock="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="8"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position actions ou ETF. Cliquez sur « Ajouter une action » pour commencer.')+'</div></td></tr>';
+    const manual=isManualValueHolding(h);const changes=marketChangeForHolding('stocks',h);const extraColumns=marketVisibleColumns('stocks').map(id=>marketChangeCell(changes[id])).join('');
+    return '<tr><td><div class="stock-title">'+stockLogoMarkup(h.symbol)+'<div class="stock-title-text"><strong>'+escapeHtml(h.symbol)+'</strong><small>'+escapeHtml(h.name||h.symbol)+'</small><span class="stock-meta"><span class="stock-meta-text">'+escapeHtml(account.name)+' · '+escapeHtml(market)+'</span>'+pledgeBadgeMarkup(account.id)+'</span></div></div></td><td class="table-amount">'+euro(m.invested)+'</td><td class="stock-quantity">'+(manual?'—':numberFr(m.quantity))+'</td><td class="stock-price">'+(manual?'—':m.price===null?'—':euroPrecise(m.price))+nativeLabel+'</td><td class="table-balance">'+(m.value===null?'—':euro(m.value))+'</td><td class="table-amount '+(m.gain===null?'':m.gain>0?'positive':m.gain<0?'negative':'')+'">'+(m.gain===null?'—':(m.gain>0?'+':'')+euro(m.gain))+'</td><td class="stock-performance '+(m.performance===null?'':m.performance>0?'positive':m.performance<0?'negative':'')+'">'+(m.performance===null?'—':formatSignedPercent(m.performance))+'</td>'+extraColumns+'<td><div class="row-actions"><button type="button" data-edit-stock="'+escapeHtml(h.id)+'">Modifier</button><button type="button" data-delete-stock="'+escapeHtml(h.id)+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="'+(8+marketVisibleColumns('stocks').length)+'"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position actions ou ETF. Cliquez sur « Ajouter une action » pour commencer.')+'</div></td></tr>';
 
   const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
   let footer=holdings.length+' position(s) affichée(s)'+(filtered?' sur '+allHoldings.length:'')+' · cours StockAnalysis.com'+(currenciesNeedFx(holdings)?' · conversion en euros via ExchangeRate-API':'');
@@ -2030,6 +2031,12 @@ function opportunityMovingAverageStatus(asset){
   const distance=(last/avg-1)*100;
   return {label:distance>=0?'Au-dessus MM200':'Sous MM200',tone:distance>=0?'positive':'negative',distance};
 }
+const MARKET_CHANGE_COLUMNS=[{id:'24h',label:'24 heures'},{id:'7d',label:'7 jours'},{id:'30d',label:'30 jours'}];
+const MARKET_COLUMN_KEYS={crypto:'gestion-comptes-crypto-market-columns-v1',stocks:'gestion-comptes-stocks-market-columns-v1'};
+function marketVisibleColumns(kind){try{const saved=JSON.parse(localStorage.getItem(MARKET_COLUMN_KEYS[kind])||'null');if(Array.isArray(saved))return MARKET_CHANGE_COLUMNS.map(c=>c.id).filter(id=>saved.includes(id));}catch(_){}return MARKET_CHANGE_COLUMNS.map(c=>c.id);}
+function renderMarketColumnSettings(kind){const panel=$(kind+'-column-settings');if(!panel)return;const visible=marketVisibleColumns(kind);panel.innerHTML='<div class="opportunity-column-settings-title">Variations affichées</div>'+MARKET_CHANGE_COLUMNS.map(c=>'<label class="opportunity-column-option"><input type="checkbox" data-market-column-kind="'+kind+'" data-market-column="'+c.id+'" '+(visible.includes(c.id)?'checked ':'')+'><span>'+c.label+'</span></label>').join('')+'<button type="button" class="opportunity-column-reset" data-market-columns-reset="'+kind+'">Tout afficher</button>';}
+function marketChangeForHolding(kind,holding){const id=(kind==='crypto'?'c-':'s-')+holding.id;const asset=opportunityAssets().find(a=>a.id===id);return asset?{'24h':opportunityChange(asset,'24h'),'7d':opportunityChange(asset,'7d'),'30d':opportunityChange(asset,'30d')}:{'24h':null,'7d':null,'30d':null};}
+function marketChangeCell(value){const cls=value===null?'missing':value>0?'positive':value<0?'negative':'neutral';return '<td><span class="opportunity-ranking-change '+cls+'">'+(value===null?'—':escapeHtml(opportunityPercent(value)))+'</span></td>';}
 const OPPORTUNITY_COLUMNS_KEY='gestion-comptes-opportunity-columns-v1';
 const OPPORTUNITY_SORT_KEY='gestion-comptes-opportunity-sort-v1';
 const OPPORTUNITY_COLUMN_DEFS=[
@@ -2501,7 +2508,12 @@ $('crypto-coin-results').addEventListener('click',event=>{
 });
 $('crypto-dialog').addEventListener('close',closeCryptoCoinResults);
 document.addEventListener('click',event=>{
-
+  for(const kind of ['crypto','stocks']){
+    const toggle=event.target.closest('#'+kind+'-columns-toggle');
+    if(toggle){const panel=$(kind+'-column-settings');if(panel){panel.hidden=!panel.hidden;toggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)renderMarketColumnSettings(kind);}return;}
+    const reset=event.target.closest('[data-market-columns-reset="'+kind+'"]');
+    if(reset){try{localStorage.removeItem(MARKET_COLUMN_KEYS[kind]);}catch(_){}renderMarketColumnSettings(kind);if(kind==='crypto')renderCrypto();else renderStocks();return;}
+  }
   const columnToggle=event.target.closest('#opportunity-columns-toggle');
   if(columnToggle){const panel=$('opportunity-column-settings');if(panel){panel.hidden=!panel.hidden;columnToggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)renderOpportunityColumnSettings();}return;}
   const resetColumns=event.target.closest('[data-op-columns-reset]');
@@ -2687,6 +2699,8 @@ $('edit-account-name').addEventListener('input',updateAccountBankPreview);
 $('edit-account-bank').addEventListener('change',updateAccountBankPreview);
 $('edit-account-pledged').addEventListener('change',updateAccountPledgeFields);
 document.addEventListener('change',event=>{
+  const marketColumn=event.target.closest('[data-market-column]');
+  if(marketColumn){const kind=marketColumn.dataset.marketColumnKind;const ids=marketVisibleColumns(kind);const id=marketColumn.dataset.marketColumn;const next=marketColumn.checked?[...ids,id]:ids.filter(x=>x!==id);try{localStorage.setItem(MARKET_COLUMN_KEYS[kind],JSON.stringify(next));}catch(_){}renderMarketColumnSettings(kind);if(kind==='crypto')renderCrypto();else renderStocks();return;}
   const columnCheckbox=event.target.closest('[data-op-column]');
   if(columnCheckbox){const ids=opportunityVisibleColumns();const id=columnCheckbox.dataset.opColumn;const next=columnCheckbox.checked?[...ids,id]:ids.filter(x=>x!==id);saveOpportunityColumns(next);renderOpportunityColumnSettings();renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');return;}
 
