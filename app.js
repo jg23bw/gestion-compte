@@ -1907,9 +1907,10 @@ function opportunityChange(asset,period){
     if(history.length>1){
       const last=history[history.length-1];
       if(period==='24h'){
-        // Le fournisseur d'historique ne garantit ni cours intrajournalier ni clôture de référence datée.
-        // Ne pas assimiler une différence de prix à une performance journalière.
-        return null;
+        // Variation de clôture à clôture issue de l'historique journalier StockAnalysis.
+        // C'est une performance de la dernière séance disponible, pas une promesse de cours intrajournalier.
+        const prior=history[history.length-2];
+        if(prior&&last.c>0&&prior.c>0&&last.t>prior.t)return (last.c/prior.c-1)*100;
       }else{
         const days=period==='7d'?7:30,cutoff=last.t-days*86400000;
         let prior=null;for(const p of history){if(p.t<=cutoff)prior=p;else break;}
