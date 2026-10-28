@@ -1528,3 +1528,25 @@ input,select,textarea{accent-color:#536dff}
 
 /* Actions / Crypto : contrôle des colonnes intégré à la barre existante. */
 .market-columns-control{position:relative;flex:0 0 auto}.crypto-toolbar,.stocks-toolbar{gap:10px}.market-columns-control .opportunity-column-settings{right:0;top:calc(100% + 8px)}
+
+
+/* Correctifs Actions/Crypto : tables défilantes et réglages de colonnes ancrés au bouton. */
+.crypto-table,.stocks-table{min-width:1080px;width:max-content;max-width:none}
+#crypto-view .table-scroll,#stocks-view .table-scroll{display:block;width:100%;max-width:100%;overflow-x:auto;overflow-y:visible;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.crypto-table th,.stocks-table th{white-space:nowrap}
+.crypto-table th .opportunity-sort-button,.stocks-table th .opportunity-sort-button{white-space:nowrap;min-width:max-content}
+.market-columns-control{position:relative;z-index:30;min-width:0}
+.market-columns-control .opportunity-column-settings{position:absolute;z-index:1000;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 32px));max-width:calc(100vw - 24px);max-height:min(65vh,420px);overflow:auto;overscroll-behavior:contain}
+.crypto-toolbar .toolbar-note,.stocks-toolbar .toolbar-note{flex:1 1 180px;min-width:0;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:760px){
+  #crypto-view .crypto-toolbar,#stocks-view .stocks-toolbar{display:flex!important;flex-flow:row wrap!important;align-items:center!important;gap:8px!important}
+  #crypto-view .crypto-toolbar .toolbar-note,#stocks-view .stocks-toolbar .toolbar-note{order:3;flex:1 1 100%!important;width:100%;margin:0;text-align:left}
+  #crypto-view .market-columns-control,#stocks-view .market-columns-control{margin-left:auto}
+  #crypto-view .table-panel,#stocks-view .table-panel{min-width:0;max-width:100%;overflow:hidden}
+  #crypto-view .table-scroll,#stocks-view .table-scroll{width:100%;max-width:100%;overflow-x:auto!important;overflow-y:visible!important}
+  .market-columns-control .opportunity-column-settings{position:fixed;right:12px;left:auto;top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px));width:min(300px,calc(100vw - 24px));max-height:60vh}
+}
+@media(max-width:420px){
+  .crypto-table,.stocks-table{min-width:1040px}
+  .market-columns-control .secondary-button{padding-inline:12px;white-space:nowrap}
+}
