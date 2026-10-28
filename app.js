@@ -1138,6 +1138,7 @@ function renderCrypto(){
     if(sort==='performance-desc')return compareDesc(ma,mb,'performance')||bySymbol;
     return (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||bySymbol;
   });
+  holdings=sortMarketHoldings('crypto',holdings,metrics);
   const priced=holdings.filter(h=>metrics.get(h.id).value!==null&&!isManualValueHolding(h));const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);const currentValue=holdings.reduce((sum,h)=>sum+(metrics.get(h.id).value??0),0);const gain=priced.reduce((sum,h)=>sum+(metrics.get(h.id).gain??0),0);
   const performance=investedPriced>0?gain/investedPriced*100:0;
 
@@ -1285,7 +1286,7 @@ function stockLogoMarkup(symbol,extraClass=''){
   const raw=String(symbol||'?').replace(/[^A-Z0-9.]/gi,'').toUpperCase()||'?';
   // Ces ETF/ETC n'ont pas d'image fiable sur la source FMP utilisée ici :
   // ne pas lancer une requête connue pour répondre 404, garder un logo typographique.
-  const symbolsWithoutReliableLogo=new Set(['PUST','CSPX','IGLN','SSLV','XNAS']);
+  const symbolsWithoutReliableLogo=new Set(['PUST','CSPX','IGLN','SSLV','XNAS','SUR000001737']);
   const label=symbolsWithoutReliableLogo.has(raw)?raw.slice(0,4):raw.slice(0,1);
   const palette=[['#eef2ff','#4e63cf'],['#eaf8f1','#1b8963'],['#fff3e7','#ac7128'],['#f4efff','#7053c2'],['#eef8fb','#2c7f9d']];
   let hash=0;for(const char of raw.slice(0,1))hash=(hash*31+char.charCodeAt(0))%palette.length;
@@ -1506,6 +1507,7 @@ function renderStocks(){
     if(sort==='performance-desc')return compareDesc(ma,mb,'performance')||bySymbol;
     return (Number(a.sortOrder)||0)-(Number(b.sortOrder)||0)||bySymbol;
   });
+  holdings=sortMarketHoldings('stocks',holdings,metrics);
   const priced=holdings.filter(h=>metrics.get(h.id).value!==null);
   const investedAll=holdings.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
   const investedPriced=priced.reduce((sum,h)=>sum+metrics.get(h.id).invested,0);
@@ -2080,6 +2082,12 @@ function opportunityMovingAverageStatus(asset){
 }
 const MARKET_CHANGE_COLUMNS=[{id:'24h',label:'24 heures'},{id:'7d',label:'7 jours'},{id:'30d',label:'30 jours'}];
 const MARKET_COLUMN_KEYS={crypto:'gestion-comptes-crypto-market-columns-v1',stocks:'gestion-comptes-stocks-market-columns-v1'};
+const MARKET_SORT_KEYS={crypto:'gestion-comptes-crypto-table-sort-v1',stocks:'gestion-comptes-stocks-table-sort-v1'};
+const MARKET_SORT_COLUMNS=[{id:'asset',label:'Actif'},{id:'invested',label:'Investi'},{id:'quantity',label:'Quantité'},{id:'price',label:'Prix actuel'},{id:'value',label:'Valeur actuelle'},{id:'gain',label:'Gain/perte'},{id:'performance',label:'%'},{id:'24h',label:'24 h'},{id:'7d',label:'7 jours'},{id:'30d',label:'30 jours'}];
+function marketSortState(kind){try{return JSON.parse(localStorage.getItem(MARKET_SORT_KEYS[kind])||'null');}catch(_){return null;}}
+function sortMarketHoldings(kind,holdings,metrics){const state=marketSortState(kind);if(!state||!MARKET_SORT_COLUMNS.some(c=>c.id===state.column))return holdings;const value=(h,id)=>{const m=metrics.get(h.id);if(id==='asset')return String(h.name||h.symbol||'').toLocaleLowerCase('fr');if(id==='invested')return m.invested;if(id==='quantity')return m.quantity;if(id==='price')return m.price??null;if(id==='value')return m.value??null;if(id==='gain')return m.gain??null;if(id==='performance')return m.performance??null;return marketChangeForHolding(kind,h)[id]??null;};return holdings.sort((a,b)=>{const av=value(a,state.column),bv=value(b,state.column);if(av===null&&bv===null)return String(a.symbol||'').localeCompare(String(b.symbol||''),'fr');if(av===null)return 1;if(bv===null)return -1;const cmp=typeof av==='string'?av.localeCompare(bv,'fr'):av-bv;return (state.direction==='asc'?1:-1)*cmp;});}
+function marketSortHeader(kind,id,label){const state=marketSortState(kind);const active=state?.column===id;return '<button type="button" class="opportunity-sort-button" data-market-sort="'+kind+':'+id+'" aria-label="Trier par '+label+'">'+label+' <span aria-hidden="true">'+(active?(state.direction==='asc'?'↑':'↓'):'↕')+'</span></button>';}
+function syncMarketSortHeaders(kind){document.querySelectorAll('[data-market-sort^="'+kind+':"]').forEach(button=>{const [buttonKind,id]=button.dataset.marketSort.split(':');const label=MARKET_SORT_COLUMNS.find(c=>c.id===id)?.label||button.textContent.trim();const state=marketSortState(buttonKind);button.innerHTML=label+' <span aria-hidden="true">'+(state?.column===id?(state.direction==='asc'?'↑':'↓'):'↕')+'</span>';});}
 function marketVisibleColumns(kind){try{const saved=JSON.parse(localStorage.getItem(MARKET_COLUMN_KEYS[kind])||'null');if(Array.isArray(saved))return MARKET_CHANGE_COLUMNS.map(c=>c.id).filter(id=>saved.includes(id));}catch(_){}return MARKET_CHANGE_COLUMNS.map(c=>c.id);}
 function renderMarketColumnSettings(kind){const panel=$(kind+'-column-settings');if(!panel)return;const visible=marketVisibleColumns(kind);panel.innerHTML='<div class="opportunity-column-settings-title">Variations affichées</div>'+MARKET_CHANGE_COLUMNS.map(c=>'<label class="opportunity-column-option"><input type="checkbox" data-market-column-kind="'+kind+'" data-market-column="'+c.id+'" '+(visible.includes(c.id)?'checked ':'')+'><span>'+c.label+'</span></label>').join('')+'<button type="button" class="opportunity-column-reset" data-market-columns-reset="'+kind+'">Tout afficher</button>';}
 function marketChangeForHolding(kind,holding){const id=(kind==='crypto'?'c-':'s-')+holding.id;const asset=opportunityAssets().find(a=>a.id===id);return asset?{'24h':opportunityChange(asset,'24h'),'7d':opportunityChange(asset,'7d'),'30d':opportunityChange(asset,'30d')}:{'24h':null,'7d':null,'30d':null};}
@@ -2561,6 +2569,8 @@ $('crypto-coin-results').addEventListener('click',event=>{
 });
 $('crypto-dialog').addEventListener('close',closeCryptoCoinResults);
 document.addEventListener('click',event=>{
+  const marketSortButton=event.target.closest('[data-market-sort]');
+  if(marketSortButton){const [kind,column]=marketSortButton.dataset.marketSort.split(':');const previous=marketSortState(kind);const next={column,direction:previous?.column===column&&previous.direction==='desc'?'asc':'desc'};try{localStorage.setItem(MARKET_SORT_KEYS[kind],JSON.stringify(next));}catch(_){}if(kind==='crypto')renderCrypto();else renderStocks();syncMarketSortHeaders(kind);return;}
   for(const kind of ['crypto','stocks']){
     const toggle=event.target.closest('#'+kind+'-columns-toggle');
     if(toggle){const panel=$(kind+'-column-settings');if(panel){panel.hidden=!panel.hidden;toggle.setAttribute('aria-expanded',String(!panel.hidden));if(!panel.hidden)renderMarketColumnSettings(kind);}return;}
