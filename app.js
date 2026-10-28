@@ -1055,20 +1055,29 @@ async function loadCryptoPrices(){
       }
       if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
     }catch(error){sourceError=error.message||'CoinGecko indisponible';}
-    if(!Object.keys(values).length){
-      const mapped=ids.map(id=>COINCAP_IDS[id]).filter(Boolean);
+    const missingIds=ids.filter(id=>!Number.isFinite(Number(values[id]))||Number(values[id])<=0);
+    if(missingIds.length){
+      const mapped=missingIds.map(id=>COINCAP_IDS[id]).filter(Boolean);
       if(mapped.length){
-        const response=await fetch(CRYPTO_FALLBACK_ENDPOINT+'?ids='+encodeURIComponent(mapped.join(',')),{headers:{Accept:'application/json'},cache:'no-store'});
-        if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'CoinCap indisponible (HTTP '+response.status+')');
-        const payload=await response.json();
-        const idByCoincap=Object.fromEntries(Object.entries(COINCAP_IDS).map(([coingecko,coincap])=>[coincap,coingecko]));
-        for(const asset of Array.isArray(payload?.data)?payload.data:[]){
-          const id=idByCoincap[asset.id],usd=Number(asset.priceUsd);
-          if(id&&Number.isFinite(usd)&&usd>0)values[id]=usd*(Number(stockFx.rates?.USD)||0.92);
-        }
+        try{
+          const response=await fetch(CRYPTO_FALLBACK_ENDPOINT+'?ids='+encodeURIComponent(mapped.join(',')),{headers:{Accept:'application/json'},cache:'no-store'});
+          if(response.ok){
+            const payload=await response.json();
+            const idByCoincap=Object.fromEntries(Object.entries(COINCAP_IDS).map(([coingecko,coincap])=>[coincap,coingecko]));
+            const eurPerUsd=Number(stockFx.rates?.USD);
+            for(const asset of Array.isArray(payload?.data)?payload.data:[]){
+              const id=idByCoincap[asset.id],usd=Number(asset.priceUsd);
+              if(id&&Number.isFinite(usd)&&usd>0&&Number.isFinite(eurPerUsd)&&eurPerUsd>0)values[id]=usd*eurPerUsd;
+            }
+          }else{
+            console.warn('Fournisseur crypto secondaire indisponible (HTTP '+response.status+')');
+          }
+        }catch(fallbackError){console.warn('Fournisseur crypto secondaire inaccessible',fallbackError);}
       }
-      if(!Object.keys(values).length)throw new Error(/load failed|failed to fetch|networkerror/i.test(sourceError)?'connexion aux fournisseurs de prix impossible. Vérifiez le réseau puis réessayez.':sourceError||'aucun prix reçu');
     }
+    if(!Object.keys(values).length)throw new Error(/load failed|failed to fetch|networkerror/i.test(sourceError)?'connexion aux fournisseurs de prix impossible. Vérifiez le réseau puis réessayez.':sourceError||'aucun prix reçu');
+    const unresolved=ids.filter(id=>!Number.isFinite(Number(values[id]))||Number(values[id])<=0);
+    if(unresolved.length)console.warn('Prix crypto manquants pour certains actifs :',unresolved);
     cryptoPrices.values={...cryptoPrices.values,...values};
     cryptoPrices.images={...cryptoPrices.images,...images};
     cryptoPrices.updatedAt=Date.now();
@@ -1427,7 +1436,8 @@ async function loadStockPrices(){
     }
   };
   try{
-    await Promise.all([fxTask,...Array.from({length:Math.min(5,queue.length)},()=>worker())]);
+    // Un seul appel fournisseur à la fois : évite les rafales qui déclenchent des HTTP 429.
+    await Promise.all([fxTask,worker()]);
     if(successCount){
       stockPrices.values={...stockPrices.values,...values};
       stockPrices.updatedAt=Date.now();
