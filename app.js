@@ -1085,6 +1085,7 @@ async function loadCryptoPrices(){
 }
 function renderCrypto(){
   if(!$('crypto-rows'))return;
+  syncMarketColumnHeaders('crypto');
   const allHoldings=[...(state.cryptoHoldings||[])];
   const query=$('crypto-search')?.value.trim().toLocaleLowerCase('fr')||'';
   const sort=$('crypto-sort')?.value||'manual';
@@ -1444,6 +1445,7 @@ async function loadStockPrices(){
 }
 function renderStocks(){
   if(!$('stocks-rows'))return;
+  syncMarketColumnHeaders('stocks');
   const allHoldings=[...(state.stockHoldings||[])];
   const query=$('stocks-search')?.value.trim().toLocaleLowerCase('fr')||'';
   const accountFilter=$('stocks-account-filter')?.value||'all';
@@ -2037,6 +2039,7 @@ function marketVisibleColumns(kind){try{const saved=JSON.parse(localStorage.getI
 function renderMarketColumnSettings(kind){const panel=$(kind+'-column-settings');if(!panel)return;const visible=marketVisibleColumns(kind);panel.innerHTML='<div class="opportunity-column-settings-title">Variations affichées</div>'+MARKET_CHANGE_COLUMNS.map(c=>'<label class="opportunity-column-option"><input type="checkbox" data-market-column-kind="'+kind+'" data-market-column="'+c.id+'" '+(visible.includes(c.id)?'checked ':'')+'><span>'+c.label+'</span></label>').join('')+'<button type="button" class="opportunity-column-reset" data-market-columns-reset="'+kind+'">Tout afficher</button>';}
 function marketChangeForHolding(kind,holding){const id=(kind==='crypto'?'c-':'s-')+holding.id;const asset=opportunityAssets().find(a=>a.id===id);return asset?{'24h':opportunityChange(asset,'24h'),'7d':opportunityChange(asset,'7d'),'30d':opportunityChange(asset,'30d')}:{'24h':null,'7d':null,'30d':null};}
 function marketChangeCell(value){const cls=value===null?'missing':value>0?'positive':value<0?'negative':'neutral';return '<td><span class="opportunity-ranking-change '+cls+'">'+(value===null?'—':escapeHtml(opportunityPercent(value)))+'</span></td>';}
+function syncMarketColumnHeaders(kind){const visible=new Set(marketVisibleColumns(kind));document.querySelectorAll('[data-market-head^="'+kind+':"]').forEach(th=>{th.hidden=!visible.has(th.dataset.marketHead.split(':')[1]);});}
 const OPPORTUNITY_COLUMNS_KEY='gestion-comptes-opportunity-columns-v1';
 const OPPORTUNITY_SORT_KEY='gestion-comptes-opportunity-sort-v1';
 const OPPORTUNITY_COLUMN_DEFS=[
