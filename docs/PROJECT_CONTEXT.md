@@ -278,3 +278,13 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - À la retraite, les retraits du capital couvrent le complément nécessaire après loyers et pension ; les tableaux et infobulles détaillent ces trois sources de revenus.
 - Le graphique couvre l’âge actuel jusqu’à l’âge de fin et utilise une échelle verticale logarithmique adoucie pour rendre lisibles les valeurs à court terme malgré la croissance à long terme.
 - Le modèle reste déterministe et indicatif ; aucun test navigateur de bout en bout n’a été effectué pour ce changement.
+
+
+## 18. Historique crypto de l’écran Opportunités — fin des erreurs de limite (28 octobre 2026)
+
+- Symptôme : sur l’écran Opportunités, l’historique 1 an échouait pour plusieurs positions à la suite avec « Fournisseur temporairement limité : réessaie dans une minute » (RSR, BTC, PUST, ESE). Cause : l’historique crypto passait uniquement par l’API publique CoinGecko appelée depuis l’Edge Function, dont le quota par IP est très bas et partagé ; le premier HTTP 429 posait un gel global côté navigateur, qui bloquait ensuite toutes les autres requêtes, y compris les historiques d’actions/ETF.
+- La fonction Edge `stock-data` essaie désormais Yahoo Finance (`SYMBOLE-EUR`, 1 an ou 5 ans, clôtures journalières) avant CoinGecko. CoinGecko reste le repli pour les cryptos absentes de Yahoo ou non libellées en euros. L’historique réussi est mis en cache 6 heures dans l’instance Edge ; un 429 CoinGecko suspend ce repli pendant 60 secondes. Clé de démonstration facultative via le secret `COINGECKO_API_KEY`.
+- Le client envoie le symbole de la position avec `crypto-history`. Les gels de 60 secondes après un 429 sont maintenant suivis **par action** (`crypto-market`, `crypto-history`, `price`, `history`) au lieu d’un gel global.
+- Les échecs d’historique sont mémorisés par actif : le préchargement de l’écran Opportunités ne relance plus une rafale à chaque rendu, affiche un message explicite, et une nouvelle tentative automatique est planifiée après une minute. Le bouton « Actualiser l’analyse » force une nouvelle tentative immédiate.
+- Cache-busting `app.js` : `crypto-history-yahoo-v1`. `styles.css` inchangé.
+- Vérifications réellement effectuées : `node --check app.js` ; appels directs Yahoo Finance pour BTC, ETH et RSR en EUR (366 points sur 1 an, 1 827 points sur 5 ans) et contrôle du repli pour des symboles absents (PUST, ESE → HTTP 404 Yahoo, donc CoinGecko). La fonction Edge n’a pas pu être déployée ni testée ici : elle doit être redéployée (`supabase functions deploy stock-data`) pour que le correctif soit actif. Aucun test navigateur avec session Supabase réelle n’a été exécuté.

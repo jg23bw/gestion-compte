@@ -178,7 +178,7 @@ function undoLastAction(){
 
 const cloud = {client:null,session:null,user:null,syncTimer:null,isApplyingCloud:false,isSyncing:false,syncAgain:false,loadedUserId:null,pendingDeletes:new Set(),pendingTemplateDeletes:new Set(),pendingCryptoDeletes:new Set(),pendingAccountDeletes:new Set(),accountTypesDirty:false,accountPledgesDirty:false,stockHoldingsDirty:false,authReady:false};
 let cryptoTableReady=null;
-const cryptoPrices={values:{},images:{},market:{},history:{},updatedAt:0,error:'',loading:false};
+const cryptoPrices={values:{},images:{},market:{},history:{},updatedAt:0,error:'',loading:false,fallback:false};
 function cloudMessage(message){const el=$('cloud-message');if(el)el.textContent=message||'';}
 function frenchAuthError(error){
   const message=String(error?.message||'').trim();
@@ -1035,23 +1035,29 @@ function hydrateCryptoPrices(){
 async function loadCryptoPrices(){
   const holdings=(state.cryptoHoldings||[]).filter(h=>h.coingeckoId);
   const ids=[...new Set(holdings.map(h=>h.coingeckoId))];
+  const symbols={};
+  holdings.forEach(h=>{const symbol=String(h.symbol||'').trim().toUpperCase();if(symbol&&!symbols[h.coingeckoId])symbols[h.coingeckoId]=symbol;});
   if(!ids.length){renderCrypto();return;}
   if(cryptoPrices.loading)return;
   cryptoPrices.loading=true;
   cryptoPrices.error='';
   renderCrypto();
   try{
-    let values={},images={},sourceError='';
+    let values={},images={},sourceError='',fallbackUsed=false;
     try{
-      const payload=await stockFunction('crypto-market',{ids});
+      const payload=await stockFunction('crypto-market',{ids,symbols});
       const data=Array.isArray(payload?.data)?payload.data:[];
       for(const coin of data){
         if(!coin?.id)continue;
         const price=Number(coin.current_price);
         if(Number.isFinite(price)&&price>0)values[coin.id]=price;
         if(typeof coin.image==='string'&&coin.image)images[coin.id]=coin.image;
-        const marketChanges={day:coin.price_change_percentage_24h===null?undefined:Number(coin.price_change_percentage_24h),week:coin.price_change_percentage_7d_in_currency===null?undefined:Number(coin.price_change_percentage_7d_in_currency),month:coin.price_change_percentage_30d_in_currency===null?undefined:Number(coin.price_change_percentage_30d_in_currency)};
-        cryptoPrices.market[coin.id]=Object.fromEntries(Object.entries(marketChanges).filter(([,value])=>Number.isFinite(value)));
+        if(coin.source==='coinbase')fallbackUsed=true;
+        const reported={day:coin.price_change_percentage_24h===null?undefined:Number(coin.price_change_percentage_24h),week:coin.price_change_percentage_7d_in_currency===null?undefined:Number(coin.price_change_percentage_7d_in_currency),month:coin.price_change_percentage_30d_in_currency===null?undefined:Number(coin.price_change_percentage_30d_in_currency)};
+        const marketChanges=Object.fromEntries(Object.entries(reported).filter(([,value])=>Number.isFinite(value)));
+        // Un prix de repli n’a pas de variations : on conserve celles déjà connues
+        // au lieu de les effacer.
+        if(Object.keys(marketChanges).length)cryptoPrices.market[coin.id]={...(cryptoPrices.market[coin.id]||{}),...marketChanges};
       }
       if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
     }catch(error){sourceError=error.message||'CoinGecko indisponible';}
@@ -1350,9 +1356,9 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:nativePrice===null||rate===null?null:nativePrice*rate};
 }
-let stockProviderCooldownUntil=0;
+const stockProviderCooldowns={};
 async function stockFunction(action,payload={}){
-  if(Date.now()<stockProviderCooldownUntil)throw new Error('Fournisseur temporairement limité : réessaie dans une minute.');
+  if(Date.now()<(Number(stockProviderCooldowns[action])||0))throw new Error('Fournisseur temporairement limité : réessaie dans une minute.');
   if(!cloud.client)throw new Error('connexion cloud requise pour les données boursières');
   const {data,error}=await cloud.client.functions.invoke(STOCK_FUNCTION_NAME,{body:{action,...payload}});
   if(error){
@@ -1364,7 +1370,7 @@ async function stockFunction(action,payload={}){
       }
     }catch(parseError){}
     const status=Number(error.context?.status||error.status||0);
-    if(status===429||/rate limit|too many requests|limite.*atteinte/i.test(message)){stockProviderCooldownUntil=Date.now()+60000;message='Limite du fournisseur de données atteinte (HTTP 429). Les nouvelles requêtes sont suspendues pendant une minute.';}
+    if(status===429||/rate limit|too many requests|limite.*atteinte/i.test(message)){stockProviderCooldowns[action]=Date.now()+60000;message='Limite du fournisseur de données atteinte (HTTP 429). Les nouvelles requêtes sont suspendues pendant une minute.';}
     else if(status>=500)message='Service de données temporairement indisponible (HTTP '+status+'). Réessaie plus tard.';
     else if(status===404)message='Historique indisponible pour cet actif (HTTP 404).';
     else if(error instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(message))message='réseau indisponible';
@@ -1968,7 +1974,7 @@ async function loadOpportunityHistory(assetId,period){
       let points=[];
       if(asset.type==='crypto'){
         const days=365;
-        const payload=await stockFunction('crypto-history',{id:asset.raw.coingeckoId,days});
+        const payload=await stockFunction('crypto-history',{id:asset.raw.coingeckoId,symbol:asset.symbol,days});
         points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((a,b)=>a.t-b.t);
       }else{
         if(!asset.raw.priceId)throw new Error('Aucun identifiant de cours exploitable pour cet actif.');
@@ -1977,27 +1983,50 @@ async function loadOpportunityHistory(assetId,period){
       }
       if(!points.length)throw new Error('La source n’a renvoyé aucun cours historique pour cet actif.');
       opportunityHistory[key]=points;
+      delete opportunityHistoryAttempts[key];
+      delete opportunityHistoryErrors[key];
       if(isActiveOpportunityChart(assetId,period))renderOpportunityChart(assetId,period);
     }catch(error){
+      opportunityHistoryAttempts[key]=Date.now();
+      opportunityHistoryErrors[key]=error.message||'La source n’a pas répondu.';
       console.warn('Opportunity history unavailable for '+asset.symbol+' ('+historyPeriod+')',error);
       if(isActiveOpportunityChart(assetId,period)){
         const container=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');
-        if(container)container.innerHTML='<div class="opportunity-chart-empty" role="alert">'+escapeHtml(error.message||'Historique indisponible')+'<br>Les données ne sont pas remplacées par des estimations. Change de période ou réessaie après le rafraîchissement.</div>';
+        if(container)container.innerHTML='<div class="opportunity-chart-empty" role="alert"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(error.message||'La source n’a pas répondu.')+'</span><small>La courbe n’est pas remplacée par une estimation ; une nouvelle tentative automatique est prévue dans une minute.</small></div>';
         if(summary)summary.innerHTML='<span>MM200 non calculable : historique indisponible.</span>';
       }
+      if(opportunityHistoryRetryTimer)clearTimeout(opportunityHistoryRetryTimer);
+      opportunityHistoryRetryTimer=setTimeout(()=>{
+        opportunityHistoryRetryTimer=null;
+        if($('opportunities-view')?.classList.contains('active'))renderOpportunities();
+      },62000);
     }finally{delete opportunityHistoryLoading[key];}
   })();
   return opportunityHistoryLoading[key];
 }
 const opportunityHistory={};
 const opportunityHistoryLoading={};
+// Dernier échec par actif : évite de relancer une rafale d’appels à chaque rendu
+// quand un fournisseur est momentanément limité. Un clic sur l’actif force une nouvelle tentative.
+const opportunityHistoryAttempts={};
+const opportunityHistoryErrors={};
+let opportunityHistoryRetryTimer=null;
 function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
   if(!opportunityHasHistorySource(asset)){chart.innerHTML='<div class="opportunity-chart-empty" role="status">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas de source de cours historique exploitable ; aucun prix n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
   const historyPeriod='1y';
   const fullPoints=opportunityHistory[asset.id+'|'+historyPeriod]||[];
-  if(!fullPoints.length){loadOpportunityHistory(assetId,period);return;}
+  if(!fullPoints.length){
+    const failedAt=Number(opportunityHistoryAttempts[asset.id+'|'+historyPeriod])||0;
+    if(failedAt&&Date.now()-failedAt<60000){
+      chart.innerHTML='<div class="opportunity-chart-empty" role="status"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(opportunityHistoryErrors[asset.id+'|'+historyPeriod]||'Le fournisseur a limité les requêtes.')+'</span><small>Nouvelle tentative automatique dans une minute ; la courbe n’est pas remplacée par une estimation.</small></div>';
+      summary.innerHTML='<span>MM200 et niveaux techniques indisponibles pour le moment.</span>';
+      return;
+    }
+    loadOpportunityHistory(assetId,period);
+    return;
+  }
   const latestTime=fullPoints[fullPoints.length-1].t;
   const rangeDays=period==='1m'?30:period==='3m'?90:365;
   const visibleFrom=latestTime-rangeDays*86400000;
@@ -2134,10 +2163,15 @@ function renderOpportunities(){
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
   renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);setupOpportunityChart();loadOpportunityFearGreed();
   // Charge l’historique de toutes les positions avec une concurrence limitée pour
-  // éviter les limites des fournisseurs. Pas de drapeau global permanent : les
-  // positions ajoutées plus tard et les échecs temporaires seront retentés au prochain rendu.
+  // éviter les limites des fournisseurs. Un échec récent est retenté après 60 s
+  // (ou immédiatement via le bouton « Actualiser l’analyse »).
   const historyAssets=assets.filter(opportunityHasHistorySource);
-  const queue=historyAssets.filter(asset=>!opportunityHistory[asset.id+'|1y']&&!opportunityHistoryLoading[asset.id+'|1y']);
+  const queue=historyAssets.filter(asset=>{
+    const key=asset.id+'|1y';
+    if(opportunityHistory[key]||opportunityHistoryLoading[key])return false;
+    const failedAt=Number(opportunityHistoryAttempts[key])||0;
+    return !failedAt||Date.now()-failedAt>=60000;
+  });
   const worker=async()=>{
     while(queue.length){
       const asset=queue.shift();
@@ -2564,8 +2598,17 @@ $('crypto-form').addEventListener('submit',event=>{
 $('stocks-add').addEventListener('click',()=>openStockEditor());
 $('stocks-refresh').addEventListener('click',loadStockPrices);
 
-$('opportunities-refresh').addEventListener('click',()=>{loadCryptoPrices();loadStockPrices();renderOpportunities();});
-$('opportunity-chart-asset').addEventListener('change',()=>renderOpportunityChart($('opportunity-chart-asset').value,document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y'));
+$('opportunities-refresh').addEventListener('click',()=>{
+  Object.keys(opportunityHistoryAttempts).forEach(key=>delete opportunityHistoryAttempts[key]);
+  Object.keys(opportunityHistoryErrors).forEach(key=>delete opportunityHistoryErrors[key]);
+  loadCryptoPrices();loadStockPrices();renderOpportunities();
+});
+$('opportunity-chart-asset').addEventListener('change',()=>{
+  const select=$('opportunity-chart-asset');
+  // Sélection explicite : on autorise une nouvelle tentative même après un échec récent.
+  delete opportunityHistoryAttempts[select.value+'|1y'];
+  renderOpportunityChart(select.value,document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y');
+});
 document.querySelectorAll('[data-chart-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-chart-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityChart($('opportunity-chart-asset').value,button.dataset.chartPeriod);}));
 document.querySelectorAll('[data-op-period]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-period]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityHeatmap(button.dataset.opPeriod);}));
 document.querySelectorAll('[data-op-filter]').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('[data-op-filter]').forEach(b=>b.classList.toggle('is-active',b===button));renderOpportunityAssets(button.dataset.opFilter);}));

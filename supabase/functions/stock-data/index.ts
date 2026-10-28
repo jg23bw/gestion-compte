@@ -10,10 +10,17 @@ const corsHeaders = {
 const STOCK_SEARCH_URL = "https://stockanalysis.com/api/search";
 const COINGECKO_URL = "https://api.coingecko.com/api/v3/coins/";
 const STOCK_CHART_URL = "https://stockanalysis.com/api/charts/a/";
+const YAHOO_CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
+const COINBASE_PRICE_URL = "https://api.coinbase.com/v2/prices/";
+const CRYPTO_HISTORY_TTL = 6 * 60 * 60 * 1000;
+const CRYPTO_HISTORY_CACHE: Map<string, { expires: number; points: HistoryPoint[] }> = new Map();
+let coinGeckoNotBefore = 0;
 const UPSTREAM_HEADERS = {
   Accept: "application/json",
   "User-Agent": "Mozilla/5.0 (compatible; GestionComptes/1.0; +https://github.com/jg23bw/gestion-compte)",
 };
+
+type HistoryPoint = { t: number; c: number };
 
 const json = (body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders });
@@ -77,6 +84,71 @@ async function fetchStockHistory(id: string, period: string) {
   return json({ id, period: selected, points, sma200 });
 }
 
+function dailyHistoryPoints(entries: Array<[number, number]>): HistoryPoint[] {
+  const daily = new Map<string, HistoryPoint>();
+  for (const [time, price] of entries) {
+    if (!Number.isFinite(time) || !Number.isFinite(price) || price <= 0) continue;
+    daily.set(new Date(time).toISOString().slice(0, 10), { t: time, c: price });
+  }
+  return [...daily.values()].sort((a, b) => a.t - b.t);
+}
+
+// Source principale : Yahoo Finance, paires crypto/EUR (pas de clé, quotas bien plus
+// larges que l'API publique CoinGecko partagée entre les projets Supabase).
+async function fetchCryptoHistoryFromYahoo(symbol: string, days: number): Promise<HistoryPoint[] | null> {
+  const range = days === 1825 ? "5y" : "1y";
+  const url = YAHOO_CHART_URL + encodeURIComponent(symbol + "-EUR") + "?range=" + range + "&interval=1d";
+  const response = await fetch(url, { headers: UPSTREAM_HEADERS, cache: "no-store" });
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => null);
+  const result = payload?.chart?.result?.[0];
+  if (!result || String(result?.meta?.currency ?? "").toUpperCase() !== "EUR") return null;
+  const timestamps = Array.isArray(result.timestamp) ? result.timestamp : [];
+  const closes = Array.isArray(result?.indicators?.quote?.[0]?.close) ? result.indicators.quote[0].close : [];
+  const entries: Array<[number, number]> = timestamps.map((timestamp: unknown, index: number) => [Number(timestamp) * 1000, Number(closes[index])]);
+  const points = dailyHistoryPoints(entries);
+  return points.length ? points : null;
+}
+
+// Repli : CoinGecko, qui couvre les cryptos absentes de Yahoo. Une clé de démonstration
+// facultative (secret Edge COINGECKO_API_KEY) relève le quota ; elle n'est jamais envoyée
+// au navigateur.
+function coinGeckoHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { ...UPSTREAM_HEADERS };
+  const apiKey = Deno.env.get("COINGECKO_API_KEY") ?? "";
+  if (apiKey) headers["x-cg-demo-api-key"] = apiKey;
+  return headers;
+}
+
+// Repli de prix : Coinbase (spot EUR, sans clé) quand CoinGecko est limité ou incomplet.
+async function fetchCryptoPriceFromCoinbase(symbol: string): Promise<number | null> {
+  const response = await fetch(COINBASE_PRICE_URL + encodeURIComponent(symbol + "-EUR") + "/spot", { headers: UPSTREAM_HEADERS, cache: "no-store" });
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => null);
+  const price = Number(payload?.data?.amount);
+  const currency = String(payload?.data?.currency ?? "").toUpperCase();
+  return Number.isFinite(price) && price > 0 && currency === "EUR" ? price : null;
+}
+
+async function fetchCryptoHistoryFromCoinGecko(id: string, days: number): Promise<{ points?: HistoryPoint[]; error?: string; status?: number }> {
+  if (Date.now() < coinGeckoNotBefore) {
+    return { error: "Limite CoinGecko atteinte ; réessaie dans une minute.", status: 429 };
+  }
+  const response = await fetch(COINGECKO_URL + encodeURIComponent(id) + "/market_chart?vs_currency=eur&days=" + days, { headers: coinGeckoHeaders(), cache: "no-store" });
+  if (!response.ok) {
+    if (response.status === 429) coinGeckoNotBefore = Date.now() + 60000;
+    return {
+      error: response.status === 429 ? "Limite CoinGecko atteinte ; réessaie dans une minute." : "CoinGecko n’a pas fourni l’historique (HTTP " + response.status + ").",
+      status: response.status === 429 ? 429 : 502,
+    };
+  }
+  const payload = await response.json().catch(() => null);
+  const prices = Array.isArray(payload?.prices) ? payload.prices : [];
+  const points = dailyHistoryPoints(prices.map((item: unknown) => [Number((item as number[])?.[0]), Number((item as number[])?.[1])] as [number, number]));
+  if (!points.length) return { error: "CoinGecko n’a renvoyé aucun cours historique.", status: 502 };
+  return { points };
+}
+
 async function fetchStockPrice(id: string) {
   let lastStatus = 0;
   for (const period of ["1D", "1Y"]) {
@@ -120,25 +192,66 @@ Deno.serve(async (req) => {
     if (action === "crypto-market") {
       const ids = Array.isArray(body?.ids) ? [...new Set(body.ids.map((id: unknown) => String(id).trim()).filter((id: string) => /^[a-z0-9-]{1,80}$/.test(id)))].slice(0, 50) : [];
       if (!ids.length) return json({ error: "Identifiants crypto invalides." }, 400);
-      const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=" + encodeURIComponent(ids.join(",")) + "&sparkline=false&per_page=250&price_change_percentage=24h%2C7d%2C30d";
-      const response = await fetch(url, { headers: { Accept: "application/json", ...UPSTREAM_HEADERS }, cache: "no-store" });
-      if (!response.ok) return json({ error: response.status === 429 ? "Limite CoinGecko atteinte ; réessaie dans une minute." : "CoinGecko indisponible (HTTP " + response.status + ")." }, response.status === 429 ? 429 : 502);
-      const data = await response.json().catch(() => null);
-      return json({ data: Array.isArray(data) ? data : [] });
+      const rawSymbols: Record<string, unknown> = body?.symbols && typeof body.symbols === "object" ? body.symbols : {};
+      const symbols: Record<string, string> = {};
+      for (const id of ids) {
+        const symbol = String(rawSymbols[id] ?? "").trim().toUpperCase();
+        if (/^[A-Z0-9.\-]{1,20}$/.test(symbol)) symbols[id] = symbol;
+      }
+      let rows: Array<Record<string, unknown>> = [];
+      let upstreamError = "";
+      let upstreamStatus = 0;
+      if (Date.now() < coinGeckoNotBefore) {
+        upstreamError = "Limite CoinGecko atteinte ; réessaie dans une minute.";
+        upstreamStatus = 429;
+      } else {
+        const url = "https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&ids=" + encodeURIComponent(ids.join(",")) + "&sparkline=false&per_page=250&price_change_percentage=24h%2C7d%2C30d";
+        const response = await fetch(url, { headers: coinGeckoHeaders(), cache: "no-store" });
+        if (!response.ok) {
+          if (response.status === 429) coinGeckoNotBefore = Date.now() + 60000;
+          upstreamStatus = response.status === 429 ? 429 : 502;
+          upstreamError = response.status === 429 ? "Limite CoinGecko atteinte ; réessaie dans une minute." : "CoinGecko indisponible (HTTP " + response.status + ").";
+        } else {
+          const data = await response.json().catch(() => null);
+          rows = Array.isArray(data) ? data : [];
+        }
+      }
+      const found = new Set(rows.map((row) => String(row?.id ?? "")));
+      const missing = ids.filter((id) => !found.has(id) && symbols[id]).slice(0, 20);
+      if (missing.length) {
+        const prices = await Promise.all(missing.map((id) => fetchCryptoPriceFromCoinbase(symbols[id]).catch(() => null)));
+        missing.forEach((id, index) => {
+          const price = prices[index];
+          if (!price) return;
+          // Les variations ne sont pas inventées : elles restent absentes jusqu'au retour de CoinGecko.
+          rows.push({ id, current_price: price, image: null, price_change_percentage_24h: null, price_change_percentage_7d_in_currency: null, price_change_percentage_30d_in_currency: null, source: "coinbase" });
+        });
+      }
+      if (!rows.length) return json({ error: upstreamError || "Aucun prix crypto reçu." }, upstreamStatus || 502);
+      return json({ data: rows });
     }
     if (action === "crypto-history") {
       const id = String(body?.id ?? "").trim();
       const days = Number(body?.days ?? 365);
       if (!/^[A-Za-z0-9-]{1,80}$/.test(id) || ![365, 1825].includes(days)) return json({ error: "Paramètres d’historique crypto invalides." }, 400);
-      const response = await fetch(COINGECKO_URL + encodeURIComponent(id) + "/market_chart?vs_currency=eur&days=" + days, { headers: { Accept: "application/json", ...UPSTREAM_HEADERS }, cache: "no-store" });
-      if (!response.ok) return json({ error: response.status === 429 ? "Limite CoinGecko atteinte ; réessaie dans une minute." : "CoinGecko n’a pas fourni l’historique (HTTP " + response.status + ")." }, response.status === 429 ? 429 : 502);
-      const payload = await response.json().catch(() => null);
-      const prices = Array.isArray(payload?.prices) ? payload.prices : [];
-      const daily = new Map();
-      for (const item of prices) { const t = Number(item?.[0]), price = Number(item?.[1]); if (Number.isFinite(t) && Number.isFinite(price) && price > 0) daily.set(new Date(t).toISOString().slice(0, 10), { t, c: price }); }
-      const points = [...daily.values()].sort((a, b) => a.t - b.t);
-      if (!points.length) return json({ error: "CoinGecko n’a renvoyé aucun cours historique." }, 502);
-      return json({ id, points });
+      const symbol = String(body?.symbol ?? "").trim().toUpperCase();
+      const yahooSymbol = /^[A-Z0-9.\-]{1,20}$/.test(symbol) ? symbol : "";
+      const cacheKey = id + "|" + yahooSymbol + "|" + days;
+      const cached = CRYPTO_HISTORY_CACHE.get(cacheKey);
+      if (cached && cached.expires > Date.now()) return json({ id, source: "cache", points: cached.points });
+      if (yahooSymbol) {
+        const points = await fetchCryptoHistoryFromYahoo(yahooSymbol, days).catch(() => null);
+        if (points) {
+          CRYPTO_HISTORY_CACHE.set(cacheKey, { expires: Date.now() + CRYPTO_HISTORY_TTL, points });
+          return json({ id, source: "yahoo", points });
+        }
+      }
+      const fallback = await fetchCryptoHistoryFromCoinGecko(id, days);
+      if (fallback.points?.length) {
+        CRYPTO_HISTORY_CACHE.set(cacheKey, { expires: Date.now() + CRYPTO_HISTORY_TTL, points: fallback.points });
+        return json({ id, source: "coingecko", points: fallback.points });
+      }
+      return json({ error: fallback.error ?? "Historique crypto indisponible." }, fallback.status ?? 502);
     }
     if (action === "history") {
       const id = String(body?.id ?? "").trim();

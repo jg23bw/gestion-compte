@@ -53,9 +53,17 @@ La taille des métadonnées Auth est limitée par Supabase ; ce stockage convien
 
 ### Fonction Edge `stock-data`
 
-La fonction `supabase/functions/stock-data/index.ts` relaie les appels publics à StockAnalysis. Elle évite les blocages CORS rencontrés lorsque le navigateur appelle directement `stockanalysis.com` depuis GitHub Pages. Elle accepte uniquement `POST` avec les actions `search` (`{query}`) et `price` (`{id}`), vérifie la session Supabase via `auth/v1/user`, puis interroge les endpoints StockAnalysis. Elle ne lit ni n’écrit aucune table Supabase et ne nécessite aucune migration SQL.
+La fonction `supabase/functions/stock-data/index.ts` relaie les appels publics à StockAnalysis et à CoinGecko. Elle évite les blocages CORS rencontrés lorsque le navigateur appelle directement ces services depuis GitHub Pages. Elle accepte uniquement `POST`, vérifie la session Supabase via `auth/v1/user`, puis interroge les sources externes. Actions disponibles : `search` (`{query}`), `price` (`{id}`), `history` (`{id, period}`), `crypto-market` (`{ids}`) et `crypto-history` (`{id, symbol, days}`). Elle ne lit ni n’écrit aucune table Supabase et ne nécessite aucune migration SQL.
 
-La fonction est déclarée avec `verify_jwt = false` dans `supabase/config.toml` afin de laisser passer le pré-vol CORS, puis effectue elle-même le contrôle du jeton Bearer. Un appel sans jeton valide répond `401`. Le navigateur utilise `supabase.functions.invoke` et la session existante ; aucune clé d’API StockAnalysis ni clé `service_role` n’est exposée côté client.
+Pour `crypto-history`, la fonction tente d’abord la paire `SYMBOLE-EUR` de Yahoo Finance, dont les quotas sont bien plus larges que l’API publique CoinGecko. Si la paire est absente ou n’est pas libellée en euros, elle retombe sur CoinGecko (`/coins/{id}/market_chart?vs_currency=eur`). L’historique réussi est mis en cache en mémoire de l’instance pendant 6 heures. Un HTTP 429 de CoinGecko suspend les appels CoinGecko pendant 60 secondes. Ces mécanismes évitent la rafale d’erreurs « fournisseur temporairement limité » sur l’écran Opportunités.
+
+Une clé de démonstration CoinGecko peut relever le quota du repli. Elle reste un secret serveur, jamais présent dans le dépôt ni dans le navigateur :
+
+```sh
+supabase secrets set COINGECKO_API_KEY=<clé-démo>
+```
+
+La fonction est déclarée avec `verify_jwt = false` dans `supabase/config.toml` afin de laisser passer le pré-vol CORS, puis effectue elle-même le contrôle du jeton Bearer. Un appel sans jeton valide répond `401`. Le navigateur utilise `supabase.functions.invoke` et la session existante ; aucune clé d’API ni clé `service_role` n’est exposée côté client.
 
 Déploiement sur le projet Supabase lié :
 
