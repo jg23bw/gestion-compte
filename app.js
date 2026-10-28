@@ -1904,7 +1904,19 @@ function opportunityChange(asset,period){
   if(reported!==null&&reported!==undefined&&reported!==''&&Number.isFinite(Number(reported)))return Number(reported);
   if(asset.type==='stock'){
     const history=opportunityHistory?.[asset.id+'|1y']||[];
-    if(history.length>1){const last=history[history.length-1],days=period==='24h'?2:period==='7d'?7:30,cutoff=last.t-days*86400000;let prior=null;for(const p of history){if(p.t<=cutoff)prior=p;else break;}if(prior&&prior.c>0)return (last.c/prior.c-1)*100;}
+    if(history.length>1){
+      const last=history[history.length-1];
+      if(period==='24h'){
+        // Les actions/ETF ont des clôtures de séance, pas des cours horaires continus.
+        // La variation journalière doit comparer les deux dernières clôtures disponibles.
+        const prior=history[history.length-2];
+        if(prior&&prior.c>0)return (last.c/prior.c-1)*100;
+      }else{
+        const days=period==='7d'?7:30,cutoff=last.t-days*86400000;
+        let prior=null;for(const p of history){if(p.t<=cutoff)prior=p;else break;}
+        if(prior&&prior.c>0)return (last.c/prior.c-1)*100;
+      }
+    }
   }
   return null;
 }
