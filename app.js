@@ -2016,14 +2016,14 @@ async function loadOpportunityHistory(assetId,period){
       console.warn('Opportunity history unavailable for '+asset.symbol+' ('+historyPeriod+')',error);
       if(isActiveOpportunityChart(assetId,period)){
         const container=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');
-        if(container)container.innerHTML='<div class="opportunity-chart-empty" role="alert"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(error.message||'La source n’a pas répondu.')+'</span><small>La courbe n’est pas remplacée par une estimation ; une nouvelle tentative automatique est prévue dans une minute.</small></div>';
+        if(container)container.innerHTML='<div class="opportunity-chart-empty" role="alert"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(error.message||'La source n’a pas répondu.')+'</span><small>La courbe n’est pas remplacée par une estimation ; une nouvelle tentative sera possible après 15 minutes ou via « Actualiser l’analyse ».</small></div>';
         if(summary)summary.innerHTML='<span>MM200 non calculable : historique indisponible.</span>';
       }
       if(opportunityHistoryRetryTimer)clearTimeout(opportunityHistoryRetryTimer);
       opportunityHistoryRetryTimer=setTimeout(()=>{
         opportunityHistoryRetryTimer=null;
         if($('opportunities-view')?.classList.contains('active'))renderOpportunities();
-      },62000);
+      },900000);
     }finally{delete opportunityHistoryLoading[key];}
   })();
   return opportunityHistoryLoading[key];
