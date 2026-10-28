@@ -1294,7 +1294,7 @@ function stockLogoMarkup(symbol,extraClass=''){
   const fallback='<span class="asset-logo-fallback stock-logo-fallback">'+escapeHtml(label)+'</span>';
   if(symbolsWithoutReliableLogo.has(raw))return wrapper+fallback+'</span>';
   const url=raw==='SU'?'https://api.elbstream.com/logos/isin/FR0000121972':'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(raw)+'.png';
-  return wrapper+fallback+'<img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\\'logo-failed\\')}"></span>';
+  return wrapper+fallback+'<img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(&#39;logo-failed&#39;)}"></span>';
 }
 function stockAccountOptionLabel(account){return account.name+' · '+kindLabel(account);}
 function defaultStockAccountId(){const eligible=state.accounts.filter(isInvestmentAccount);const filtered=$('stocks-account-filter')?.value;if(filtered&&filtered!=='all'&&eligible.some(a=>a.id===filtered))return filtered;return (eligible.find(a=>bankKeyForAccount(a)==='interactive-brokers'&&effectiveAccountType(a)==='cto')||eligible[0])?.id||'';}
