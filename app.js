@@ -1101,6 +1101,7 @@ async function loadCryptoPrices(){
 function renderCrypto(){
   if(!$('crypto-rows'))return;
   syncMarketColumnHeaders('crypto');
+  syncMarketSortHeaders('crypto');
   const allHoldings=[...(state.cryptoHoldings||[])];
   const query=$('crypto-search')?.value.trim().toLocaleLowerCase('fr')||'';
   const sort=$('crypto-sort')?.value||'manual';
@@ -1469,6 +1470,7 @@ async function loadStockPrices(){
 function renderStocks(){
   if(!$('stocks-rows'))return;
   syncMarketColumnHeaders('stocks');
+  syncMarketSortHeaders('stocks');
   const allHoldings=[...(state.stockHoldings||[])];
   const query=$('stocks-search')?.value.trim().toLocaleLowerCase('fr')||'';
   const accountFilter=$('stocks-account-filter')?.value||'all';
