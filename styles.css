@@ -1525,3 +1525,6 @@ input,select,textarea{accent-color:#536dff}
  .sidebar{height:76px!important;min-height:76px!important;max-height:76px!important;align-items:center!important;gap:4px!important}
 }
 @media(max-width:1024px){:root[data-theme="dark"] .sidebar .nav-item.active{background:rgba(110,137,255,.2)!important;color:#eaf0ff!important}}
+
+/* Actions / Crypto : contrôle des colonnes intégré à la barre existante. */
+.market-columns-control{position:relative;flex:0 0 auto}.crypto-toolbar,.stocks-toolbar{gap:10px}.market-columns-control .opportunity-column-settings{right:0;top:calc(100% + 8px)}
