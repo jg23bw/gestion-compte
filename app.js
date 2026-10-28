@@ -1897,7 +1897,7 @@ function opportunityAssets(){
   const stocks=(state.stockHoldings||[]).map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:{},updatedAt:stockPrices.updatedAt,raw:h};});
   return [...crypto,...stocks];
 }
-function opportunityPercent(value){return value!==null&&value!==undefined&&value!==''&&Number.isFinite(Number(value))?((Number(value)>0?'+':'')+Number(value).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %'):'—';}
+function opportunityPercent(value){if(value===null||value===undefined||value===''||!Number.isFinite(Number(value)))return '—';const n=Math.abs(Number(value))<0.005?0:Number(value);return (n>0?'+':'')+n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %';}
 function opportunityChange(asset,period){
   const key=period==='24h'?'day':period==='7d'?'week':'month';
   const reported=asset.changes?.[key];
@@ -1907,12 +1907,9 @@ function opportunityChange(asset,period){
     if(history.length>1){
       const last=history[history.length-1];
       if(period==='24h'){
-        // Comparer le dernier cours disponible à la dernière clôture historique.
-        // Si l'historique contient déjà la clôture du jour, comparer les deux dernières clôtures.
-        const prior=history[history.length-2];
-        const current=Number(asset.price);
-        if(Number.isFinite(current)&&current>0&&last.c>0&&Math.abs(current/last.c-1)>0.00001)return (current/last.c-1)*100;
-        if(prior&&prior.c>0)return (last.c/prior.c-1)*100;
+        // Le fournisseur d'historique ne garantit ni cours intrajournalier ni clôture de référence datée.
+        // Ne pas assimiler une différence de prix à une performance journalière.
+        return null;
       }else{
         const days=period==='7d'?7:30,cutoff=last.t-days*86400000;
         let prior=null;for(const p of history){if(p.t<=cutoff)prior=p;else break;}
@@ -1951,7 +1948,10 @@ function opportunityLogoUrl(asset){
   return 'https://images.financialmodelingprep.com/symbol/'+encodeURIComponent(ticker)+'.png';
 }
 function opportunityLogoMarkup(asset){
-  const initials=escapeHtml(String(asset.symbol||'?').slice(0,3).toUpperCase());
+  const symbol=String(asset.symbol||'?').toUpperCase();
+  const initials=escapeHtml(symbol.slice(0,4));
+  const noReliableLogo=new Set(['SSLV','IGLN','XNAS','PUST','CSPX','SUR000001737']);
+  if(noReliableLogo.has(symbol))return '<span class="opportunity-asset-logo asset-logo logo-failed" aria-label="Actif '+initials+'"><span class="asset-logo-fallback opportunity-fallback">'+initials+'</span></span>';
   const url=opportunityLogoUrl(asset);
   return '<span class="opportunity-asset-logo asset-logo" aria-label="Actif '+initials+'"><span class="asset-logo-fallback opportunity-fallback">'+initials+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}"></span>';
 }
@@ -2043,8 +2043,8 @@ function renderOpportunityChart(assetId,period){
   const fullPoints=opportunityHistory[asset.id+'|'+historyPeriod]||[];
   if(!fullPoints.length){
     const failedAt=Number(opportunityHistoryAttempts[asset.id+'|'+historyPeriod])||0;
-    if(failedAt&&Date.now()-failedAt<60000){
-      chart.innerHTML='<div class="opportunity-chart-empty" role="status"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(opportunityHistoryErrors[asset.id+'|'+historyPeriod]||'Le fournisseur a limité les requêtes.')+'</span><small>Nouvelle tentative automatique dans une minute ; la courbe n’est pas remplacée par une estimation.</small></div>';
+    if(failedAt&&Date.now()-failedAt<900000){
+      chart.innerHTML='<div class="opportunity-chart-empty" role="status"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(opportunityHistoryErrors[asset.id+'|'+historyPeriod]||'Le fournisseur a limité les requêtes.')+'</span><small>Nouvelle tentative après 15 minutes ou via « Actualiser l’analyse » ; aucune estimation n’est affichée.</small></div>';
       summary.innerHTML='<span>MM200 et niveaux techniques indisponibles pour le moment.</span>';
       return;
     }
@@ -2193,14 +2193,14 @@ function renderOpportunities(){
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
   renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);setupOpportunityChart();loadOpportunityFearGreed();
   // Charge l’historique de toutes les positions avec une concurrence limitée pour
-  // éviter les limites des fournisseurs. Un échec récent est retenté après 60 s
+  // éviter les limites des fournisseurs. Un échec récent est retenté après 15 min
   // (ou immédiatement via le bouton « Actualiser l’analyse »).
   const historyAssets=assets.filter(opportunityHasHistorySource);
   const queue=historyAssets.filter(asset=>{
     const key=asset.id+'|1y';
     if(opportunityHistory[key]||opportunityHistoryLoading[key])return false;
     const failedAt=Number(opportunityHistoryAttempts[key])||0;
-    return !failedAt||Date.now()-failedAt>=60000;
+    return !failedAt||Date.now()-failedAt>=900000;
   });
   const worker=async()=>{
     while(queue.length){
