@@ -1907,9 +1907,11 @@ function opportunityChange(asset,period){
     if(history.length>1){
       const last=history[history.length-1];
       if(period==='24h'){
-        // Les actions/ETF ont des clôtures de séance, pas des cours horaires continus.
-        // La variation journalière doit comparer les deux dernières clôtures disponibles.
+        // Comparer le dernier cours disponible à la dernière clôture historique.
+        // Si l'historique contient déjà la clôture du jour, comparer les deux dernières clôtures.
         const prior=history[history.length-2];
+        const current=Number(asset.price);
+        if(Number.isFinite(current)&&current>0&&last.c>0&&Math.abs(current/last.c-1)>0.00001)return (current/last.c-1)*100;
         if(prior&&prior.c>0)return (last.c/prior.c-1)*100;
       }else{
         const days=period==='7d'?7:30,cutoff=last.t-days*86400000;
