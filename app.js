@@ -2151,7 +2151,7 @@ function renderMarketDailySummary(kind,holdings,metrics){
   statusEl.textContent=(missing===0?'Portefeuille complet':'Données partielles · '+valid+' position(s) valorisée(s)')+' · variation sur 24 h';
 }
 
-function marketChangeCell(value,period){const cls=value===null?'missing':value>0?'positive':value<0?'negative':'neutral';const daily=period==='24h';const arrow=value===null?'':value>0?'▲':value<0?'▼':'•';return '<td class="'+(daily?'market-daily-change-cell':'')+'"><span class="opportunity-ranking-change '+cls+(daily?' market-daily-change-pill':'')+'">'+(daily&&value!==null?'<span class="market-daily-change-arrow" aria-hidden="true">'+arrow+'</span>':'')+(value===null?'—':escapeHtml(opportunityPercent(value)))+'</span></td>';}
+function marketChangeCell(value,period){const cls=value===null?'missing':value>0?'positive':value<0?'negative':'neutral';const daily=period==='24h';return '<td class="'+(daily?'market-daily-change-cell':'')+'"><span class="opportunity-ranking-change '+cls+(daily?' market-daily-change-pill':'')+'">'+(value===null?'—':escapeHtml(opportunityPercent(value)))+'</span></td>';}
 function syncMarketColumnHeaders(kind){const visible=new Set(marketVisibleColumns(kind));document.querySelectorAll('[data-market-head^="'+kind+':"]').forEach(th=>{th.hidden=!visible.has(th.dataset.marketHead.split(':')[1]);});}
 const OPPORTUNITY_COLUMNS_KEY='gestion-comptes-opportunity-columns-v1';
 const OPPORTUNITY_SORT_KEY='gestion-comptes-opportunity-sort-v1';
