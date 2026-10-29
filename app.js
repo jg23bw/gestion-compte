@@ -1153,6 +1153,7 @@ function renderCrypto(){
   performanceElement.textContent=investedPriced>0?formatSignedPercent(performance):'—';
   performanceElement.classList.toggle('positive',performance>0);
   performanceElement.classList.toggle('negative',performance<0);
+  renderMarketDailySummary('crypto',holdings,metrics);
 
   const priceStatus=$('crypto-price-status');
   if(priceStatus){
@@ -1527,6 +1528,7 @@ function renderStocks(){
   performanceElement.textContent=investedPriced>0?formatSignedPercent(performance):'—';
   performanceElement.classList.toggle('positive',performance>0);
   performanceElement.classList.toggle('negative',performance<0);
+  renderMarketDailySummary('stocks',holdings,metrics);
 
   const priceStatus=$('stocks-price-status');
   if(priceStatus){
@@ -2121,6 +2123,34 @@ window.addEventListener('resize',()=>{for(const kind of ['crypto','stocks'])posi
 window.addEventListener('scroll',()=>{for(const kind of ['crypto','stocks'])positionMarketColumnPanel(kind);},true);
 function renderMarketColumnSettings(kind){const panel=$(kind+'-column-settings');if(!panel)return;const visible=marketVisibleColumns(kind);panel.innerHTML='<div class="opportunity-column-settings-title">Variations affichées</div>'+MARKET_CHANGE_COLUMNS.map(c=>'<label class="opportunity-column-option"><input type="checkbox" data-market-column-kind="'+kind+'" data-market-column="'+c.id+'" '+(visible.includes(c.id)?'checked ':'')+'><span>'+c.label+'</span></label>').join('')+'<button type="button" class="opportunity-column-reset" data-market-columns-reset="'+kind+'">Tout afficher</button>';}
 function marketChangeForHolding(kind,holding){const id=(kind==='crypto'?'c-':'s-')+holding.id;const asset=opportunityAssets().find(a=>a.id===id);return asset?{'24h':opportunityChange(asset,'24h'),'7d':opportunityChange(asset,'7d'),'30d':opportunityChange(asset,'30d')}:{'24h':null,'7d':null,'30d':null};}
+
+function renderMarketDailySummary(kind,holdings,metrics){
+  const prefix=kind==='crypto'?'crypto':'stocks';
+  const amountEl=$(prefix+'-daily-amount'),percentEl=$(prefix+'-daily-percent'),statusEl=$(prefix+'-daily-status');
+  if(!amountEl||!percentEl||!statusEl)return;
+  let deltaTotal=0,previousTotal=0,valid=0,missing=0;
+  for(const holding of holdings){
+    const metric=metrics.get(holding.id);
+    if(!metric||metric.value===null||!Number.isFinite(metric.value)||metric.value<=0||(isManualValueHolding(holding)&&kind==='stocks')){missing++;continue;}
+    const change=marketChangeForHolding(kind,holding)['24h'];
+    if(change===null||!Number.isFinite(change)||change<=-100){missing++;continue;}
+    const previousValue=metric.value/(1+change/100);
+    if(!Number.isFinite(previousValue)||previousValue<=0){missing++;continue;}
+    previousTotal+=previousValue;deltaTotal+=metric.value-previousValue;valid++;
+  }
+  if(valid===0){
+    amountEl.textContent='—';percentEl.textContent='—';
+    amountEl.classList.remove('positive','negative');percentEl.classList.remove('positive','negative');
+    statusEl.textContent='Variation journalière indisponible';return;
+  }
+  const percent=previousTotal>0?deltaTotal/previousTotal*100:null;
+  amountEl.textContent=(deltaTotal>0?'+':'')+euro(deltaTotal);
+  percentEl.textContent=percent===null?'—':formatSignedPercent(percent);
+  amountEl.classList.toggle('positive',deltaTotal>0);amountEl.classList.toggle('negative',deltaTotal<0);
+  percentEl.classList.toggle('positive',percent!==null&&percent>0);percentEl.classList.toggle('negative',percent!==null&&percent<0);
+  statusEl.textContent=(missing===0?'Portefeuille complet':'Données partielles · '+valid+' position(s) valorisée(s)')+' · variation sur 24 h';
+}
+
 function marketChangeCell(value,period){const cls=value===null?'missing':value>0?'positive':value<0?'negative':'neutral';const daily=period==='24h';const arrow=value===null?'':value>0?'▲':value<0?'▼':'•';return '<td class="'+(daily?'market-daily-change-cell':'')+'"><span class="opportunity-ranking-change '+cls+(daily?' market-daily-change-pill':'')+'">'+(daily&&value!==null?'<span class="market-daily-change-arrow" aria-hidden="true">'+arrow+'</span>':'')+(value===null?'—':escapeHtml(opportunityPercent(value)))+'</span></td>';}
 function syncMarketColumnHeaders(kind){const visible=new Set(marketVisibleColumns(kind));document.querySelectorAll('[data-market-head^="'+kind+':"]').forEach(th=>{th.hidden=!visible.has(th.dataset.marketHead.split(':')[1]);});}
 const OPPORTUNITY_COLUMNS_KEY='gestion-comptes-opportunity-columns-v1';
