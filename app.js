@@ -1720,7 +1720,7 @@ function renderWealthViews(){
  const pensionIncome=Math.max(0,Math.min(15000,Number($('fire-pension')?.value??2000)));
  const pensionStartAge=64;
  const financialNeed=Math.max(0,desiredIncome-passiveIncome-(currentAge>=pensionStartAge?pensionIncome:0));
- const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||4)/100));
+ const withdrawal=Math.max(0.005,Math.min(0.10,(Number($('fire-withdrawal')?.value)||3.25)/100));
  const saving=Math.max(0,Number($('fire-saving')?.value||0));
  const rate=Number($('fire-return')?.value||0)/100;
  const inflation=Math.max(0,Number($('fire-inflation')?.value||0)/100);
