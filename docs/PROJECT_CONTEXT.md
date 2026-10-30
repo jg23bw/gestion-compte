@@ -288,3 +288,28 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les échecs d’historique sont mémorisés par actif : le préchargement de l’écran Opportunités ne relance plus une rafale à chaque rendu, affiche un message explicite, et une nouvelle tentative automatique est planifiée après une minute. Le bouton « Actualiser l’analyse » force une nouvelle tentative immédiate.
 - Cache-busting `app.js` : `crypto-history-yahoo-v1`. `styles.css` inchangé.
 - Vérifications réellement effectuées : `node --check app.js` ; appels directs Yahoo Finance pour BTC, ETH et RSR en EUR (366 points sur 1 an, 1 827 points sur 5 ans) et contrôle du repli pour des symboles absents (PUST, ESE → HTTP 404 Yahoo, donc CoinGecko). La fonction Edge n’a pas pu être déployée ni testée ici : elle doit être redéployée (`supabase functions deploy stock-data`) pour que le correctif soit actif. Aucun test navigateur avec session Supabase réelle n’a été exécuté.
+
+
+## 19. Graphique technique TradingView et fiabilisation MM200 (30 octobre 2026)
+
+- L’écran « Opportunités » utilise désormais TradingView Lightweight Charts 4.2.2 pour afficher le cours historique et la MM200 sur une échelle temporelle commune, avec crosshair, zoom, déplacement et adaptation à la largeur du conteneur.
+- La bibliothèque est chargée depuis un CDN dans `index.html`; aucun framework ni étape de build n’est ajouté. Les versions CSS/JS ont été actualisées pour invalider le cache du navigateur.
+- Les historiques sont normalisés en clôtures journalières datées en UTC ; les doublons d’une même journée sont dédupliqués et les valeurs non finies ou non positives sont exclues.
+- La MM200 est une SMA arithmétique des 200 derniers points journaliers : 200 séances pour les actions/ETF et 200 jours calendaires pour les cryptomonnaies. Pour les cryptos, Yahoo fournit des clôtures journalières ; le repli CoinGecko fournit des observations journalières, qui ne constituent pas nécessairement une clôture de marché officielle. Une lacune supérieure à 10 jours pour les actions, ou toute journée manquante pour les cryptos, invalide la fenêtre concernée ; aucune interpolation ni valeur de remplacement n’est appliquée.
+- La dernière clôture, la MM200 et l’écart en pourcentage sont calculés sur la même date. Le résumé indique la date de la dernière clôture et le nombre de clôtures valides. Si la fenêtre récente est insuffisante ou discontinue, la MM200 reste indisponible plutôt que d’afficher un signal trompeur.
+- Les périodes 1 mois et 3 mois modifient le zoom du graphique sans raccourcir l’historique utilisé pour calculer la MM200. Les actions sont affichées sur environ 21/63 séances et les cryptos sur 30/90 jours.
+- Les sources de marché ne sont pas remplacées par cette migration : actions/ETF via StockAnalysis ; cryptos via Yahoo Finance en EUR, avec repli CoinGecko. La qualité de la moyenne dépend donc toujours de la disponibilité et de l’exactitude de ces fournisseurs. La MM200 est calculée sur les cours de clôture fournis, sans ajustement spécifique des dividendes ou opérations sur titres au-delà de ce que la source transmet.
+- Modifications : `app.js`, `index.html`, `styles.css`. Aucune migration Supabase et aucun changement de données personnelles.
+- Branche de travail : `feat/tradingview-mm200`. Les changements ne sont pas fusionnés dans `main` et GitHub Pages n’a pas été déployé depuis cette branche.
+- Vérifications effectuées dans cette session : relecture des sections modifiées et contrôle des références de scripts, styles et fonctions. **Non effectués** : `node --check`, tests automatisés, test navigateur réel, contrôle de la précision des historiques auprès des fournisseurs et validation sur téléphone. Ces validations restent nécessaires avant fusion.
+
+
+## Compléments de validation MM200 (30 octobre 2026)
+
+- Le calcul pur est isolé dans `technical-indicators.js`, utilisé par l’application et exporté pour Node.js.
+- La normalisation déduplique les points UTC et retient, en cas de plusieurs observations dans la même journée (notamment CoinGecko), la dernière observation intrajournalière disponible.
+- Le calcul SMA utilise une fenêtre glissante de 200 points valides. Une donnée invalide ou une lacune supérieure au seuil autorisé réinitialise la fenêtre ; il faut ensuite 200 nouveaux points continus pour obtenir une moyenne.
+- Le graphique utilise la devise native de l’action/ETF renvoyée par StockAnalysis. Les valeurs GBX sont converties en GBP (division par 100) pour l’affichage ; les cryptos restent en EUR. La comparaison cours/MM200 n’est donc pas faussée par un symbole monétaire EUR appliqué à des prix USD/GBP.
+- Un tooltip au survol/crosshair affiche la date, le cours, la MM200 et l’écart en pourcentage. Le listener de redimensionnement de secours est retiré lors de la destruction du graphique.
+- Tests ajoutés dans `tests/opportunity-mm200.test.js` et workflow GitHub Actions `.github/workflows/mm200-tests.yml` (Node.js 22).
+- 10 scénarios ont été exécutés dans l’environnement d’orchestration : fenêtre insuffisante, moyenne exacte, lacunes crypto/actions, weekends et jours fériés, clôtures invalides, normalisation UTC, timestamps secondes/millisecondes, reprise après lacune et déduplication déterministe. Résultat : 10 réussis, 0 échec. Le runner Node.js de GitHub Actions n’a pas encore été observé en exécution ; ne pas considérer ce résultat comme une validation navigateur.
