@@ -2001,7 +2001,7 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
   const smaSeries=chart.addLineSeries({color:'#e7a844',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
   const asTime=point=>new Date(point.t).toISOString().slice(0,10);
   priceSeries.setData(points.map(point=>({time:asTime(point),value:point.c*chartScale})));
-  smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:sma[index]*chartScale})).filter(point=>Number.isFinite(point.value)));
+  smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:Number.isFinite(sma[index])?sma[index]*chartScale:null})).filter(point=>Number.isFinite(point.value)));
   const tooltip=document.createElement('div');
   tooltip.className='opportunity-tv-tooltip';
   tooltip.setAttribute('aria-live','polite');
