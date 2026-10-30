@@ -302,3 +302,14 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Modifications : `app.js`, `index.html`, `styles.css`. Aucune migration Supabase et aucun changement de données personnelles.
 - Branche de travail : `feat/tradingview-mm200`. Les changements ne sont pas fusionnés dans `main` et GitHub Pages n’a pas été déployé depuis cette branche.
 - Vérifications effectuées dans cette session : relecture des sections modifiées et contrôle des références de scripts, styles et fonctions. **Non effectués** : `node --check`, tests automatisés, test navigateur réel, contrôle de la précision des historiques auprès des fournisseurs et validation sur téléphone. Ces validations restent nécessaires avant fusion.
+
+
+## Compléments de validation MM200 (30 octobre 2026)
+
+- Le calcul pur est isolé dans `technical-indicators.js`, utilisé par l’application et exporté pour Node.js.
+- La normalisation déduplique les points UTC et retient, en cas de plusieurs observations dans la même journée (notamment CoinGecko), la dernière observation intrajournalière disponible.
+- Le calcul SMA utilise une fenêtre glissante de 200 points valides. Une donnée invalide ou une lacune supérieure au seuil autorisé réinitialise la fenêtre ; il faut ensuite 200 nouveaux points continus pour obtenir une moyenne.
+- Le graphique utilise la devise native de l’action/ETF renvoyée par StockAnalysis. Les valeurs GBX sont converties en GBP (division par 100) pour l’affichage ; les cryptos restent en EUR. La comparaison cours/MM200 n’est donc pas faussée par un symbole monétaire EUR appliqué à des prix USD/GBP.
+- Un tooltip au survol/crosshair affiche la date, le cours, la MM200 et l’écart en pourcentage. Le listener de redimensionnement de secours est retiré lors de la destruction du graphique.
+- Tests ajoutés dans `tests/opportunity-mm200.test.js` et workflow GitHub Actions `.github/workflows/mm200-tests.yml` (Node.js 22).
+- 10 scénarios ont été exécutés dans l’environnement d’orchestration : fenêtre insuffisante, moyenne exacte, lacunes crypto/actions, weekends et jours fériés, clôtures invalides, normalisation UTC, timestamps secondes/millisecondes, reprise après lacune et déduplication déterministe. Résultat : 10 réussis, 0 échec. Le runner Node.js de GitHub Actions n’a pas encore été observé en exécution ; ne pas considérer ce résultat comme une validation navigateur.
