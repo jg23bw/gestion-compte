@@ -79,3 +79,5 @@ test('unsorted and duplicate daily observations normalize deterministically',()=
     {t:day+2*DAY,c:30}
   ]);
 });
+
+// Couverture exécutée par GitHub Actions avec Node.js 22.
