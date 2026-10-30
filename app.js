@@ -1958,26 +1958,88 @@ function opportunityLogoMarkup(asset){
   const url=opportunityLogoUrl(asset);
   return '<span class="opportunity-asset-logo asset-logo" aria-label="Actif '+initials+'"><span class="asset-logo-fallback opportunity-fallback">'+initials+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}"></span>';
 }
-function opportunitySma(values,period=200){
-  const out=Array(values.length).fill(null);let sum=0;
-  for(let i=0;i<values.length;i++){sum+=values[i];if(i>=period)sum-=values[i-period];if(i>=period-1)out[i]=sum/period;}
-  return out;
+function normalizeOpportunityDailyPoints(rawPoints,type){
+  const byDay=new Map();
+  for(const point of (Array.isArray(rawPoints)?rawPoints:[])){
+    const rawTime=Number(point?.t),close=Number(point?.c);
+    if(!Number.isFinite(rawTime)||!Number.isFinite(close)||close<=0)continue;
+    const milliseconds=rawTime<1e12?rawTime*1000:rawTime;
+    const date=new Date(milliseconds);
+    if(Number.isNaN(date.getTime()))continue;
+    const day=date.toISOString().slice(0,10);
+    byDay.set(day,{t:Date.parse(day+'T00:00:00Z'),c:close});
+  }
+  return [...byDay.values()].sort((a,b)=>a.t-b.t);
 }
-function opportunityChartSvg(points,period,fullPoints=points){
-  const usable=points.filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
-  const baseline=fullPoints.filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0);
-  if(usable.length<2)return '<div class="opportunity-chart-empty">Historique réel insuffisant pour tracer la courbe.</div>';
-  const fullSma=opportunitySma(baseline.map(p=>p.c),200),smaByTime=new Map(baseline.map((p,i)=>[p.t,fullSma[i]]));
-  const closes=usable.map(p=>p.c),sma=usable.map(p=>smaByTime.get(p.t)??null),all=[...closes,...sma.filter(Number.isFinite)];
-  const min=Math.min(...all),max=Math.max(...all),range=max-min||Math.max(max*.02,1);
-  const width=900,height=320,padL=64,padR=20,padT=20,padB=32,innerW=width-padL-padR,innerH=height-padT-padB;
-  const x=i=>padL+i/(usable.length-1)*innerW,y=v=>padT+(max-v)/range*innerH;
-  const line=closes.map((v,i)=>(i?'L':'M')+x(i).toFixed(2)+' '+y(v).toFixed(2)).join(' ');
-  let started=false;const smaPath=sma.map((v,i)=>{if(!Number.isFinite(v)){started=false;return null;}const path=(started?'L':'M')+x(i).toFixed(2)+' '+y(v).toFixed(2);started=true;return path;}).filter(Boolean).join(' ');
-  const grid=[0,1,2,3].map(i=>{const v=max-(range*i/3),yy=padT+innerH*i/3;return '<line x1="'+padL+'" y1="'+yy+'" x2="'+(width-padR)+'" y2="'+yy+'" stroke="currentColor" opacity=".10"/><text x="'+(padL-9)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(new Intl.NumberFormat('fr-FR',{notation:'compact',maximumFractionDigits:2}).format(v))+'</text>';}).join('');
-  const area=line+' L'+x(usable.length-1)+' '+(height-padB)+' L'+x(0)+' '+(height-padB)+' Z';
-  const dateLabel=index=>{const d=new Date(usable[index].t);return Number.isNaN(d.getTime())?'':new Intl.DateTimeFormat('fr-FR',{month:'short',year:undefined}).format(d);};
-  return '<svg viewBox="0 0 '+width+' '+height+'" role="img" aria-label="Cours historique et moyenne mobile 200 jours">'+grid+'<path d="'+area+'" fill="#526ff0" opacity=".08"/><path d="'+line+'" fill="none" stroke="#526ff0" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>'+(smaPath?'<path d="'+smaPath+'" fill="none" stroke="#e7a844" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>':'')+'<text x="'+padL+'" y="'+(height-6)+'" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(0))+'</text><text x="'+(width-padR)+'" y="'+(height-6)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".65">'+escapeHtml(dateLabel(usable.length-1))+'</text></svg>';
+function opportunitySmaPoints(points,type,period=200){
+  const output=Array(points.length).fill(null);
+  const maxGapDays=type==='crypto'?1:10;
+  for(let i=period-1;i<points.length;i++){
+    const start=i-period+1;
+    let sum=0,valid=true;
+    for(let j=start;j<=i;j++){
+      const point=points[j];
+      if(!point||!Number.isFinite(point.c)||point.c<=0){valid=false;break;}
+      if(j>start){
+        const gap=(point.t-points[j-1].t)/86400000;
+        if(!Number.isFinite(gap)||gap<=0||gap>maxGapDays){valid=false;break;}
+      }
+      sum+=point.c;
+    }
+    if(valid)output[i]=sum/period;
+  }
+  return output;
+}
+let opportunityChartInstance=null;
+let opportunityChartResizeObserver=null;
+function destroyOpportunityChart(){
+  if(opportunityChartResizeObserver){opportunityChartResizeObserver.disconnect();opportunityChartResizeObserver=null;}
+  if(opportunityChartInstance){opportunityChartInstance.remove();opportunityChartInstance=null;}
+}
+function renderOpportunityTradingViewChart(container,points,sma,period,asset){
+  destroyOpportunityChart();
+  const library=window.LightweightCharts;
+  if(!library||typeof library.createChart!=='function'){
+    container.innerHTML='<div class="opportunity-chart-empty" role="alert">Le composant TradingView n’a pas pu être chargé. Vérifie la connexion puis recharge la page.</div>';
+    return;
+  }
+  container.innerHTML='<div id="opportunity-tv-chart" class="opportunity-tv-chart" role="img" aria-label="Graphique TradingView du cours et de la MM200 de '+escapeHtml(asset.symbol)+'"></div>';
+  const target=$('opportunity-tv-chart');
+  if(!target)return;
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const textColor=dark?'#c5d1e2':'#68758a';
+  const gridColor=dark?'rgba(170,190,220,.10)':'rgba(35,55,85,.08)';
+  const formatter=value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:value<1?5:2}).format(value);
+  const chart=library.createChart(target,{
+    width:Math.max(320,target.clientWidth||800),height:340,
+    layout:{background:{type:'solid',color:dark?'#142238':'#ffffff'},textColor,fontFamily:"'DM Sans', sans-serif",fontSize:11},
+    grid:{vertLines:{color:gridColor},horzLines:{color:gridColor}},
+    crosshair:{mode:library.CrosshairMode?.Normal??0,vertLine:{color:dark?'#91a7c8':'#8b98ad',width:1,style:2},horzLine:{color:dark?'#91a7c8':'#8b98ad',width:1,style:2}},
+    rightPriceScale:{borderColor:gridColor,scaleMargins:{top:.12,bottom:.12}},
+    timeScale:{borderColor:gridColor,timeVisible:false,secondsVisible:false,rightOffset:6,barSpacing:7},
+    localization:{locale:'fr-FR',dateFormat:'dd MMM yyyy',priceFormatter:formatter},
+    handleScroll:{鼠wheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
+    handleScale:{鼠wheel:true,pinch:true,axisPressedMouseMove:true}
+  });
+  const priceSeries=chart.addLineSeries({color:'#526ff0',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
+  const smaSeries=chart.addLineSeries({color:'#e7a844',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
+  const asTime=point=>new Date(point.t).toISOString().slice(0,10);
+  priceSeries.setData(points.map(point=>({time:asTime(point),value:point.c})));
+  smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:sma[index]})).filter(point=>Number.isFinite(point.value)));
+  chart.timeScale().fitContent();
+  const visibleBars=period==='1m'?30:period==='3m'?90:points.length;
+  if(points.length>visibleBars)chart.timeScale().setVisibleLogicalRange({from:Math.max(0,points.length-visibleBars),to:points.length-1});
+  opportunityChartInstance=chart;
+  if(typeof ResizeObserver!=='undefined'){
+    opportunityChartResizeObserver=new ResizeObserver(entries=>{
+      const width=Math.floor(entries[0]?.contentRect?.width||target.clientWidth);
+      if(width>0&&opportunityChartInstance===chart)chart.applyOptions({width});
+    });
+    opportunityChartResizeObserver.observe(target);
+  }else{
+    const resize=()=>{if(opportunityChartInstance===chart&&target.clientWidth>0)chart.applyOptions({width:target.clientWidth});};
+    window.addEventListener('resize',resize,{passive:true});
+  }
 }
 function isActiveOpportunityChart(assetId,period){
   const select=$('opportunity-chart-asset');
@@ -2002,11 +2064,11 @@ async function loadOpportunityHistory(assetId,period){
       if(asset.type==='crypto'){
         const days=365;
         const payload=await stockFunction('crypto-history',{id:asset.raw.coingeckoId,symbol:asset.symbol,days});
-        points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((a,b)=>a.t-b.t);
+        points=normalizeOpportunityDailyPoints(payload.points,'crypto');
       }else{
         if(!asset.raw.priceId)throw new Error('Aucun identifiant de cours exploitable pour cet actif.');
         const payload=await stockFunction('history',{id:asset.raw.priceId,period:historyPeriod});
-        points=(payload.points||[]).map(p=>({t:Number(p.t),c:Number(p.c)})).filter(p=>Number.isFinite(p.t)&&Number.isFinite(p.c)&&p.c>0).sort((a,b)=>a.t-b.t);
+        points=normalizeOpportunityDailyPoints(payload.points,'stock');
       }
       if(!points.length)throw new Error('La source n’a renvoyé aucun cours historique pour cet actif.');
       opportunityHistory[key]=points;
@@ -2041,12 +2103,13 @@ let opportunityHistoryRetryTimer=null;
 function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');if(!chart||!summary)return;
-  if(!opportunityHasHistorySource(asset)){chart.innerHTML='<div class="opportunity-chart-empty" role="status">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas de source de cours historique exploitable ; aucun prix n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
+  if(!opportunityHasHistorySource(asset)){destroyOpportunityChart();chart.innerHTML='<div class="opportunity-chart-empty" role="status">Historique indisponible pour '+escapeHtml(asset.symbol)+'. Cette position n’a pas de source de cours historique exploitable ; aucun prix n’est inventé.</div>';summary.innerHTML='<span>MM200 non calculable pour cette position.</span>';return;}
   const historyPeriod='1y';
   const fullPoints=opportunityHistory[asset.id+'|'+historyPeriod]||[];
   if(!fullPoints.length){
     const failedAt=Number(opportunityHistoryAttempts[asset.id+'|'+historyPeriod])||0;
     if(failedAt&&Date.now()-failedAt<900000){
+      destroyOpportunityChart();
       chart.innerHTML='<div class="opportunity-chart-empty" role="status"><strong>Historique momentanément indisponible</strong><span>'+escapeHtml(opportunityHistoryErrors[asset.id+'|'+historyPeriod]||'Le fournisseur a limité les requêtes.')+'</span><small>Nouvelle tentative après 15 minutes ou via « Actualiser l’analyse » ; aucune estimation n’est affichée.</small></div>';
       summary.innerHTML='<span>MM200 et niveaux techniques indisponibles pour le moment.</span>';
       return;
@@ -2054,21 +2117,23 @@ function renderOpportunityChart(assetId,period){
     loadOpportunityHistory(assetId,period);
     return;
   }
-  const latestTime=fullPoints[fullPoints.length-1].t;
+  const smaFull=opportunitySmaPoints(fullPoints,asset.type,200);
+  const last=fullPoints[fullPoints.length-1],lastSma=smaFull[smaFull.length-1];
   const rangeDays=period==='1m'?30:period==='3m'?90:365;
-  const visibleFrom=latestTime-rangeDays*86400000;
-  const points=fullPoints.filter(p=>p.t>=visibleFrom);
-  const smaFull=opportunitySma(fullPoints.map(p=>p.c),200),last=fullPoints[fullPoints.length-1],lastSma=smaFull[smaFull.length-1];
-  const first=points[0]||fullPoints[0],change=(last.c/first.c-1)*100,distance=Number.isFinite(lastSma)?(last.c/lastSma-1)*100:null;
-  const recent=fullPoints.filter(p=>p.t>=latestTime-30*86400000).map(p=>p.c);
-  const older=fullPoints.filter(p=>p.t>=latestTime-60*86400000&&p.t<latestTime-30*86400000).map(p=>p.c);
+  const visibleFrom=last.t-rangeDays*86400000;
+  const visiblePoints=fullPoints.filter(p=>p.t>=visibleFrom);
+  const first=visiblePoints[0]||fullPoints[0],change=(last.c/first.c-1)*100,distance=Number.isFinite(lastSma)?(last.c/lastSma-1)*100:null;
+  const recent=fullPoints.filter(p=>p.t>=last.t-30*86400000).map(p=>p.c);
+  const older=fullPoints.filter(p=>p.t>=last.t-60*86400000&&p.t<last.t-30*86400000).map(p=>p.c);
   const momentum=recent.length>1&&older.length>1?(recent[recent.length-1]/older[0]-1)*100:null;
-  const window=fullPoints.filter(p=>p.t>=latestTime-90*86400000).map(p=>p.c);
+  const window=fullPoints.filter(p=>p.t>=last.t-90*86400000).map(p=>p.c);
   const support=window.length?Math.min(...window):null,resistance=window.length?Math.max(...window):null;
   const trend=distance===null?'MM200 non calculable':distance>=0?'Cours au-dessus de la MM200':'Cours sous la MM200';
-  const signal=distance===null?'Historique insuffisant pour confirmer la tendance longue':distance>3&&momentum!==null&&momentum>0?'Biais haussier à confirmer':distance< -3&&momentum!==null&&momentum<0?'Biais baissier / prudence':'Signal technique neutre ou mixte';
-  summary.innerHTML='<div class="opportunity-chart-metric"><span>Dernier cours</span><strong>'+escapeHtml(euro(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 (200 séances/jours)</span><strong>'+(lastSma===null||!Number.isFinite(lastSma)?'—':escapeHtml(euro(lastSma)))+'</strong></div><div class="opportunity-chart-metric"><span>Écart à MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(euro(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(euro(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours, pas des niveaux garantis. Indicateurs descriptifs, pas une recommandation d’achat/vente.</small></div>';
-  chart.innerHTML=opportunityChartSvg(points,period,fullPoints);
+  const signal=distance===null?'Historique insuffisant ou discontinu pour confirmer la tendance longue':distance>3&&momentum!==null&&momentum>0?'Biais haussier à confirmer':distance< -3&&momentum!==null&&momentum<0?'Biais baissier / prudence':'Signal technique neutre ou mixte';
+  const dateLabel=new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeZone:'UTC'}).format(new Date(last.t));
+  const smaLabel=Number.isFinite(lastSma)?euro(lastSma):'Indisponible';
+  summary.innerHTML='<div class="opportunity-chart-metric"><span>Dernière clôture · '+escapeHtml(dateLabel)+'</span><strong>'+escapeHtml(euro(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 · 200 '+(asset.type==='crypto'?'jours':'séances')+'</span><strong>'+(Number.isFinite(lastSma)?escapeHtml(smaLabel):'Indisponible')+'</strong></div><div class="opportunity-chart-metric"><span>Écart clôture / MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Clôtures valides</span><strong>'+fullPoints.length+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(euro(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(euro(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours. La MM200 est calculée sur les 200 dernières clôtures journalières valides ; les interruptions anormales invalident la moyenne. Le cours et la MM200 affichés correspondent à la même date de clôture.</small></div>';
+  renderOpportunityTradingViewChart(chart,fullPoints,smaFull,period,asset);
 }
 function opportunityHasHistorySource(asset){
   return asset.type==='crypto' ? !!asset.raw?.coingeckoId : !!asset.raw?.priceId;
@@ -2094,9 +2159,9 @@ function setupOpportunityChart(){
 function opportunityMovingAverageStatus(asset){
   const history=opportunityHistory[asset.id+'|1y']||[];
   if(history.length<200)return {label:'MM200 indisponible',tone:'neutral',distance:null};
-  const closes=history.map(p=>p.c),sma=opportunitySma(closes,200),last=closes[closes.length-1],avg=sma[sma.length-1];
+  const sma=opportunitySmaPoints(history,asset.type,200),last=history[history.length-1],avg=sma[sma.length-1];
   if(!Number.isFinite(avg)||avg<=0)return {label:'MM200 indisponible',tone:'neutral',distance:null};
-  const distance=(last/avg-1)*100;
+  const distance=(last.c/avg-1)*100;
   return {label:distance>=0?'Au-dessus MM200':'Sous MM200',tone:distance>=0?'positive':'negative',distance};
 }
 const MARKET_CHANGE_COLUMNS=[{id:'24h',label:'24 heures'},{id:'7d',label:'7 jours'},{id:'30d',label:'30 jours'}];
