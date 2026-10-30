@@ -2027,7 +2027,7 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
   priceSeries.setData(points.map(point=>({time:asTime(point),value:point.c})));
   smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:sma[index]})).filter(point=>Number.isFinite(point.value)));
   chart.timeScale().fitContent();
-  const visibleBars=period==='1m'?30:period==='3m'?90:points.length;
+  const visibleBars=asset.type==='crypto'?(period==='1m'?30:period==='3m'?90:points.length):(period==='1m'?21:period==='3m'?63:points.length);
   if(points.length>visibleBars)chart.timeScale().setVisibleLogicalRange({from:Math.max(0,points.length-visibleBars),to:points.length-1});
   opportunityChartInstance=chart;
   if(typeof ResizeObserver!=='undefined'){
@@ -2056,7 +2056,7 @@ async function loadOpportunityHistory(assetId,period){
   if(opportunityHistoryLoading[key])return opportunityHistoryLoading[key];
   if(isActiveOpportunityChart(assetId,period)){
     const container=$('opportunity-price-chart');
-    if(container)container.innerHTML='<div class="opportunity-chart-empty" role="status"><span class="opportunity-loading-spinner" aria-hidden="true"></span>Chargement de l’historique réel de '+escapeHtml(asset.symbol)+'…</div>';
+    if(container){destroyOpportunityChart();container.innerHTML='<div class="opportunity-chart-empty" role="status"><span class="opportunity-loading-spinner" aria-hidden="true"></span>Chargement de l’historique réel de '+escapeHtml(asset.symbol)+'…</div>';}
   }
   opportunityHistoryLoading[key]=(async()=>{
     try{
@@ -2148,7 +2148,7 @@ function setupOpportunityChart(){
   if(!assets.length){
     select.innerHTML='<option value="">Aucun historique disponible</option>';
     const chart=$('opportunity-price-chart'),summary=$('opportunity-chart-summary');
-    if(chart)chart.innerHTML='<div class="opportunity-chart-empty" role="status">Aucun actif ne possède actuellement de source d’historique exploitable. Vérifie les identifiants de cours dans Actions ou les identifiants CoinGecko dans Crypto.</div>';
+    if(chart){destroyOpportunityChart();chart.innerHTML='<div class="opportunity-chart-empty" role="status">Aucun actif ne possède actuellement de source d’historique exploitable. Vérifie les identifiants de cours dans Actions ou les identifiants CoinGecko dans Crypto.</div>';}
     if(summary)summary.innerHTML='<span>Historique indisponible pour les positions actuelles.</span>';
     return;
   }
