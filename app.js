@@ -1981,7 +1981,11 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
   const dark=document.documentElement.getAttribute('data-theme')==='dark';
   const textColor=dark?'#c5d1e2':'#68758a';
   const gridColor=dark?'rgba(170,190,220,.10)':'rgba(35,55,85,.08)';
-  const formatter=value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:value<1?5:2}).format(value);
+  const rawCurrency=asset.type==='crypto'?'EUR':normalizeStockCurrency(asset.raw?.currency);
+  const chartScale=rawCurrency==='GBX'?.01:1;
+  const displayCurrency=rawCurrency==='GBX'?'GBP':rawCurrency;
+  const formatter=value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:displayCurrency,maximumFractionDigits:Math.abs(value*chartScale)<1?5:2}).format(value*chartScale);
+  const formatPrice=value=>formatter(value);
   const chart=library.createChart(target,{
     width:Math.max(320,target.clientWidth||800),height:340,
     layout:{background:{type:'solid',color:dark?'#142238':'#ffffff'},textColor,fontFamily:"'DM Sans', sans-serif",fontSize:11},
@@ -1996,8 +2000,8 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
   const priceSeries=chart.addLineSeries({color:'#526ff0',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
   const smaSeries=chart.addLineSeries({color:'#e7a844',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
   const asTime=point=>new Date(point.t).toISOString().slice(0,10);
-  priceSeries.setData(points.map(point=>({time:asTime(point),value:point.c})));
-  smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:sma[index]})).filter(point=>Number.isFinite(point.value)));
+  priceSeries.setData(points.map(point=>({time:asTime(point),value:point.c*chartScale})));
+  smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:sma[index]*chartScale})).filter(point=>Number.isFinite(point.value)));
   const tooltip=document.createElement('div');
   tooltip.className='opportunity-tv-tooltip';
   tooltip.setAttribute('aria-live','polite');
@@ -2013,7 +2017,7 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
     const date=new Date(time+'T00:00:00Z');
     const dateText=new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeZone:'UTC'}).format(date);
     const distance=average&&Number.isFinite(average.value)?(price.value/average.value-1)*100:null;
-    tooltip.innerHTML='<strong>'+escapeHtml(dateText)+'</strong><span><i class="tooltip-price-dot"></i>Cours : '+escapeHtml(formatter(price.value))+'</span><span><i class="tooltip-sma-dot"></i>MM200 : '+(distance===null?'Indisponible':escapeHtml(formatter(average.value)))+'</span><span>Écart : '+(distance===null?'—':escapeHtml(opportunityPercent(distance)))+'</span>';
+    tooltip.innerHTML='<strong>'+escapeHtml(dateText)+'</strong><span><i class="tooltip-price-dot"></i>Cours : '+escapeHtml(formatPrice(price.value/chartScale))+'</span><span><i class="tooltip-sma-dot"></i>MM200 : '+(distance===null?'Indisponible':escapeHtml(formatPrice(average.value/chartScale)))+'</span><span>Écart : '+(distance===null?'—':escapeHtml(opportunityPercent(distance)))+'</span>';
     tooltip.hidden=false;
     const left=Math.max(8,Math.min(param.point.x+12,target.clientWidth-190));
     const top=Math.max(8,Math.min(param.point.y+12,target.clientHeight-112));
@@ -2125,7 +2129,7 @@ function renderOpportunityChart(assetId,period){
   const signal=distance===null?'Historique insuffisant ou discontinu pour confirmer la tendance longue':distance>3&&momentum!==null&&momentum>0?'Biais haussier à confirmer':distance< -3&&momentum!==null&&momentum<0?'Biais baissier / prudence':'Signal technique neutre ou mixte';
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeZone:'UTC'}).format(new Date(last.t));
   const smaLabel=Number.isFinite(lastSma)?euro(lastSma):'Indisponible';
-  summary.innerHTML='<div class="opportunity-chart-metric"><span>'+(asset.type==='crypto'?'Dernier cours journalier':'Dernière clôture')+' · '+escapeHtml(dateLabel)+'</span><strong>'+escapeHtml(euro(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 · 200 '+(asset.type==='crypto'?'jours':'séances')+'</span><strong>'+(Number.isFinite(lastSma)?escapeHtml(smaLabel):'Indisponible')+'</strong></div><div class="opportunity-chart-metric"><span>Écart cours / MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Points journaliers valides</span><strong>'+fullPoints.length+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(euro(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(euro(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours. La MM200 est calculée sur les 200 derniers points journaliers valides ; les interruptions anormales invalident la moyenne. Le cours et la MM200 affichés correspondent à la même date.</small></div>';
+  summary.innerHTML='<div class="opportunity-chart-metric"><span>'+(asset.type==='crypto'?'Dernier cours journalier':'Dernière clôture')+' · '+escapeHtml(dateLabel)+'</span><strong>'+escapeHtml(formatPrice(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 · 200 '+(asset.type==='crypto'?'jours':'séances')+'</span><strong>'+(Number.isFinite(lastSma)?escapeHtml(formatPrice(lastSma)):'Indisponible')+'</strong></div><div class="opportunity-chart-metric"><span>Écart cours / MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Points journaliers valides</span><strong>'+fullPoints.length+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(formatPrice(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(formatPrice(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours. La MM200 est calculée sur les 200 derniers points journaliers valides ; les interruptions anormales invalident la moyenne. Le cours et la MM200 affichés correspondent à la même date.</small></div>';
   renderOpportunityTradingViewChart(chart,fullPoints,smaFull,period,asset);
 }
 function opportunityHasHistorySource(asset){
