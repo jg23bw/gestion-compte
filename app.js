@@ -1958,42 +1958,14 @@ function opportunityLogoMarkup(asset){
   const url=opportunityLogoUrl(asset);
   return '<span class="opportunity-asset-logo asset-logo" aria-label="Actif '+initials+'"><span class="asset-logo-fallback opportunity-fallback">'+initials+'</span><img src="'+escapeHtml(url)+'" alt="" loading="lazy" onload="if(this.previousElementSibling)this.previousElementSibling.hidden=true" onerror="if(this&&this.parentElement){this.hidden=true;this.parentElement.classList.add(\'logo-failed\')}"></span>';
 }
-function normalizeOpportunityDailyPoints(rawPoints,type){
-  const byDay=new Map();
-  for(const point of (Array.isArray(rawPoints)?rawPoints:[])){
-    const rawTime=Number(point?.t),close=Number(point?.c);
-    if(!Number.isFinite(rawTime)||!Number.isFinite(close)||close<=0)continue;
-    const milliseconds=rawTime<1e12?rawTime*1000:rawTime;
-    const date=new Date(milliseconds);
-    if(Number.isNaN(date.getTime()))continue;
-    const day=date.toISOString().slice(0,10);
-    byDay.set(day,{t:Date.parse(day+'T00:00:00Z'),c:close});
-  }
-  return [...byDay.values()].sort((a,b)=>a.t-b.t);
-}
-function opportunitySmaPoints(points,type,period=200){
-  const output=Array(points.length).fill(null);
-  const maxGapDays=type==='crypto'?1:10;
-  for(let i=period-1;i<points.length;i++){
-    const start=i-period+1;
-    let sum=0,valid=true;
-    for(let j=start;j<=i;j++){
-      const point=points[j];
-      if(!point||!Number.isFinite(point.c)||point.c<=0){valid=false;break;}
-      if(j>start){
-        const gap=(point.t-points[j-1].t)/86400000;
-        if(!Number.isFinite(gap)||gap<=0||gap>maxGapDays){valid=false;break;}
-      }
-      sum+=point.c;
-    }
-    if(valid)output[i]=sum/period;
-  }
-  return output;
-}
+const normalizeOpportunityDailyPoints=window.OpportunityTechnical.normalizeDailyPoints;
+const opportunitySmaPoints=window.OpportunityTechnical.smaPoints;
 let opportunityChartInstance=null;
 let opportunityChartResizeObserver=null;
+let opportunityChartResizeHandler=null;
 function destroyOpportunityChart(){
   if(opportunityChartResizeObserver){opportunityChartResizeObserver.disconnect();opportunityChartResizeObserver=null;}
+  if(opportunityChartResizeHandler){window.removeEventListener('resize',opportunityChartResizeHandler);opportunityChartResizeHandler=null;}
   if(opportunityChartInstance){opportunityChartInstance.remove();opportunityChartInstance=null;}
 }
 function renderOpportunityTradingViewChart(container,points,sma,period,asset){
@@ -2026,6 +1998,27 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
   const asTime=point=>new Date(point.t).toISOString().slice(0,10);
   priceSeries.setData(points.map(point=>({time:asTime(point),value:point.c})));
   smaSeries.setData(points.map((point,index)=>({time:asTime(point),value:sma[index]})).filter(point=>Number.isFinite(point.value)));
+  const tooltip=document.createElement('div');
+  tooltip.className='opportunity-tv-tooltip';
+  tooltip.setAttribute('aria-live','polite');
+  tooltip.hidden=true;
+  target.appendChild(tooltip);
+  chart.subscribeCrosshairMove(param=>{
+    if(!param||!param.time||!param.point||param.point.x<0||param.point.y<0||param.point.x>target.clientWidth||param.point.y>target.clientHeight){
+      tooltip.hidden=true;return;
+    }
+    const price=param.seriesData.get(priceSeries),average=param.seriesData.get(smaSeries);
+    if(!price){tooltip.hidden=true;return;}
+    const time=typeof param.time==='string'?param.time:(param.time.year+'-'+String(param.time.month).padStart(2,'0')+'-'+String(param.time.day).padStart(2,'0'));
+    const date=new Date(time+'T00:00:00Z');
+    const dateText=new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeZone:'UTC'}).format(date);
+    const distance=average&&Number.isFinite(average.value)?(price.value/average.value-1)*100:null;
+    tooltip.innerHTML='<strong>'+escapeHtml(dateText)+'</strong><span><i class="tooltip-price-dot"></i>Cours : '+escapeHtml(formatter(price.value))+'</span><span><i class="tooltip-sma-dot"></i>MM200 : '+(distance===null?'Indisponible':escapeHtml(formatter(average.value)))+'</span><span>Écart : '+(distance===null?'—':escapeHtml(opportunityPercent(distance)))+'</span>';
+    tooltip.hidden=false;
+    const left=Math.max(8,Math.min(param.point.x+12,target.clientWidth-190));
+    const top=Math.max(8,Math.min(param.point.y+12,target.clientHeight-112));
+    tooltip.style.left=left+'px';tooltip.style.top=top+'px';
+  });
   chart.timeScale().fitContent();
   const visibleBars=asset.type==='crypto'?(period==='1m'?30:period==='3m'?90:points.length):(period==='1m'?21:period==='3m'?63:points.length);
   if(points.length>visibleBars)chart.timeScale().setVisibleLogicalRange({from:Math.max(0,points.length-visibleBars),to:points.length-1});
@@ -2037,8 +2030,8 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
     });
     opportunityChartResizeObserver.observe(target);
   }else{
-    const resize=()=>{if(opportunityChartInstance===chart&&target.clientWidth>0)chart.applyOptions({width:target.clientWidth});};
-    window.addEventListener('resize',resize,{passive:true});
+    opportunityChartResizeHandler=()=>{if(opportunityChartInstance===chart&&target.clientWidth>0)chart.applyOptions({width:target.clientWidth});};
+    window.addEventListener('resize',opportunityChartResizeHandler,{passive:true});
   }
 }
 function isActiveOpportunityChart(assetId,period){
