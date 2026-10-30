@@ -1984,8 +1984,8 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
   const rawCurrency=asset.type==='crypto'?'EUR':normalizeStockCurrency(asset.raw?.currency);
   const chartScale=rawCurrency==='GBX'?.01:1;
   const displayCurrency=rawCurrency==='GBX'?'GBP':rawCurrency;
-  const formatter=value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:displayCurrency,maximumFractionDigits:Math.abs(value*chartScale)<1?5:2}).format(value*chartScale);
-  const formatPrice=value=>formatter(value);
+  const formatter=value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:displayCurrency,maximumFractionDigits:Math.abs(value)<1?5:2}).format(value);
+  const formatPrice=value=>formatter(value*chartScale);
   const chart=library.createChart(target,{
     width:Math.max(320,target.clientWidth||800),height:340,
     layout:{background:{type:'solid',color:dark?'#142238':'#ffffff'},textColor,fontFamily:"'DM Sans', sans-serif",fontSize:11},
@@ -2128,7 +2128,6 @@ function renderOpportunityChart(assetId,period){
   const trend=distance===null?'MM200 non calculable':distance>=0?'Cours au-dessus de la MM200':'Cours sous la MM200';
   const signal=distance===null?'Historique insuffisant ou discontinu pour confirmer la tendance longue':distance>3&&momentum!==null&&momentum>0?'Biais haussier à confirmer':distance< -3&&momentum!==null&&momentum<0?'Biais baissier / prudence':'Signal technique neutre ou mixte';
   const dateLabel=new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeZone:'UTC'}).format(new Date(last.t));
-  const smaLabel=Number.isFinite(lastSma)?euro(lastSma):'Indisponible';
   summary.innerHTML='<div class="opportunity-chart-metric"><span>'+(asset.type==='crypto'?'Dernier cours journalier':'Dernière clôture')+' · '+escapeHtml(dateLabel)+'</span><strong>'+escapeHtml(formatPrice(last.c))+'</strong></div><div class="opportunity-chart-metric"><span>Variation période</span><strong class="'+(change>=0?'positive':'negative')+'">'+escapeHtml(opportunityPercent(change))+'</strong></div><div class="opportunity-chart-metric"><span>MM200 · 200 '+(asset.type==='crypto'?'jours':'séances')+'</span><strong>'+(Number.isFinite(lastSma)?escapeHtml(formatPrice(lastSma)):'Indisponible')+'</strong></div><div class="opportunity-chart-metric"><span>Écart cours / MM200</span><strong class="'+(distance===null?'':distance>=0?'positive':'negative')+'">'+(distance===null?'Historique insuffisant':escapeHtml(opportunityPercent(distance)))+'</strong></div><div class="opportunity-chart-metric"><span>Points journaliers valides</span><strong>'+fullPoints.length+'</strong></div><div class="opportunity-chart-metric"><span>Support 90 j*</span><strong>'+(support===null?'—':escapeHtml(formatPrice(support)))+'</strong></div><div class="opportunity-chart-metric"><span>Résistance 90 j*</span><strong>'+(resistance===null?'—':escapeHtml(formatPrice(resistance)))+'</strong></div><div class="opportunity-chart-decision"><strong>'+escapeHtml(signal)+'</strong><span>'+escapeHtml(trend)+(momentum===null?'':' · momentum 30 j : '+opportunityPercent(momentum))+'</span><small>* Extrêmes observés sur 90 jours. La MM200 est calculée sur les 200 derniers points journaliers valides ; les interruptions anormales invalident la moyenne. Le cours et la MM200 affichés correspondent à la même date.</small></div>';
   renderOpportunityTradingViewChart(chart,fullPoints,smaFull,period,asset);
 }
