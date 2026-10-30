@@ -19,4 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: node --check app.js
+      - run: node --check technical-indicators.js
       - run: node --test tests/opportunity-mm200.test.js
