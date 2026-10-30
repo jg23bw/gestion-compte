@@ -1574,3 +1574,11 @@ input,select,textarea{accent-color:#536dff}
 :root[data-theme="dark"] .market-daily-copy>strong,:root[data-theme="dark"] .market-daily-rate>strong{color:#edf3ff}
 :root[data-theme="dark"] .market-daily-summary .positive{color:#6de0b1!important}:root[data-theme="dark"] .market-daily-summary .negative{color:#ff938a!important}
 @media(max-width:560px){.market-daily-summary{gap:11px;padding:17px 15px;border-radius:17px}.market-daily-icon{flex-basis:40px;width:40px;height:40px;font-size:23px;border-radius:13px}.market-daily-copy>strong{font-size:25px}.market-daily-copy>small{font-size:10px}.market-daily-rate{padding-left:12px}.market-daily-rate>strong{font-size:20px}.market-daily-rate>span{font-size:10px}}
+
+
+/* TradingView Lightweight Charts — graphique technique MM200 */
+.opportunity-price-chart{min-height:340px;padding:4px 12px 8px;overflow:hidden}
+.opportunity-tv-chart{width:100%;height:340px;min-width:0;touch-action:pan-y}
+.opportunity-chart-legend .legend-price{background:#526ff0}.opportunity-chart-legend .legend-sma{background:#e7a844}
+@media(max-width:700px){.opportunity-price-chart{min-height:280px;padding:0 4px 6px}.opportunity-tv-chart{height:300px}}
+@media(max-width:420px){.opportunity-tv-chart{height:270px}}
