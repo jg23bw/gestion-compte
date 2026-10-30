@@ -1,0 +1,22 @@
+name: MM200 technical indicators
+on:
+  pull_request:
+    paths:
+      - 'technical-indicators.js'
+      - 'tests/**'
+      - '.github/workflows/mm200-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'technical-indicators.js'
+      - 'tests/**'
+      - '.github/workflows/mm200-tests.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tests/opportunity-mm200.test.js
