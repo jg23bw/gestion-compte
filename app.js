@@ -2018,8 +2018,8 @@ function renderOpportunityTradingViewChart(container,points,sma,period,asset){
     rightPriceScale:{borderColor:gridColor,scaleMargins:{top:.12,bottom:.12}},
     timeScale:{borderColor:gridColor,timeVisible:false,secondsVisible:false,rightOffset:6,barSpacing:7},
     localization:{locale:'fr-FR',dateFormat:'dd MMM yyyy',priceFormatter:formatter},
-    handleScroll:{鼠wheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
-    handleScale:{鼠wheel:true,pinch:true,axisPressedMouseMove:true}
+    handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
+    handleScale:{mouseWheel:true,pinch:true,axisPressedMouseMove:true}
   });
   const priceSeries=chart.addLineSeries({color:'#526ff0',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
   const smaSeries=chart.addLineSeries({color:'#e7a844',lineWidth:2,priceLineVisible:false,lastValueVisible:true,priceFormat:{type:'custom',formatter}});
