@@ -56,3 +56,26 @@ test('normalization accepts seconds and milliseconds timestamps',()=>{
     {t:day,c:10},{t:day+DAY,c:11}
   ]);
 });
+
+test('SMA recovers only after a full valid window following a data gap',()=>{
+  const source=points(405);
+  source[100].t+=2*DAY;
+  const result=smaPoints(source,'crypto',200);
+  assert.equal(result[299],null);
+  assert.equal(result[300],(source[101].c+source[300].c)/2);
+  assert.ok(Number.isFinite(result[300]));
+});
+test('unsorted and duplicate daily observations normalize deterministically',()=>{
+  const day=Date.UTC(2025,4,1);
+  const result=normalizeDailyPoints([
+    {t:day+2*DAY,c:30},
+    {t:day+10*3600000,c:20},
+    {t:day+DAY,c:25},
+    {t:day+18*3600000,c:21}
+  ]);
+  assert.deepEqual(result,[
+    {t:day,c:21},
+    {t:day+DAY,c:25},
+    {t:day+2*DAY,c:30}
+  ]);
+});
