@@ -322,4 +322,4 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les opérations restent triées par date croissante comme dans l'ancien chargement. Une table crypto absente reste tolérée ; toute autre erreur de lecture est propagée.
 - Tests ajoutés dans `tests/unit/application/cloud-state-loader.test.js` : mapping des métadonnées, ordre des opérations, table crypto absente, erreur inattendue et validation des paramètres.
 - Le nouveau fichier est chargé avant `app.js` et inclus dans `npm run check`.
-- Validation à effectuer par GitHub Actions : `npm run check` et `npm test`. Aucun test navigateur ni test sur le projet Supabase distant n'est revendiqué à ce stade.
+- Validation GitHub Actions effectuée le 31 octobre 2026 sur le commit `2974f907751c512204b0255700f55b2d260d6d71` : `npm run check` et `npm test` réussis. Aucun test navigateur ni test sur le projet Supabase distant n'est revendiqué à ce stade.
