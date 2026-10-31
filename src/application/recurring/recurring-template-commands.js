@@ -8,8 +8,12 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   function create({ repository }) {
+    const portApi = typeof RecurringTemplateRepositoryPort !== 'undefined'
+      ? RecurringTemplateRepositoryPort
+      : (typeof require === 'function' ? require('../../ports/recurring/recurring-template-repository.js') : null);
     if (!repository) throw new TypeError('recurring template repository is required');
-    const port = RecurringTemplateRepositoryPort.assert(repository);
+    if (!portApi) throw new TypeError('recurring template repository port is unavailable');
+    const port = portApi.assert(repository);
     return Object.freeze({
       findById(id) { return port.findById(id); },
       save(template) {
