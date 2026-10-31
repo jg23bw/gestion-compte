@@ -357,3 +357,14 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Aucun format de données ni schéma Supabase n'a été modifié.
 
 **Validation CI :** les tests unitaires du nouveau domaine ont réussi sur le commit `b490baf31acc093ea2fc1733a971aa32b6633c6b`, et le contrôle syntaxique de l'application a réussi sur `f313d6c1d4c30bd7009c6dd80df919c0f092c25a`. La validation finale incluant les derniers changements de chargement HTML et de configuration des checks est en cours au moment de cette note. Aucun test navigateur ni appel réel aux fournisseurs de marché n'est revendiqué.
+
+
+## Extraction du repository des positions actions/ETF (31 octobre 2026)
+
+- Ajout du port `StockHoldingRepositoryPort`, de l'adaptateur mémoire `StateStockHoldingRepository` et du cas d'usage `StockHoldingCommands`.
+- Les lectures par identifiant, créations, modifications et suppressions de positions actions/ETF passent désormais par ce repository. La suppression d'un compte supprime aussi ses positions via le même contrat.
+- Le modèle des positions et la structure de `state.stockHoldings` restent inchangés. Le repository mémoire encapsule l'état historique et suit les remplacements de l'objet `state` lors du chargement cloud ou de l'annulation.
+- La synchronisation distante des positions reste volontairement inchangée : elles sont stockées dans les métadonnées Supabase Auth (`user_metadata.stockHoldings`), et non dans une table dédiée. Cette étape ne crée aucune migration SQL.
+- Cinq tests unitaires couvrent la lecture, la création/mise à jour, la suppression par identifiant, la suppression par compte et la validation du contrat.
+- Les modules sont chargés avant `app.js` et ajoutés à `npm run check`. Cache-busting de l'application : `stock-holding-repository-v1`.
+- Aucun test navigateur ni écriture dans le compte Supabase réel n'a été effectué pour cette extraction.
