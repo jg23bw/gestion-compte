@@ -58,6 +58,7 @@ const COINCAP_IDS={'bitcoin':'bitcoin','ethereum':'ethereum','tether':'tether','
 const coinCapFallbackProvider = CoinCapFallbackProvider.create({ endpoint: CRYPTO_FALLBACK_ENDPOINT, coinIds: COINCAP_IDS });
 const fearGreedProvider = AlternativeMeFearGreedProvider.create({ endpoint: 'https://api.alternative.me/fng/?limit=1&format=json' });
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
+const coinGeckoCatalogProvider = CoinGeckoCatalogProvider.create({ searchEndpoint: CRYPTO_SEARCH_ENDPOINT, resultLimit: 10 });
 const CRYPTO_REFRESH_MS=60000;
 const cryptoSearch={timer:null,controller:null,results:[]};
 // Les positions crypto sont des données personnelles : elles ne doivent pas être
@@ -1051,10 +1052,7 @@ async function searchCryptoCoins(query){
   container.innerHTML='<div class="crypto-coin-message">Recherche…</div>';
   $('crypto-coin-search').setAttribute('aria-expanded','true');
   try{
-    const response=await fetch(CRYPTO_SEARCH_ENDPOINT+'?query='+encodeURIComponent(query),{signal:controller.signal,headers:{Accept:'application/json'}});
-    if(!response.ok)throw new Error(response.status===429?'limite de requêtes atteinte, réessayez dans une minute':'réponse HTTP '+response.status);
-    const data=await response.json();
-    const coins=(data.coins||[]).slice(0,10);
+    const coins=await coinGeckoCatalogProvider.searchCoins(query,{signal:controller.signal});
     cryptoSearch.results=coins;
     if(!coins.length){container.innerHTML='<div class="crypto-coin-message">Aucune crypto trouvée.</div>';return;}
     container.innerHTML=coins.map((coin,index)=>'<button type="button" class="crypto-coin-option" role="option" data-crypto-coin-index="'+index+'">'+cryptoLogoMarkup(coin.large||coin.thumb||'',coin.symbol,'is-small')+'<span class="crypto-coin-symbol">'+escapeHtml(String(coin.symbol||'').toUpperCase())+'</span><span class="crypto-coin-name">'+escapeHtml(coin.name||'')+'</span>'+(coin.market_cap_rank?'<span class="crypto-coin-rank">#'+Number(coin.market_cap_rank)+'</span>':'')+'</button>').join('');
