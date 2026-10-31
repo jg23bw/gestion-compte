@@ -530,3 +530,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - La communication avec la fonction Supabase `mcp-tokens` est déléguée à `McpTokenService`.
 - Les payloads historiques `list`, `revoke` et les autres actions sont transmis sans transformation afin de préserver le contrat de la fonction existante.
+
+
+## Extraction de l'écran Opportunités (31 octobre 2026)
+
+- Le bloc d'environ 445 lignes dédié à l'écran Opportunités a été déplacé de `app.js` vers `src/adapters/ui/dom/opportunities-screen.js` sans réécriture fonctionnelle.
+- Le script est chargé après `technical-indicators.js`. La compatibilité repose encore sur les bindings globaux du bootstrap historique ; cette extraction réduit le fichier principal mais ne termine pas le découplage UI.
