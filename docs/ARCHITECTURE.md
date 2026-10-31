@@ -356,3 +356,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les dialogues de création/modification des opérations et comptes, les paramètres de nantissement et le formulaire Lombard sont regroupés dans `src/adapters/ui/dom/account-editors.js`.
 - Les cas d'usage de persistance restent dans les services applicatifs ; l'adaptateur DOM conserve les confirmations et les effets visuels.
+
+
+### Session cloud
+
+- L'orchestration de synchronisation et de chargement de session est déplacée dans `src/bootstrap/cloud-session.js`.
+- Les cas d'usage de synchronisation et de chargement restent dans `src/application/synchronization` ; ce module bootstrap compose les repositories, état et retours UI historiques.
