@@ -1274,7 +1274,9 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:StockValuation.euroPrice(nativePrice,rate)};
 }
-async function stockFunction(action,payload={}){\n  return stockPriceProvider.invoke(action,payload);\n}
+async function stockFunction(action,payload={}){
+  return stockPriceProvider.invoke(action,payload);
+}
 const stockPriceProvider=StockPriceProviderPort.assert(SupabaseStockPriceProvider.create({getClient:()=>cloud.client,functionName:STOCK_FUNCTION_NAME}));
 const stockFxProvider=ExchangeRateProviderPort.assert(HttpExchangeRateProvider.create({endpoint:STOCK_FX_ENDPOINT}));
 async function fetchStockNativePrice(priceId){
