@@ -56,6 +56,7 @@ const CRYPTO_FALLBACK_ENDPOINT='https://api.coincap.io/v2/assets';
 const CRYPTO_HISTORY_ENDPOINT='https://api.coingecko.com/api/v3/coins/';
 const COINCAP_IDS={'bitcoin':'bitcoin','ethereum':'ethereum','tether':'tether','binancecoin':'binance-coin','solana':'solana','ripple':'xrp','usd-coin':'usd-coin','dogecoin':'dogecoin','cardano':'cardano','avalanche-2':'avalanche','chainlink':'chainlink','polkadot':'polkadot','tron':'tron','litecoin':'litecoin','bitcoin-cash':'bitcoin-cash','stellar':'stellar','shiba-inu':'shiba-inu','near':'near-protocol','uniswap':'uniswap','render-token':'render-token','aave':'aave','ondo-finance':'ondo','bittensor':'bittensor','sui':'sui','aptos':'aptos','toncoin':'toncoin','cosmos':'cosmos','hedera-hashgraph':'hedera-hashgraph','internet-computer':'internet-computer','ethereum-classic':'ethereum-classic','monero':'monero','kaspa':'kaspa','pepe':'pepe','arbitrum':'arbitrum','optimism':'optimism','maker':'maker','the-graph':'the-graph'};
 const coinCapFallbackProvider = CoinCapFallbackProvider.create({ endpoint: CRYPTO_FALLBACK_ENDPOINT, coinIds: COINCAP_IDS });
+const fearGreedProvider = AlternativeMeFearGreedProvider.create({ endpoint: 'https://api.alternative.me/fng/?limit=1&format=json' });
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const CRYPTO_REFRESH_MS=60000;
 const cryptoSearch={timer:null,controller:null,results:[]};
@@ -2082,8 +2083,17 @@ function renderOpportunityAssets(filter='all'){
 }
 async function loadOpportunityFearGreed(){
   const valueEl=$('opportunity-fear-greed'),labelEl=$('opportunity-fear-greed-label');if(!valueEl)return;
-  try{const response=await fetch('https://api.alternative.me/fng/?limit=1&format=json',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)throw new Error('API indisponible');const payload=await response.json(),row=payload.data?.[0],value=Number(row?.value);if(!Number.isFinite(value))throw new Error('Indice absent');valueEl.textContent=String(value)+'/100';if(labelEl)labelEl.textContent=String(row.value_classification||'Sentiment crypto')+' · '+(value<45?'Fear dominant':value>55?'Greed dominant':'zone neutre');const marker=$('opportunity-fear-greed-marker');if(marker){marker.style.left=Math.max(0,Math.min(100,value))+'%';marker.setAttribute('aria-label','Score '+value+' sur 100');}}
-  catch{valueEl.textContent='—';if(labelEl)labelEl.textContent='Indice indisponible (source externe)';}
+  try{
+    const result=await fearGreedProvider.fetchLatest();
+    const value=result.value;
+    valueEl.textContent=String(value)+'/100';
+    if(labelEl)labelEl.textContent=result.classification+' · '+(value<45?'Fear dominant':value>55?'Greed dominant':'zone neutre');
+    const marker=$('opportunity-fear-greed-marker');
+    if(marker){marker.style.left=Math.max(0,Math.min(100,value))+'%';marker.setAttribute('aria-label','Score '+value+' sur 100');}
+  }catch{
+    valueEl.textContent='—';
+    if(labelEl)labelEl.textContent='Indice indisponible (source externe)';
+  }
 }
 function renderOpportunities(){
   if(!$('opportunities-view'))return;
