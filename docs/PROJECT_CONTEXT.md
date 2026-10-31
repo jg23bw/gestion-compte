@@ -430,3 +430,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - `app.js` conserve la lecture des contrôles, le rendu HTML, les logos, le formatage, les interactions et les calculs propres à l'affichage professionnel.
 - Tests unitaires ajoutés pour vérifier l'ordre d'affichage, les soldes cumulés et les positions manuelles. Aucun format de données ni schéma Supabase n'est modifié.
 - Aucun test navigateur ni scénario Supabase réel n'est revendiqué pour cette tranche.
+
+
+## Extraction du regroupement des sélecteurs de comptes (31 octobre 2026)
+
+- `AccountListRules.selectGroups` centralise les règles de classement des comptes en comptes opérationnels, personnels, professionnels et comptes d’investissement.
+- `fillAccountSelects` dans `app.js` consomme ces groupes et conserve la responsabilité du DOM, des options HTML et de la préservation des sélections valides.
+- Les catégories restent cohérentes entre les filtres Opérations, Professionnel, Historique, Récurrences et portefeuille Actions ; les tests vérifient les groupes et l’absence de mutation de la liste source.
+- Aucun changement de données, de stockage ou de schéma Supabase. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
