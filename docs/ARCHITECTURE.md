@@ -368,3 +368,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les catalogues de banques, devises, marchés, ISIN et comptes de démonstration sont regroupés dans `src/config/catalogs.js`.
 - Les données personnelles de comptes, transactions et positions restent chargées depuis leurs stockages ; aucun portefeuille personnel n'est ajouté aux fichiers de configuration.
+
+
+### Bootstrap de l'interface
+
+- Les listeners DOM, la configuration des interactions, les rafraîchissements périodiques et le démarrage de session sont regroupés dans `src/adapters/ui/dom/event-handlers.js`.
+- `app.js` appelle désormais `initializeDomEventHandlers()` après la déclaration de ses bindings de composition. Le script de listeners ne s'exécute pas avant l'initialisation de ces bindings.
