@@ -542,3 +542,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le bloc UI d'environ 377 lignes de recherche, édition, affichage et rafraîchissement des positions actions/ETF est déplacé dans `src/adapters/ui/dom/stocks-screen.js`.
 - Le fichier `app.js` descend à environ 1 940 lignes. Le module conserve provisoirement les dépendances globales historiques, sans changement de parcours utilisateur intentionnel.
+
+
+## Extraction des agrégats patrimoniaux (31 octobre 2026)
+
+- Le calcul du snapshot de patrimoine est isolé dans `WealthSnapshotQueries`, avec tests sur valorisation cotée, valorisation manuelle et repli sur le montant investi.
+- Les règles de présentation restent dans l'interface ; les chiffres sont calculés à partir des mêmes sources applicatives qu'auparavant.
