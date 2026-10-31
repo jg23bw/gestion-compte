@@ -154,12 +154,14 @@ let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]
 const transactionRepository = StateTransactionRepository.create(() => state);
 const recurringTemplateRepository = StateRecurringTemplateRepository.create(() => state);
 const stockHoldingRepository = StateStockHoldingRepository.create(() => state);
+const accountRepository = StateAccountRepository.create(() => state);
+const accountPledgeCommands = AccountPledgeCommands.create({repository: accountRepository, rules: AccountPledgeRules});
 const transactionQueries = TransactionQueries.create({repository: transactionRepository, domain: TransactionRules});
 const transactionCommands = TransactionCommands.create({repository: transactionRepository, domain: TransactionRules});
 const recurringTemplateCommands = RecurringTemplateCommands.create({repository: recurringTemplateRepository});
 const stockHoldingCommands = StockHoldingCommands.create({repository: stockHoldingRepository});
 const accountCommands = AccountCommands.create({
-  repository: StateAccountRepository.create(() => state), isBankKey, accountShort,
+  repository: accountRepository, isBankKey, accountShort,
   transactionRepository, recurringTemplateRepository, stockHoldingCommands
 });
 let toastTimer;
@@ -262,17 +264,7 @@ function normalizeAccountTypes(value){
   for(const [id,type] of Object.entries(value))if(isAccountSubtype(type))result[id]=type;
   return result;
 }
-function normalizeAccountPledges(value){
-  if(!value||typeof value!=='object'||Array.isArray(value))return {};
-  const result={};
-  for(const [id,entry] of Object.entries(value)){
-    if(!id)continue;
-    if(entry===true){result[id]={note:''};continue;}
-    if(!entry||typeof entry!=='object'||Array.isArray(entry))continue;
-    result[id]={note:String(entry.note||'').trim().slice(0,160)};
-  }
-  return result;
-}
+function normalizeAccountPledges(value){return accountPledgeCommands.normalize(value);}
 function normalizeStockCurrency(value){
   const currency=String(value||'').trim().toUpperCase();
   return STOCK_CURRENCIES.includes(currency)?currency:'EUR';
@@ -313,11 +305,7 @@ function accountTypeOverrides(){
   }
   return result;
 }
-function accountPledgeOverrides(){
-  const result=normalizeAccountPledges(state.accountPledges);
-  for(const id of Object.keys(result))if(!accountById(id))delete result[id];
-  return result;
-}
+function accountPledgeOverrides(){return accountPledgeCommands.overrides(state.accounts);}
 function authMetadataRepository(){
   return SupabaseAuthMetadataRepository.create({
     auth:cloudClient().auth,
@@ -636,7 +624,7 @@ function accountShort(name){
   if(words.length>1)return words.slice(0,3).map(w=>w[0]).join('').toUpperCase().slice(0,3);
   return String(name||'').trim().slice(0,2).toUpperCase();
 }
-function accountPledgeFor(id){return state.accountPledges?.[id]||null;}
+function accountPledgeFor(id){return accountPledgeCommands.find(id);}
 function pledgedAccountCount(){return Object.keys(state.accountPledges||{}).filter(id=>accountById(id)).length;}
 function pledgeBadgeMarkup(id){
   const pledge=accountPledgeFor(id);
@@ -2752,10 +2740,12 @@ $('account-form').addEventListener('submit',event=>{
   }
   const pledged=$('edit-account-pledged').checked;
   const pledgeNote=$('edit-account-pledge-note').value.trim().slice(0,160);
-  const pledges={...state.accountPledges};
-  if(pledged)pledges[accountId]={note:pledgeNote};
-  else delete pledges[accountId];
-  state.accountPledges=pledges;
+  try{
+    accountPledgeCommands.save({accountId,pledged,note:pledgeNote});
+  }catch(error){
+    showToast('Nantissement non enregistré : '+(error.message||'vérifiez le compte.'));
+    return;
+  }
   cloud.accountTypesDirty=true;
   cloud.accountPledgesDirty=true;
   $('account-dialog').close();
