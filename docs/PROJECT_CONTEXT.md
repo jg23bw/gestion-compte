@@ -466,3 +466,13 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - `AccountPledgeCommands` expose la lecture, la normalisation, la préparation des métadonnées cloud et l'enregistrement/suppression d'un nantissement via le port compte.
 - L'adaptateur d'état implémente désormais les opérations de lecture et d'écriture des nantissements ; l'UI conserve les champs, le rendu et les indicateurs de synchronisation.
 - Le format JSON stocké dans les métadonnées utilisateur Supabase reste inchangé.
+
+
+### Types de comptes — extraction des métadonnées Auth (31 octobre 2026)
+
+- Les règles de validation des sous-types PEA, assurance vie et CTO, de normalisation des métadonnées, de calcul des overrides et d'application aux comptes importés sont isolées dans `AccountTypeRules`.
+- `AccountTypeCommands` expose ces règles à l'application : normalisation des métadonnées Auth, calcul des overrides à partir des comptes, résolution du type effectif depuis le type Supabase et application des overrides à un ancien état local.
+- `app.js` ne contient plus la logique de validation/normalisation des sous-types ni le mapping des overrides ; il conserve la composition, le suivi de synchronisation et l'interface.
+- Le contrat est inchangé : seuls les sous-types `pea`, `av` et `cto` sont enregistrés dans `user_metadata.accountTypes`; les comptes restent stockés avec leur `kind` historique (notamment `savings` pour PEA/AV/CTO).
+- Aucun changement de schéma Supabase, de format JSON ou de migration des données. Les métadonnées de nantissement restent gérées par leur cas d'usage existant.
+- Aucun test navigateur ni accès à un compte Supabase réel n'est revendiqué.
