@@ -485,3 +485,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - `app.js` délègue désormais la normalisation et l'enregistrement au cas d'usage ; il conserve la composition Supabase et les interactions de l'écran Lombard.
 - Aucun changement de schéma Supabase, aucune migration et aucune conversion des données déjà stockées.
 - Tests unitaires couvrant la normalisation, la lecture, la sauvegarde, l'absence d'utilisateur connecté et l'absence de repository.
+
+
+## Extraction des métadonnées positions actions/ETF (31 octobre 2026)
+
+- Les règles de normalisation des positions, dédoublonnage, validation, devise et compatibilité Suravenir sont déplacées vers `StockHoldingRules`.
+- La lecture et la sauvegarde du champ existant `user_metadata.stockHoldings` sont déléguées à `StockHoldingMetadataCommands`.
+- Les catalogues de marchés/devises et la fonction de date sont injectés depuis la composition applicative ; aucun format de données ni schéma Supabase n'est modifié.
+- L'interface, les cours, le FX et le rafraîchissement des prix restent dans `app.js` à ce stade.
