@@ -925,7 +925,7 @@ function monthAlreadyGenerated(month){
   }).status==='already-generated';
 }
 function generateRecurringForMonth(month){
-  if(!/^\\d{4}-\\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
+  if(!/^\d{4}-\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
   if(generationInProgress.has(month))return;
   const result=RecurringCommands.prepareGeneration({
     templates:state.recurringTemplates||[], transactions:state.transactions,
