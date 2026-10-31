@@ -192,3 +192,10 @@ La suite doit poursuivre domaine par domaine, sans déclarer la migration termin
 **CI vérifiée sur le commit `6b9c3e4` :** contrôle syntaxique réussi, 30 tests passés, 0 échec.
 
 Cette tranche est une première vertical slice hexagonale, pas une migration complète : les écritures d'opérations, la persistance Supabase/localStorage et les autres domaines restent à isoler.
+
+
+#### Complément — solde après opération
+
+Le calcul du solde courant après une opération a également été déplacé dans `TransactionQueries`. L'interface historique conserve sa signature, mais délègue désormais au cas d'usage. Les tests couvrent l'ordre d'affichage (du plus récent au plus ancien), l'arrêt sur l'opération demandée et le cas d'un compte supprimé.
+
+**Dernière CI vérifiée :** commit `ba79a22`, 32 tests passés, 0 échec ; `npm run check` réussi.
