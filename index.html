@@ -44,9 +44,11 @@
   <script src="src/application/synchronization/cloud-synchronization.js"></script>
   <script src="src/domain/recurring/recurring-rules.js"></script>
   <script src="src/domain/portfolio/stock-valuation.js"></script>
+  <script src="src/domain/portfolio/stock-holding-rules.js"></script>
   <script src="src/ports/portfolio/stock-holding-repository.js"></script>
   <script src="src/adapters/persistence/state/state-stock-holding-repository.js"></script>
   <script src="src/application/portfolio/stock-holding-commands.js"></script>
+  <script src="src/application/portfolio/stock-holding-metadata-commands.js"></script>
   <script src="src/ports/portfolio/stock-price-provider.js"></script>
   <script src="src/ports/portfolio/exchange-rate-provider.js"></script>
   <script src="src/adapters/market-data/supabase-stock-price-provider.js"></script>
@@ -59,7 +61,7 @@
   <script src="src/adapters/persistence/local-storage/generated-months-repository.js"></script>
     <script src="technical-indicators.js"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=lombard-credit-commands-v1" defer></script>
+  <script src="app.js?v=stock-holding-metadata-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
