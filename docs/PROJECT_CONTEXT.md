@@ -584,3 +584,10 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Les listes statiques de banques, devises, marchés, ISIN et comptes par défaut sont déplacées dans `src/config/catalogs.js`.
 - `app.js` passe sous les 900 lignes. Les données personnelles ne sont pas déplacées vers ce module.
+
+
+## Extraction du câblage DOM (31 octobre 2026)
+
+- Environ 438 lignes de listeners, formulaires, interactions, rafraîchissements et démarrage sont déplacées dans `src/adapters/ui/dom/event-handlers.js`.
+- `app.js` est réduit à environ 460 lignes et délègue l'initialisation de l'interface à `initializeDomEventHandlers()`.
+- Le comportement des événements n'a pas été réécrit ; les dépendances globales de composition restent à éliminer lors de l'étape de découplage explicite.
