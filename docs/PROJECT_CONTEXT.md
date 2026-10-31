@@ -448,3 +448,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les paramètres professionnels existants (TVA, cotisations et solde net initial) sont préservés lors d'une modification.
 - La suppression en cascade n'est pas encore extraite : elle reste dans `app.js` afin de traiter séparément et sans régression les suppressions cloud, l'undo et les données liées.
 - Aucun changement du schéma Supabase ou du format de persistance. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction de la suppression en cascade des comptes (31 octobre 2026)
+
+- `AccountCommands.remove` orchestre désormais la suppression du compte et de ses données liées : opérations, récurrences, positions actions/ETF et nantissement.
+- Les adaptateurs d'état exposent les suppressions unitaires nécessaires ; l'application récupère le résultat du cas d'usage pour mettre à jour les files de synchronisation cloud sans générer de suppressions individuelles redondantes pour les opérations et récurrences.
+- `app.js` conserve les règles d'interface : interdiction de supprimer le dernier compte, message de confirmation détaillant les éléments liés, fermeture de la fenêtre, rendu et notification.
+- La suppression reste volontairement définitive et ne crée pas de point d'annulation, comme avant cette extraction.
+- Aucun changement de schéma Supabase ou de format des données.
