@@ -83,6 +83,7 @@ test('monthly history filters, sorts and aggregates rows without changing stored
 test('monthly history applies account, type and text filters with amount sorting', () => {
   const f = fixture();
   f.accounts[0].name = 'Compte courant';
+  f.transactions[0].label = 'Salaire complémentaire';
   f.transactions.push(
     { id: 'salary', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 2000, label: 'Salaire' },
     { id: 'bill', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -30, label: 'Facture énergie' }
@@ -117,6 +118,6 @@ test('account transaction query preserves manual order and supports pointed-firs
   f.transactions[1].sortOrder = 1;
   f.transactions[0].isPaid = true;
   const queries = create({ repository: f.repository, domain });
-  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a' }).map(item => item.id), ['out', 'in']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'manual' }).map(item => item.id), ['out', 'in']);
   assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'pointed' }).map(item => item.id), ['in', 'out']);
 });
