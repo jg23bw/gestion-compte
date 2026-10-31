@@ -387,30 +387,30 @@ async function syncCloudState(){
   cloud.isSyncing=true;
   try{
     const client=cloudClient(),uid=cloud.user.id;
+    const accountRepository=SupabaseAccountRepository.create({client,userId:uid});
+    const templateRepository=SupabaseRecurringTemplateRepository.create({client,userId:uid});
     const transactionRepository=SupabaseTransactionRepository.create({client,userId:uid});
     const accounts=state.accounts.map(a=>toCloudAccount(a,uid));
     const templates=(state.recurringTemplates||[]).map(t=>toCloudTemplate(t,uid));
     const transactions=state.transactions.map(t=>toCloudTransaction(t,uid));
     const cryptoHoldings=(state.cryptoHoldings||[]).map(h=>toCloudCryptoHolding(h,uid));
-    const [ar,remoteTransactionRows,rr]=await Promise.all([
-      client.from('accounts').select('*'),
+    const [remoteAccountRows,remoteTransactionRows,remoteTemplateRows]=await Promise.all([
+      accountRepository.listAll(),
       transactionRepository.listAll(),
-      client.from('recurring_templates').select('*')
+      templateRepository.listAll()
     ]);
-    for(const result of [ar,rr])if(result.error)throw result.error;
-    const remoteAccounts=new Map((ar.data||[]).map(row=>[row.id,row]));
+    const remoteAccounts=new Map(remoteAccountRows.map(row=>[row.id,row]));
     const remoteTransactions=new Map(remoteTransactionRows.map(row=>[row.id,row]));
-    const remoteTemplates=new Map((rr.data||[]).map(row=>[row.id,row]));
+    const remoteTemplates=new Map(remoteTemplateRows.map(row=>[row.id,row]));
     const changedAccounts=accounts.filter(row=>!remoteAccounts.has(row.id)||!sameCloudValues(row,remoteAccounts.get(row.id),['name','short','kind','opening','vat_rate','social_rate','net_opening']));
     const changedTemplates=templates.filter(row=>!remoteTemplates.has(row.id)||!sameCloudValues(row,remoteTemplates.get(row.id),['account_id','day_of_month','frequency','months','start_month','end_month','once_date','label','amount','enabled']));
     const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','is_paid','sort_order','source','recurring_template_id','generated_month','recurring_key']));
-    if(changedAccounts.length){const {error}=await client.from('accounts').upsert(changedAccounts,{onConflict:'user_id,id'});if(error)throw error;}
+    if(changedAccounts.length)await accountRepository.upsertMany(changedAccounts);
     for(const id of [...cloud.pendingAccountDeletes]){
-      const {error}=await client.from('accounts').delete().eq('id',id).eq('user_id',uid);
-      if(error)throw error;
+      await accountRepository.deleteById(id);
       cloud.pendingAccountDeletes.delete(id);
     }
-    if(changedTemplates.length){const {error}=await client.from('recurring_templates').upsert(changedTemplates,{onConflict:'user_id,id'});if(error)throw error;}
+    if(changedTemplates.length)await templateRepository.upsertMany(changedTemplates);
     if(changedTransactions.length){
       const result=await transactionRepository.upsertMany(changedTransactions);
       if(result.compatibilityFallback){
@@ -422,8 +422,7 @@ async function syncCloudState(){
       cloud.pendingDeletes.delete(id);
     }
     for(const id of [...cloud.pendingTemplateDeletes]){
-      const {error}=await client.from('recurring_templates').delete().eq('id',id).eq('user_id',uid);
-      if(error)throw error;
+      await templateRepository.deleteById(id);
       cloud.pendingTemplateDeletes.delete(id);
     }
     if(cryptoTableReady!==false){
