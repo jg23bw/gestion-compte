@@ -381,80 +381,33 @@ async function syncCloudState(){
   cloud.isSyncing=true;
   try{
     const client=cloudClient(),uid=cloud.user.id;
-    const accountRepository=SupabaseAccountRepository.create({client,userId:uid});
-    const templateRepository=SupabaseRecurringTemplateRepository.create({client,userId:uid});
-    const transactionRepository=SupabaseTransactionRepository.create({client,userId:uid});
-    const accounts=state.accounts.map(a=>toCloudAccount(a,uid));
-    const templates=(state.recurringTemplates||[]).map(t=>toCloudTemplate(t,uid));
-    const transactions=state.transactions.map(t=>toCloudTransaction(t,uid));
-    const cryptoHoldings=(state.cryptoHoldings||[]).map(h=>toCloudCryptoHolding(h,uid));
-    const [remoteAccountRows,remoteTransactionRows,remoteTemplateRows]=await Promise.all([
-      accountRepository.listAll(),
-      transactionRepository.listAll(),
-      templateRepository.listAll()
-    ]);
-    const remoteAccounts=new Map(remoteAccountRows.map(row=>[row.id,row]));
-    const remoteTransactions=new Map(remoteTransactionRows.map(row=>[row.id,row]));
-    const remoteTemplates=new Map(remoteTemplateRows.map(row=>[row.id,row]));
-    const changedAccounts=accounts.filter(row=>!remoteAccounts.has(row.id)||!sameCloudValues(row,remoteAccounts.get(row.id),['name','short','kind','opening','vat_rate','social_rate','net_opening']));
-    const changedTemplates=templates.filter(row=>!remoteTemplates.has(row.id)||!sameCloudValues(row,remoteTemplates.get(row.id),['account_id','day_of_month','frequency','months','start_month','end_month','once_date','label','amount','enabled']));
-    const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','is_paid','sort_order','source','recurring_template_id','generated_month','recurring_key']));
-    if(changedAccounts.length)await accountRepository.upsertMany(changedAccounts);
-    for(const id of [...cloud.pendingAccountDeletes]){
-      await accountRepository.deleteById(id);
-      cloud.pendingAccountDeletes.delete(id);
-    }
-    if(changedTemplates.length)await templateRepository.upsertMany(changedTemplates);
-    if(changedTransactions.length){
-      const result=await transactionRepository.upsertMany(changedTransactions);
-      if(result.compatibilityFallback){
-        showToast('Migration Supabase requise : exécutez supabase/migrations/202610180002_transaction_pointage_order.sql dans SQL Editor. Le pointage et l’ordre manuel ne seront pas conservés avant cela.');
-      }
-    }
-    for(const id of [...cloud.pendingDeletes]){
-      await transactionRepository.deleteById(id);
-      cloud.pendingDeletes.delete(id);
-    }
-    for(const id of [...cloud.pendingTemplateDeletes]){
-      await templateRepository.deleteById(id);
-      cloud.pendingTemplateDeletes.delete(id);
-    }
-    if(cryptoTableReady!==false){
-      const cryptoRepository=SupabaseCryptoHoldingRepository.create({client,userId:uid});
-      let remoteCryptoRows;
-      try{
-        remoteCryptoRows=await cryptoRepository.listAll();
-        cryptoTableReady=true;
-      }catch(error){
-        if(isMissingCryptoTable(error))cryptoTableReady=false;
-        else throw error;
-      }
-      if(cryptoTableReady){
-        const remoteCrypto=new Map(remoteCryptoRows.map(row=>[row.id,row]));
-        const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','status','invested','quantity','sort_order']));
-        if(changedCrypto.length)await cryptoRepository.upsertMany(changedCrypto);
-        for(const id of [...cloud.pendingCryptoDeletes]){
-          await cryptoRepository.deleteById(id);
-          cloud.pendingCryptoDeletes.delete(id);
-        }
-      }
-    }
-    if(cloud.accountTypesDirty||cloud.accountPledgesDirty){
-      const overrides=accountTypeOverrides();
-      const pledges=accountPledgeOverrides();
-      const snapshot=JSON.stringify({overrides,pledges});
-      await saveAccountMetadataToAuth(overrides,pledges);
-      if(JSON.stringify({overrides:accountTypeOverrides(),pledges:accountPledgeOverrides()})===snapshot){
-        cloud.accountTypesDirty=false;
-        cloud.accountPledgesDirty=false;
-      }
-    }
-    if(cloud.stockHoldingsDirty){
-      const payload=normalizeStockHoldings(state.stockHoldings);
-      const snapshot=JSON.stringify(payload);
-      await saveStockHoldingsToAuth(payload);
-      if(JSON.stringify(normalizeStockHoldings(state.stockHoldings))===snapshot)cloud.stockHoldingsDirty=false;
-    }
+    const dirty={
+      get accountTypes(){return cloud.accountTypesDirty;},
+      set accountTypes(value){cloud.accountTypesDirty=value;},
+      get accountPledges(){return cloud.accountPledgesDirty;},
+      set accountPledges(value){cloud.accountPledgesDirty=value;},
+      get stockHoldings(){return cloud.stockHoldingsDirty;},
+      set stockHoldings(value){cloud.stockHoldingsDirty=value;}
+    };
+    const synchronization=CloudSynchronization.create({
+      accountRepository:options=>SupabaseAccountRepository.create(options),
+      recurringTemplateRepository:options=>SupabaseRecurringTemplateRepository.create(options),
+      transactionRepository:options=>SupabaseTransactionRepository.create(options),
+      cryptoHoldingRepository:options=>SupabaseCryptoHoldingRepository.create(options),
+      mapAccount:toCloudAccount,mapTemplate:toCloudTemplate,mapTransaction:toCloudTransaction,mapCryptoHolding:toCloudCryptoHolding,
+      sameCloudValues,isMissingCryptoTable,
+      saveAccountMetadata:({overrides,pledges})=>saveAccountMetadataToAuth(overrides,pledges),
+      saveStockHoldings:holdings=>saveStockHoldingsToAuth(holdings),
+      getAccountTypeOverrides:accountTypeOverrides,getAccountPledgeOverrides:accountPledgeOverrides,
+      normalizeStockHoldings,
+      onCompatibilityFallback:()=>showToast('Migration Supabase requise : exécutez supabase/migrations/202610180002_transaction_pointage_order.sql dans SQL Editor. Le pointage et l’ordre manuel ne seront pas conservés avant cela.')
+    });
+    const result=await synchronization.synchronize({
+      client,userId:uid,state,
+      pending:{accounts:cloud.pendingAccountDeletes,templates:cloud.pendingTemplateDeletes,transactions:cloud.pendingDeletes,crypto:cloud.pendingCryptoDeletes},
+      dirty,cryptoTableReady
+    });
+    cryptoTableReady=result.cryptoTableReady;
     cloudStatus('Synchronisé en ligne',true);
     return true;
   }catch(error){
