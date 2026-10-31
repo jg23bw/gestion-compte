@@ -56,6 +56,8 @@
   <script src="src/application/portfolio/stock-holding-metadata-commands.js"></script>
   <script src="src/ports/portfolio/stock-price-provider.js"></script>
   <script src="src/ports/portfolio/exchange-rate-provider.js"></script>
+  <script src="src/ports/market-data/fear-greed-provider.js"></script>
+  <script src="src/adapters/market-data/alternative-me-fear-greed-provider.js"></script>
   <script src="src/adapters/market-data/supabase-stock-price-provider.js"></script>
   <script src="src/adapters/market-data/http-exchange-rate-provider.js"></script>
   <script src="src/application/recurring/recurring-commands.js"></script>
@@ -66,7 +68,7 @@
   <script src="src/adapters/persistence/local-storage/generated-months-repository.js"></script>
     <script src="technical-indicators.js"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=coincap-fallback-provider-v1" defer></script>
+  <script src="app.js?v=fear-greed-provider-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
