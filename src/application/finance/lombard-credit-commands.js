@@ -4,7 +4,7 @@
 (function exposeLombardCreditCommands(root) {
   'use strict';
   const api = Object.freeze({
-    create({ rules }) {
+    create({ rules } = {}) {
       const domain = rules || (typeof LombardCreditRules !== 'undefined'
         ? LombardCreditRules : require('../../domain/finance/lombard-credit-rules.js'));
       if (!domain || typeof domain.normalize !== 'function') throw new TypeError('Lombard credit rules are required');
