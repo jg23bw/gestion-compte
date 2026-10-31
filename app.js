@@ -152,6 +152,7 @@ const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
 const transactionQueries = TransactionQueries.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
+const transactionCommands = TransactionCommands.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -2814,11 +2815,10 @@ $('transaction-form').addEventListener('submit',event=>{
   event.preventDefault();
   const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
   if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
-  const previous=id?state.transactions.find(t=>t.id===id):null;
-  const record=TransactionRules.createTransactionRecord({transactions:state.transactions,previous,id:id||crypto.randomUUID(),accountId,date,amount,label,createdAt:Date.now()});
+  const previous=id?transactionCommands.findById(id):null;
   // Capture l'état avant toute création ou modification pour rendre « Annuler » opérationnel.
   prepareUndo();
-  if(previous)state.transactions=state.transactions.map(t=>t.id===id?record:t);else state.transactions.push(record);
+  transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount,label,createdAt:Date.now()});
   $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.',true);
 });
 $('lombard-form').addEventListener('submit',async event=>{
@@ -2903,7 +2903,7 @@ document.addEventListener('change',event=>{
   const transaction=state.transactions.find(t=>t.id===paid.dataset.togglePaid);
   if(!transaction)return;
   if(!paid.checked){
-    prepareUndo();transaction.isPaid=false;renderAll();
+    prepareUndo();transactionCommands.setPaid(transaction.id,{isPaid:false});renderAll();
     showToast('Opération remise à pointer.',true);return;
   }
   const dateDialog=document.getElementById('point-date-dialog');
@@ -2918,8 +2918,7 @@ document.addEventListener('change',event=>{
     const chosenDate=dateInputParse(dateInput.value);
     if(!chosenDate||chosenDate>today()){showToast('Choisissez aujourd’hui ou une date passée.',false);return;}
     prepareUndo();
-    transaction.date=chosenDate;
-    transaction.isPaid=true;
+    transactionCommands.setPaid(transaction.id,{isPaid:true,date:chosenDate});
     dateDialog.close('confirm');
     renderAll();
     showToast('Opération pointée et repositionnée à la date choisie.',true);
@@ -2935,7 +2934,7 @@ document.addEventListener('click',event=>{
   const edit=event.target.closest('[data-edit-transaction]');
   if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
   const del=event.target.closest('[data-delete-transaction]');
-  if(del){const t=state.transactions.find(t=>t.id===del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer l’opération « '+t.label+' » ?')){prepareUndo();if(cloud.user)cloud.pendingDeletes.add(t.id);state.transactions=state.transactions.filter(x=>x.id!==t.id);renderAll();showToast('Opération supprimée.',true);}return;}
+  if(del){const t=transactionCommands.findById(del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer l’opération « '+t.label+' » ?')){prepareUndo();if(cloud.user)cloud.pendingDeletes.add(t.id);transactionCommands.remove(t.id);renderAll();showToast('Opération supprimée.',true);}return;}
   const editRecurring=event.target.closest('[data-edit-recurring]');
   if(editRecurring){openRecurringEditor(editRecurring.dataset.editRecurring);return;}
   const deleteRecurring=event.target.closest('[data-delete-recurring]');
