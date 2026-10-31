@@ -430,33 +430,33 @@ async function loadCloudState(user){
   $('app-shell').hidden=true;
   try{
     const client=cloudClient();
-    const [ar,tr,rr]=await Promise.all([
-      client.from('accounts').select('*'),
-      client.from('transactions').select('*').order('transaction_date',{ascending:true}),
-      client.from('recurring_templates').select('*')
-    ]);
-    for(const result of [ar,tr,rr])if(result.error)throw result.error;
+    const remoteData=await CloudStateLoader.create({
+      accountRepository:options=>SupabaseAccountRepository.create(options),
+      transactionRepository:options=>SupabaseTransactionRepository.create(options),
+      recurringTemplateRepository:options=>SupabaseRecurringTemplateRepository.create(options),
+      cryptoHoldingRepository:options=>SupabaseCryptoHoldingRepository.create(options),
+      mapAccount:fromCloudAccount,
+      mapTransaction:fromCloudTransaction,
+      mapRecurringTemplate:fromCloudTemplate,
+      mapCryptoHolding:fromCloudCryptoHolding,
+      normalizeLombardCredit,
+      normalizeAccountTypes,
+      normalizeAccountPledges,
+      normalizeStockHoldings,
+      isMissingCryptoTable
+    }).load({client,user});
     if(!cloud.user||cloud.user.id!==user.id)return;
-
-    // La table crypto peut ne pas encore exister : ne pas bloquer le reste de l'application.
-    const cryptoRepository=SupabaseCryptoHoldingRepository.create({client,userId:user.id});
-    let remoteCrypto=[];
-    try{
-      remoteCrypto=(await cryptoRepository.listAll()).map(fromCloudCryptoHolding);
-      cryptoTableReady=true;
-    }catch(error){
-      if(!isMissingCryptoTable(error))throw error;
-      cryptoTableReady=false;
-    }
-    let cryptoHoldings=[];
-    if(cryptoTableReady&&remoteCrypto.length)cryptoHoldings=remoteCrypto;
-
-    // Le crédit lombard, les sous-types de comptes, le nantissement et les
-    // positions actions sont stockés dans les métadonnées privées du compte Auth.
-    const remoteLombard=normalizeLombardCredit(user.user_metadata?.lombardCredit);
-    const remoteAccountTypes=normalizeAccountTypes(user.user_metadata?.accountTypes);
-    const remoteAccountPledges=normalizeAccountPledges(user.user_metadata?.accountPledges);
-    const remoteStockHoldings=normalizeStockHoldings(user.user_metadata?.stockHoldings);
+    cryptoTableReady=remoteData.cryptoTableReady;
+    const {
+      accounts:remoteAccounts,
+      transactions:remoteTransactions,
+      recurringTemplates:remoteTemplates,
+      cryptoHoldings,
+      lombardCredit:remoteLombard,
+      accountTypes:remoteAccountTypes,
+      accountPledges:remoteAccountPledges,
+      stockHoldings:remoteStockHoldings
+    }=remoteData;
 
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
     let legacy=null;
@@ -464,9 +464,6 @@ async function loadCloudState(user){
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
       if(saved&&Array.isArray(saved.accounts)&&Array.isArray(saved.transactions))legacy=loadState();
     }catch(error){console.warn('Anciennes données locales illisibles',error);}
-    const remoteAccounts=(ar.data||[]).map(account=>fromCloudAccount(account,remoteAccountTypes));
-    const remoteTransactions=(tr.data||[]).map(fromCloudTransaction);
-    const remoteTemplates=(rr.data||[]).map(fromCloudTemplate);
     const existingAccountIds=new Set(remoteAccounts.map(account=>account.id));
     const loadedStockHoldings=remoteStockHoldings.filter(holding=>existingAccountIds.has(holding.accountId));
     const loadedAccountPledges=Object.fromEntries(Object.entries(remoteAccountPledges).filter(([id])=>existingAccountIds.has(id)));
