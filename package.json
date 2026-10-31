@@ -5,7 +5,7 @@
   "description": "Application personnelle de gestion financière",
   "scripts": {
     "test": "node --test",
-    "check": "node --check app.js && node --check technical-indicators.js && node --check src/domain/transactions/transaction-rules.js"
+    "check": "node --check app.js && node --check technical-indicators.js && node --check src/domain/transactions/transaction-rules.js && node --check src/ports/transactions/transaction-repository.js && node --check src/adapters/persistence/state/state-transaction-repository.js && node --check src/application/transactions/transaction-queries.js"
   },
   "engines": {
     "node": ">=22"
