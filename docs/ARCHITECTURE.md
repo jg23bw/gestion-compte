@@ -230,3 +230,18 @@ L'interface garde la validation des champs et les effets UI/undo, mais délègue
 **CI vérifiée sur le commit `d0f1a4d` :** `npm run check` réussi ; 49 tests passés, 0 échec.
 
 **Limites restantes :** le mapper n'est pas encore utilisé par un dépôt Supabase complet ; les appels réseau, la synchronisation, les suppressions en attente, le chargement initial et les autres mappers restent dans `app.js`. Aucun test de contrat contre Supabase réel ni test navigateur n'a encore été exécuté.
+
+
+### Étape 4 — première règle métier des récurrences
+
+**Implémentée et validée par CI.**
+
+- Extraction de `dueDateForTemplate` dans `src/domain/recurring/recurring-rules.js`.
+- La règle reste pure et couvre les fréquences mensuelle, trimestrielle, annuelle et ponctuelle.
+- Les bornes de mois des récurrences mensuelles sont inclusives ; les jours impossibles sont ramenés au dernier jour du mois.
+- L'interface délègue désormais le calcul de l'échéance au domaine.
+- Tests sur février bissextile/non bissextile, fins de mois, bornes de période, mois configurés et fréquence invalide.
+
+**CI vérifiée sur le commit `a5d9521` :** `npm run check` réussi ; 54 tests passés, 0 échec.
+
+**Limites restantes :** la génération des opérations, l'idempotence, le stockage des marqueurs de mois, l'annulation et les mutations des modèles restent dans `app.js`. Cette extraction ne constitue pas encore le cas d'usage complet de génération des récurrences.
