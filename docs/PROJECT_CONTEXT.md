@@ -334,4 +334,4 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Tests ajoutés pour la délégation des cas d'usage, l'abonnement/désabonnement, la traduction des arguments d'inscription et la propagation des erreurs.
 - Aucun changement de schéma ni migration Supabase n'est requis.
 
-**Validation à cette étape :** tests unitaires et contrôle syntaxique à exécuter dans la CI après le commit. Le parcours navigateur réel (connexion, inscription, déconnexion et session expirée) reste à vérifier ; aucune connexion au compte réel n'a été effectuée.
+**Validation CI :** sur le commit `53b311490ab8e45374ca48010faa3ac19579b1c5`, les étapes `npm run check` et `npm test` sont toutes deux réussies (workflow GitHub Actions `41199953854`). Le parcours navigateur réel (connexion, inscription, déconnexion et session expirée) reste à vérifier ; aucune connexion au compte réel n'a été effectuée.
