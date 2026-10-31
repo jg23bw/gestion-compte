@@ -78,3 +78,18 @@ test('reorder updates only the requested account and persists the requested orde
   assert.deepEqual(reordered.map(item => [item.id, item.sortOrder]), [['second', 1], ['existing', 2]]);
   assert.equal(f.transactions.find(item => item.id === 'other-account').sortOrder, 1);
 });
+
+test('normalizeOrder assigns missing manual order by descending date and creation time', () => {
+  const f = fixture();
+  f.transactions[0].sortOrder = null;
+  f.transactions.push(
+    { id: 'newer-date', accountId: 'a', date: '2026-02-01', createdAt: 1 },
+    { id: 'same-date-newer', accountId: 'a', date: '2026-02-01', createdAt: 9 },
+    { id: 'other-account', accountId: 'b', date: '2026-03-01', createdAt: 10 }
+  );
+  assert.equal(f.commands.normalizeOrder([{ id: 'a' }, { id: 'b' }]), 3);
+  assert.equal(f.transactions.find(item => item.id === 'same-date-newer').sortOrder, 1);
+  assert.equal(f.transactions.find(item => item.id === 'newer-date').sortOrder, 2);
+  assert.equal(f.transactions.find(item => item.id === 'existing').sortOrder, 3);
+  assert.equal(f.transactions.find(item => item.id === 'other-account').sortOrder, 1);
+});
