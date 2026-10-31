@@ -313,3 +313,13 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Un tooltip au survol/crosshair affiche la date, le cours, la MM200 et l’écart en pourcentage. Le listener de redimensionnement de secours est retiré lors de la destruction du graphique.
 - Tests ajoutés dans `tests/opportunity-mm200.test.js` et workflow GitHub Actions `.github/workflows/mm200-tests.yml` (Node.js 22).
 - 10 scénarios ont été exécutés dans l’environnement d’orchestration : fenêtre insuffisante, moyenne exacte, lacunes crypto/actions, weekends et jours fériés, clôtures invalides, normalisation UTC, timestamps secondes/millisecondes, reprise après lacune et déduplication déterministe. Résultat : 10 réussis, 0 échec. Le runner Node.js de GitHub Actions n’a pas encore été observé en exécution ; ne pas considérer ce résultat comme une validation navigateur.
+
+
+## 10. Refactoring — chargement de l'état cloud (31 octobre 2026)
+
+- Ajout de `src/application/synchronization/cloud-state-loader.js` : le cas d'usage orchestre la lecture des comptes, opérations, modèles récurrents et positions crypto via les repositories Supabase, puis normalise les métadonnées Auth (crédit lombard, sous-types de comptes, nantissements et positions actions).
+- `app.js` délègue désormais cette lecture à ce cas d'usage. La logique d'import volontaire de l'ancien cache local, la confirmation utilisateur, le rendu et la synchronisation initiale restent dans la couche d'orchestration UI.
+- Les opérations restent triées par date croissante comme dans l'ancien chargement. Une table crypto absente reste tolérée ; toute autre erreur de lecture est propagée.
+- Tests ajoutés dans `tests/unit/application/cloud-state-loader.test.js` : mapping des métadonnées, ordre des opérations, table crypto absente, erreur inattendue et validation des paramètres.
+- Le nouveau fichier est chargé avant `app.js` et inclus dans `npm run check`.
+- Validation à effectuer par GitHub Actions : `npm run check` et `npm test`. Aucun test navigateur ni test sur le projet Supabase distant n'est revendiqué à ce stade.
