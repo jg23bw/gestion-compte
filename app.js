@@ -916,19 +916,7 @@ function deleteRecurringTemplate(id){
   renderAll();
   showToast('Récurrence supprimée. Les opérations déjà créées sont conservées.',true);
 }
-function dueDateForTemplate(t,month){
-  const [year,monthNumber]=month.split('-').map(Number);
-  if(t.frequency==='once')return t.date===year+'-'+String(monthNumber).padStart(2,'0')+'-'+String(t.day).padStart(2,'0')?t.date:null;
-  if(t.frequency==='monthly'){
-    if(t.startMonth&&month<t.startMonth)return null;
-    if(t.endMonth&&month>t.endMonth)return null;
-  } else if(t.frequency==='quarterly'||t.frequency==='annual'){
-    if(!(t.months||[]).includes(monthNumber))return null;
-  } else return null;
-  const daysInMonth=new Date(year,monthNumber,0).getDate();
-  const day=Math.min(Number(t.day)||1,daysInMonth);
-  return year+'-'+String(monthNumber).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-}
+function dueDateForTemplate(template,month){return RecurringRules.dueDateForTemplate(template,month);}
 function generatedMonths(){
   try{const value=JSON.parse(localStorage.getItem(GENERATED_MONTHS_KEY)||'[]');return Array.isArray(value)?value:[];}catch(error){return [];}
 }
