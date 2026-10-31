@@ -584,7 +584,7 @@ function pledgeNoteMarkup(id){
 }
 function transactionOrder(a,b){return TransactionRules.transactionOrder(a,b);}
 function accountTransactions(accountId){return transactionQueries.listAccountTransactions(accountId);}
-function normalizeTransactionOrder(){for(const account of state.accounts){const rows=state.transactions.filter(t=>t.accountId===account.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);rows.forEach((t,index)=>{if(!Number.isFinite(Number(t.sortOrder))||t.sortOrder===null)t.sortOrder=index+1;});}}
+function normalizeTransactionOrder(){return transactionCommands.normalizeOrder(state.accounts);}
 function moveTransaction(id,direction){
   const current=state.transactions.find(t=>t.id===id);if(!current)return;
   const accountId=current.accountId;
