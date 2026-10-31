@@ -73,12 +73,12 @@ test('retries legacy schema errors without pointage and order columns', async ()
 
 test('does not retry unrelated upsert errors and propagates fallback errors', async () => {
   const unrelated = create({ client: fakeClient({ upsertResults: [{ error: { message: 'permission denied' } }] }), userId: 'user-1' });
-  await assert.rejects(unrelated.upsertMany([{ id: 'tx-1' }]), /permission denied/);
+  await assert.rejects(unrelated.upsertMany([{ id: 'tx-1' }]), error => error.message === 'permission denied');
   const fallbackFailure = create({ client: fakeClient({ upsertResults: [
     { error: { message: 'column is_paid does not exist' } },
     { error: { message: 'fallback failed' } }
   ] }), userId: 'user-1' });
-  await assert.rejects(fallbackFailure.upsertMany([{ id: 'tx-1', is_paid: true }]), /fallback failed/);
+  await assert.rejects(fallbackFailure.upsertMany([{ id: 'tx-1', is_paid: true }]), error => error.message === 'fallback failed');
 });
 
 test('deletes a transaction scoped to its authenticated user', async () => {
