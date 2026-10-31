@@ -1274,29 +1274,7 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:StockValuation.euroPrice(nativePrice,rate)};
 }
-const stockProviderCooldowns={};
-async function stockFunction(action,payload={}){
-  if(Date.now()<(Number(stockProviderCooldowns[action])||0))throw new Error('Fournisseur temporairement limité : réessaie dans une minute.');
-  if(!cloud.client)throw new Error('connexion cloud requise pour les données boursières');
-  const {data,error}=await cloud.client.functions.invoke(STOCK_FUNCTION_NAME,{body:{action,...payload}});
-  if(error){
-    let message=error.message||'service boursier indisponible';
-    try{
-      if(error.context&&typeof error.context.json==='function'){
-        const body=await error.context.json();
-        if(body?.error)message=body.error;
-      }
-    }catch(parseError){}
-    const status=Number(error.context?.status||error.status||0);
-    if(status===429||/rate limit|too many requests|limite.*atteinte/i.test(message)){stockProviderCooldowns[action]=Date.now()+60000;message='Limite du fournisseur de données atteinte (HTTP 429). Les nouvelles requêtes sont suspendues pendant une minute.';}
-    else if(status>=500)message='Service de données temporairement indisponible (HTTP '+status+'). Réessaie plus tard.';
-    else if(status===404)message='Historique indisponible pour cet actif (HTTP 404).';
-    else if(error instanceof TypeError||/failed to fetch|networkerror|load failed/i.test(message))message='réseau indisponible';
-    throw new Error(message);
-  }
-  if(data?.error)throw new Error(data.error);
-  return data;
-}
+async function stockFunction(action,payload={}){\n  return stockPriceProvider.invoke(action,payload);\n}
 const stockPriceProvider=StockPriceProviderPort.assert(SupabaseStockPriceProvider.create({getClient:()=>cloud.client,functionName:STOCK_FUNCTION_NAME}));
 const stockFxProvider=ExchangeRateProviderPort.assert(HttpExchangeRateProvider.create({endpoint:STOCK_FX_ENDPOINT}));
 async function fetchStockNativePrice(priceId){
