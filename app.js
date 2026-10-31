@@ -1297,8 +1297,8 @@ async function stockFunction(action,payload={}){
   if(data?.error)throw new Error(data.error);
   return data;
 }
-const stockPriceProvider=SupabaseStockPriceProvider.create({getClient:()=>cloud.client,functionName:STOCK_FUNCTION_NAME});
-const stockFxProvider=HttpExchangeRateProvider.create({endpoint:STOCK_FX_ENDPOINT});
+const stockPriceProvider=StockPriceProviderPort.assert(SupabaseStockPriceProvider.create({getClient:()=>cloud.client,functionName:STOCK_FUNCTION_NAME}));
+const stockFxProvider=ExchangeRateProviderPort.assert(HttpExchangeRateProvider.create({endpoint:STOCK_FX_ENDPOINT}));
 async function fetchStockNativePrice(priceId){
   return stockPriceProvider.getPrice(priceId);
 }
