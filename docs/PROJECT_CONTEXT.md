@@ -376,3 +376,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les taux de change passent par `ExchangeRateProviderPort` et `HttpExchangeRateProvider`. La conversion EUR-base, y compris GBX, est testée ; le cache et l'état UI restent dans `app.js`.
 - Les adaptateurs sont chargés avant `app.js` et couverts par cinq tests unitaires. Les sources externes et le schéma Supabase restent inchangés.
 - Aucun test navigateur, appel FX réel ou test sur un compte Supabase réel n'est revendiqué.
+
+
+## Centralisation des appels Edge de données de marché (31 octobre 2026)
+
+- Le port `StockPriceProviderPort` et l'adaptateur `SupabaseStockPriceProvider` couvrent désormais tous les appels à l'Edge Function `stock-data` : cours, recherche d'instruments, historiques actions/ETF, données marché crypto et historiques crypto.
+- `app.js` ne construit plus directement les appels `supabase.functions.invoke` pour ces opérations ; il délègue au fournisseur. La gestion des erreurs HTTP, du réseau et des cooldowns HTTP 429 est centralisée dans l'adaptateur, avec un cooldown indépendant par action afin qu'un 429 sur l'historique ne bloque pas la recherche ou les cours.
+- Le fournisseur FX reste indépendant derrière `ExchangeRateProviderPort`. Le cache des cours/taux et les états de chargement restent dans l'interface.
+- Tests unitaires ajoutés pour les actions génériques et l'isolation des cooldowns. Aucun schéma Supabase ni contrat de l'Edge Function n'est modifié.
+- Aucun test navigateur ni appel réel à la fonction Edge ou au service FX n'est revendiqué.
