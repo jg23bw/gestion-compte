@@ -726,15 +726,7 @@ function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter
 function totalStockValue(){return state.accounts.reduce((sum,a)=>sum+stockValueForAccount(a.id),0);}
 function totalCryptoValue(){return (state.cryptoHoldings||[]).reduce((sum,h)=>{const price=cryptoPrice(h);return sum+(price!==null?Number(h.quantity||0)*price:Number(h.invested||0));},0);}
 function accountOverviewBalance(accountId){return balanceAt(accountId)+stockValueForAccount(accountId);}
-function balanceAfterTransaction(transaction){
-  const a=accountById(transaction.accountId);if(!a)return 0;
-  let balance=Number(a.opening||0);
-  for(const t of accountTransactions(transaction.accountId)){
-    balance+=Number(t.amount);
-    if(t.id===transaction.id)break;
-  }
-  return balance;
-}
+function balanceAfterTransaction(transaction){return transactionQueries.balanceAfterTransaction(transaction);}
 function tiimeCalc(account,amount){return TransactionRules.calculateProfessionalAmounts(account,amount);}
 function proRecurringKind(transaction){return TransactionRules.professionalRecurringKind(transaction,state.recurringTemplates||[]);}
 function proAdjustedAmount(transaction){return TransactionRules.professionalAdjustedAmount(transaction,state.recurringTemplates||[]);}
