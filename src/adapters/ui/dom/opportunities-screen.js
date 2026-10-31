@@ -420,29 +420,7 @@ function renderOpportunities(){
   const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
   renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);setupOpportunityChart();loadOpportunityFearGreed();
-  // Charge l’historique de toutes les positions avec une concurrence limitée pour
-  // éviter les limites des fournisseurs. Un échec récent est retenté après 15 min
-  // (ou immédiatement via le bouton « Actualiser l’analyse »).
-  const historyAssets=assets.filter(opportunityHasHistorySource);
-  const queue=historyAssets.filter(asset=>{
-    const key=asset.id+'|1y';
-    if(opportunityHistory[key]||opportunityHistoryLoading[key])return false;
-    const failedAt=Number(opportunityHistoryAttempts[key])||0;
-    return !failedAt||Date.now()-failedAt>=900000;
-  });
-  const worker=async()=>{
-    while(queue.length){
-      const asset=queue.shift();
-      if(asset)await loadOpportunityHistory(asset.id,'1y');
-    }
-  };
-  if(queue.length){
-    Promise.allSettled(Array.from({length:Math.min(2,queue.length)},()=>worker())).then(()=>{
-      renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');
-      renderOpportunityAssets(document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all');
-      const select=$('opportunity-chart-asset');
-      const period=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
-      if(select?.value)renderOpportunityChart(select.value,period);
-    });
-  }
+  // L'historique détaillé est chargé à la demande pour le seul actif sélectionné
+  // dans le graphique (setupOpportunityChart ci-dessus). Charger toutes les positions
+  // au démarrage provoquait une rafale de requêtes vers stock-data et les quotas amont.
 }
