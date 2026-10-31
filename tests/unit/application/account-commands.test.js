@@ -38,6 +38,7 @@ test('updates an existing account without losing unrelated professional settings
   const { state, commands } = setup([original]);
   const updated = commands.save({ existing: original, name: 'New', accountType: 'pro', bank: 'other', opening: 20 });
   assert.equal(updated.id, 'pro');
+  assert.equal(state.accounts[0], original, 'updates preserve the existing account object identity');
   assert.equal(updated.vatRate, 10);
   assert.equal(updated.socialRate, 30);
   assert.equal(updated.netOpening, 5);
