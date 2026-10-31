@@ -946,13 +946,8 @@ function generateRecurringForMonth(month){
   }
   generationInProgress.add(month);
   const button=$('recurring-add-month');if(button)button.disabled=true;
-  const additions=[];
-  (state.recurringTemplates||[]).forEach(t=>{
-    if(!t.enabled||t.amount===null||t.amount===undefined||t.amount===''||!Number.isFinite(Number(t.amount)))return;
-    const date=dueDateForTemplate(t,month);if(!date)return;
-    const recurringKey=t.id+'@'+date;
-    if(state.transactions.some(x=>x.recurringKey===recurringKey))return;
-    additions.push({id:crypto.randomUUID(),accountId:t.accountId,date,amount:Number(t.amount),label:t.label,createdAt:Date.now()+additions.length,recurringKey,recurringTemplateId:t.id});
+  const additions=RecurringCommands.generateTransactions({
+    templates:state.recurringTemplates||[], transactions:state.transactions, month
   });
   if(!additions.length){
     generationInProgress.delete(month);
