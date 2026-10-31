@@ -412,3 +412,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le rendu des cartes, les badges de nantissement, les compteurs et les interactions restent dans `app.js`. La liste source n'est pas mutée.
 - Tests unitaires ajoutés pour la recherche, le filtre de type, les tris et la validation des dépendances.
 - Aucun changement de modèle, de stockage ou de schéma Supabase. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Centralisation du tri des opérations pour le déplacement manuel (31 octobre 2026)
+
+- Le cas d'usage `TransactionQueries.accountTransactionsInDisplayOrder` fournit désormais l'ordre d'affichage d'un compte selon le tri actif (date, libellé, montant, pointage ou ordre manuel).
+- Le filtrage de l'écran Opérations et le déplacement haut/bas réutilisent le même comparateur applicatif ; `app.js` ne recalcule plus lui-même le tri avant une réorganisation.
+- Le tri travaille sur une copie de la liste et ne modifie pas les opérations persistées. La mutation des `sortOrder` reste confiée à `TransactionCommands.reorder`.
+- Tests unitaires ajoutés pour les tris manuel, chronologique et pointé, ainsi que l'absence de mutation de l'état.
+- Aucun changement du format des données, du schéma Supabase ou de la synchronisation. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
