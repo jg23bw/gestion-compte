@@ -457,3 +457,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - `app.js` conserve les règles d'interface : interdiction de supprimer le dernier compte, message de confirmation détaillant les éléments liés, fermeture de la fenêtre, rendu et notification.
 - La suppression reste volontairement définitive et ne crée pas de point d'annulation, comme avant cette extraction.
 - Aucun changement de schéma Supabase ou de format des données.
+
+
+### Nantissements des comptes — extraction des règles et commandes (31 octobre 2026)
+
+- Les règles pures de normalisation des nantissements (compatibilité avec l'ancien booléen `true`, note nettoyée et limitée à 160 caractères, rejet des formes invalides) sont dans `AccountPledgeRules`.
+- Le filtrage des métadonnées aux seuls comptes existants est également centralisé dans le domaine.
+- `AccountPledgeCommands` expose la lecture, la normalisation, la préparation des métadonnées cloud et l'enregistrement/suppression d'un nantissement via le port compte.
+- L'adaptateur d'état implémente désormais les opérations de lecture et d'écriture des nantissements ; l'UI conserve les champs, le rendu et les indicateurs de synchronisation.
+- Le format JSON stocké dans les métadonnées utilisateur Supabase reste inchangé.
