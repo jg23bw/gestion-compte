@@ -290,3 +290,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - La normalisation de l'ordre initial des opérations est désormais un cas d'usage de `TransactionCommands`, exécuté via le repository ; l'interface conserve uniquement le déclenchement au chargement.
 - La classification et le type effectif d'un compte sont centralisés dans `AccountTypeRules`, sans dépendance UI.
+
+
+### Fournisseur crypto secondaire
+
+- Le repli CoinCap est maintenant un adaptateur `CoinCapFallbackProvider` derrière le port `CryptoFallbackProviderPort`.
+- L'adaptateur reçoit le mapping des identifiants et le taux USD/EUR ; il ne connaît ni l'état de l'écran ni le cache applicatif.
