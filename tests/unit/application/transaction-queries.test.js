@@ -42,7 +42,7 @@ test('unknown account returns zero without throwing', () => {
 
 test('professional adjusted balance uses repository templates', () => {
   const f = fixture();
-  f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, recurringKey: '2026-01', label: 'TVA' });
+  f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, recurringKey: '2026-01', recurringTemplateId: 'vat-template', label: 'TVA' });
   f.repository.findRecurringTemplates = () => [{ id: 'vat-template', label: 'TVA', amount: 20 }];
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
