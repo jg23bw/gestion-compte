@@ -135,3 +135,26 @@ test('account transaction display ordering is shared by reorder actions and does
   assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'pointed').map(item => item.id), ['in', 'out']);
   assert.deepEqual(f.transactions, original);
 });
+
+
+test('account transaction display rows calculate balances and manual positions in one query', () => {
+  const f = fixture();
+  f.transactions.push(
+    { id: 'later', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 25, label: 'Loyer' }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const rows = queries.accountTransactionDisplayRows({
+    accountId: 'a', typeFilter: 'all', query: '', sort: 'date-desc'
+  });
+  assert.deepEqual(rows.map(row => row.transaction.id), ['later', 'out', 'in']);
+  assert.deepEqual(rows.map(row => row.balance), [165, 140, 150]);
+  assert.deepEqual(rows.map(row => row.position), [2, 1, 0]);
+  assert.ok(rows.every(row => row.accountTransactionCount === 3));
+});
+
+test('account transaction display rows retain zero balance and missing position for a deleted account', () => {
+  const f = fixture();
+  const queries = create({ repository: f.repository, domain });
+  const rows = queries.accountTransactionDisplayRows({ accountId: 'missing' });
+  assert.deepEqual(rows, []);
+});
