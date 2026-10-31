@@ -518,3 +518,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le chargement de l'indice Alternative.me est maintenant délégué à un adaptateur testé avec des réponses réseau simulées.
 - L'interface conserve les libellés, le seuil de sentiment et le rendu de l'indicateur.
+
+
+## Extraction du catalogue crypto (31 octobre 2026)
+
+- La recherche CoinGecko passe maintenant par un port et un adaptateur dédiés, avec tests de limitation des résultats, HTTP 429 et annulation.
+- La gestion de l'AbortController et le rendu des résultats restent dans l'interface.
