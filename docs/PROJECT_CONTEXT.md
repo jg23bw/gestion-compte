@@ -578,3 +578,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Les fonctions d'orchestration `syncCloudState` et `loadCloudState` (environ 153 lignes) sont déplacées dans `src/bootstrap/cloud-session.js`.
 - `app.js` est désormais réduit à moins de 1 000 lignes. Les bindings historiques restent provisoirement nécessaires à la composition et seront remplacés par injection explicite dans la phase finale.
+
+
+## Extraction des catalogues statiques (31 octobre 2026)
+
+- Les listes statiques de banques, devises, marchés, ISIN et comptes par défaut sont déplacées dans `src/config/catalogs.js`.
+- `app.js` passe sous les 900 lignes. Les données personnelles ne sont pas déplacées vers ce module.
