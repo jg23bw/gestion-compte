@@ -121,3 +121,17 @@ test('account transaction query preserves manual order and supports pointed-firs
   assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'manual' }).map(item => item.id), ['out', 'in']);
   assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'pointed' }).map(item => item.id), ['in', 'out']);
 });
+
+test('account transaction display ordering is shared by reorder actions and does not mutate repository rows', () => {
+  const f = fixture();
+  f.transactions[0].sortOrder = 2;
+  f.transactions[1].sortOrder = 1;
+  f.transactions[0].isPaid = true;
+  const original = f.transactions.map(item => ({ ...item }));
+  const queries = create({ repository: f.repository, domain });
+  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'manual').map(item => item.id), ['out', 'in']);
+  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'date-asc').map(item => item.id), ['in', 'out']);
+  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'date-desc').map(item => item.id), ['out', 'in']);
+  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'pointed').map(item => item.id), ['in', 'out']);
+  assert.deepEqual(f.transactions, original);
+});
