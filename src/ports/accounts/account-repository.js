@@ -4,12 +4,9 @@
 (function exposeAccountRepositoryPort(root) {
   const api = Object.freeze({
     assert(repository) {
-      if (!repository || typeof repository.findAll !== 'function'
-        || typeof repository.findById !== 'function'
-        || typeof repository.save !== 'function'
-        || typeof repository.delete !== 'function'
-        || typeof repository.findPledgeByAccount !== 'function'
-        || typeof repository.deletePledgeByAccount !== 'function') {
+      const methods = ['findAll','findById','save','delete','findPledgeByAccount',
+        'findAllPledges','savePledge','deletePledgeByAccount'];
+      if (!repository || methods.some(method => typeof repository[method] !== 'function')) {
         throw new TypeError('account repository port is required');
       }
       return repository;
