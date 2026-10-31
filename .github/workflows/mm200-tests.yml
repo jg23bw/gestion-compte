@@ -12,6 +12,9 @@ on:
     branches: [main]
     paths:
       - 'technical-indicators.js'
+      - 'app.js'
+      - 'index.html'
+      - 'styles.css'
       - 'tests/**'
       - '.github/workflows/mm200-tests.yml'
 jobs:
