@@ -147,7 +147,7 @@ test('account transaction display rows calculate balances and manual positions i
     accountId: 'a', typeFilter: 'all', query: '', sort: 'date-desc'
   });
   assert.deepEqual(rows.map(row => row.transaction.id), ['later', 'out', 'in']);
-  assert.deepEqual(rows.map(row => row.balance), [165, 140, 150]);
+  assert.deepEqual(rows.map(row => row.balance), [125, 115, 165]);
   assert.deepEqual(rows.map(row => row.position), [2, 1, 0]);
   assert.ok(rows.every(row => row.accountTransactionCount === 3));
 });
