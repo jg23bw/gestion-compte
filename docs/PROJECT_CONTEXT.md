@@ -346,3 +346,14 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Aucun changement de schéma Supabase ni migration des données n'est nécessaire. Le dépôt mémoire encapsule toujours l'état historique ; l'adaptateur Supabase des modèles récurrents reste utilisé pour la synchronisation cloud.
 
 **Validation CI :** commit `5f32cf57bc91c2b977d10442a9e6faa204059c0f`, workflow GitHub Actions `41200579430` : `npm run check` et `npm test` réussis. Le commit précédent contenant les tests avait échoué car le port n'était pas chargé dans l'environnement Node ; le chargement CommonJS a été corrigé et la CI finale est verte. Aucun test navigateur ni test sur Supabase réel n'est revendiqué.
+
+
+## 14. Première extraction du domaine de valorisation actions/ETF (31 octobre 2026)
+
+- Ajout de `src/domain/portfolio/stock-valuation.js`, module pur qui centralise la détection des positions à valeur manuelle (dont Suravenir), la capitalisation prorata temporis de cette valeur, la conversion d'un cours natif en euros à partir d'un taux FX fourni et le calcul valeur/plus-value/performance d'une position.
+- Les cours, taux de change, date courante et hypothèse de rendement sont fournis en entrée : le domaine n'effectue aucun accès réseau, stockage ou lecture de l'horloge système. Cela rend les calculs déterministes en test.
+- `app.js` délègue désormais ces règles au domaine. La récupération des cours, le cache, les taux FX, la gestion des positions, l'affichage et les comportements de repli restent dans la couche legacy pour cette première tranche.
+- Huit tests unitaires couvrent la détection manuelle, la capitalisation, l'absence de rendement dans le futur, les cours/taux invalides, la valorisation, les cours absents, la valeur manuelle et le rendement non calculable si le capital investi est nul.
+- Aucun format de données ni schéma Supabase n'a été modifié.
+
+**Validation CI :** les tests unitaires du nouveau domaine ont réussi sur le commit `b490baf31acc093ea2fc1733a971aa32b6633c6b`, et le contrôle syntaxique de l'application a réussi sur `f313d6c1d4c30bd7009c6dd80df919c0f092c25a`. La validation finale incluant les derniers changements de chargement HTML et de configuration des checks est en cours au moment de cette note. Aucun test navigateur ni appel réel aux fournisseurs de marché n'est revendiqué.
