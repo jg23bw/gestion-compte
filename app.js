@@ -2322,7 +2322,7 @@ function deleteAccount(){
   state.accounts=state.accounts.filter(a=>a.id!==id);
   state.transactions=state.transactions.filter(t=>t.accountId!==id);
   state.recurringTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId!==id);
-  state.stockHoldings=stockHoldingCommands.findAll().filter(t=>t.accountId!==id);
+  stockHoldingCommands.deleteByAccount(id);
   if(state.accountPledges?.[id]){const next={...state.accountPledges};delete next[id];state.accountPledges=next;}
   cloud.accountTypesDirty=true;
   cloud.accountPledgesDirty=true;
