@@ -740,6 +740,7 @@ function tiimeCalc(account,amount){
   return {vat:0,social:0,net:amount};
 }
 function proRecurringKind(transaction){
+  if(!transaction.recurringTemplateId&&!transaction.recurringKey)return null;
   const template=(state.recurringTemplates||[]).find(item=>item.id===transaction.recurringTemplateId);
   const label=String(template?.label||transaction.label||'').trim().toLocaleLowerCase('fr');
   if(/^tva(?:\s|$)/i.test(label))return 'vat';
