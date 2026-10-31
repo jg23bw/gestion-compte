@@ -724,8 +724,12 @@ function renderDashboard(){
 }
 function renderAccounts(){
   const query=$('account-search').value.trim().toLocaleLowerCase('fr'),kind=$('account-kind-filter')?.value||'all',sort=$('account-sort')?.value||'name-asc';
-  const accounts=state.accounts.filter(a=>(a.name+' '+a.short+' '+bankByKey(bankKeyForAccount(a)).name+' '+kindLabel(a)).toLocaleLowerCase('fr').includes(query)&&(kind==='all'||effectiveAccountType(a)===kind));
-  accounts.sort((a,b)=>{if(sort==='name-desc')return b.name.localeCompare(a.name,'fr');if(sort==='balance-desc')return accountOverviewBalance(b.id)-accountOverviewBalance(a.id);if(sort==='balance-asc')return accountOverviewBalance(a.id)-accountOverviewBalance(b.id);if(sort==='kind')return kindLabel(a).localeCompare(kindLabel(b),'fr')||a.name.localeCompare(b.name,'fr');return a.name.localeCompare(b.name,'fr');});
+  const accounts=AccountListRules.filterAndSort({
+    accounts:state.accounts,query,kind,sort,
+    effectiveType:effectiveAccountType,kindLabel,
+    bankName:account=>bankByKey(bankKeyForAccount(account)).name,
+    balance:accountOverviewBalance
+  });
   $('all-accounts').innerHTML=accounts.length?accounts.map(a=>accountMarkup(a)).join(''):'<div class="empty-state">Aucun compte ne correspond aux filtres.</div>';
   const pledgedVisible=accounts.filter(a=>accountPledgeFor(a.id)).length;
   $('accounts-total-label').textContent=accounts.length+' / '+state.accounts.length+' comptes'+(pledgedVisible?' · '+pledgedVisible+' nanti'+(pledgedVisible>1?'s':''):'');
