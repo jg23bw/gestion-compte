@@ -211,3 +211,6 @@ La construction du modèle d'opération est maintenant une règle métier pure (
 L'interface garde la validation des champs et les effets UI/undo, mais délègue la construction du modèle au domaine.
 
 **CI vérifiée :** commit `04a4e49`, 35 tests passés, 0 échec ; contrôle syntaxique réussi.
+
+- [x] Opérations : cas d’usage d’écriture pour création, modification, suppression, pointage et réordonnancement ; orchestration undo/rendu/synchronisation conservée dans l’interface legacy.
+- [x] Tests unitaires des cas d’usage de mutation des opérations (5 scénarios).
