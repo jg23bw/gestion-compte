@@ -37,6 +37,8 @@
   <script src="src/adapters/persistence/supabase/account-repository.js"></script>
   <script src="src/adapters/persistence/supabase/recurring-template-repository.js"></script>
   <script src="src/ports/crypto/crypto-holding-cloud-repository.js"></script>
+  <script src="src/ports/crypto/crypto-fallback-price-provider.js"></script>
+  <script src="src/adapters/market-data/coincap-fallback-provider.js"></script>
   <script src="src/adapters/persistence/supabase/crypto-holding-repository.js"></script>
   <script src="src/ports/authentication/authentication-repository.js"></script>
   <script src="src/adapters/authentication/supabase-authentication-repository.js"></script>
@@ -64,7 +66,7 @@
   <script src="src/adapters/persistence/local-storage/generated-months-repository.js"></script>
     <script src="technical-indicators.js"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=supabase-row-mappers-v1" defer></script>
+  <script src="app.js?v=coincap-fallback-provider-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
