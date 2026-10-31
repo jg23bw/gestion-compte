@@ -94,3 +94,29 @@ test('monthly history applies account, type and text filters with amount sorting
   assert.equal(result.outgoing, 0);
   assert.equal(result.net, 2000);
 });
+
+
+test('account transaction query filters by account, type and text, then applies the requested sort', () => {
+  const f = fixture();
+  f.accounts[0].name = 'Compte courant';
+  f.transactions.push(
+    { id: 'salary', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 2000, label: 'Salaire', isPaid: true },
+    { id: 'bill', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -30, label: 'Facture énergie' },
+    { id: 'other-account', accountId: 'b', date: '2026-01-05', createdAt: 5, amount: 500, label: 'Salaire' }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const result = queries.filterAccountTransactions({
+    accountId: 'a', typeFilter: 'income', query: ' salaire ', sort: 'amount-desc'
+  });
+  assert.deepEqual(result.map(item => item.id), ['salary', 'in']);
+});
+
+test('account transaction query preserves manual order and supports pointed-first sorting', () => {
+  const f = fixture();
+  f.transactions[0].sortOrder = 2;
+  f.transactions[1].sortOrder = 1;
+  f.transactions[0].isPaid = true;
+  const queries = create({ repository: f.repository, domain });
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a' }).map(item => item.id), ['out', 'in']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'pointed' }).map(item => item.id), ['in', 'out']);
+});
