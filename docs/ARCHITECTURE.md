@@ -296,3 +296,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Le repli CoinCap est maintenant un adaptateur `CoinCapFallbackProvider` derrière le port `CryptoFallbackProviderPort`.
 - L'adaptateur reçoit le mapping des identifiants et le taux USD/EUR ; il ne connaît ni l'état de l'écran ni le cache applicatif.
+
+
+### Indice Fear & Greed
+
+- La récupération de l'indice Alternative.me est isolée dans `AlternativeMeFearGreedProvider`, derrière `FearGreedProviderPort`.
+- Le rendu et le positionnement du marqueur restent dans l'interface ; l'adaptateur retourne uniquement le score et sa classification.
