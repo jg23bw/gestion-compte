@@ -114,3 +114,35 @@ test('non-positive professional amount has no VAT or social charge', () => {
     { vat: 0, social: 0, net: -100 }
   );
 });
+
+test('transaction record keeps the existing manual order when editing in the same account', () => {
+  const previous = tx('edit', { sortOrder: 4, isPaid: true, createdAt: 10 });
+  const record = rules.createTransactionRecord({
+    transactions: [previous, tx('other', { sortOrder: 8 })],
+    previous, id: 'edit', accountId: 'bank-1', date: '2026-02-01',
+    amount: 25, label: 'Modifiée', createdAt: 99
+  });
+  assert.equal(record.sortOrder, 4);
+  assert.equal(record.isPaid, true);
+  assert.equal(record.createdAt, 10);
+  assert.equal(record.amount, 25);
+});
+
+test('transaction record gets the next manual order for a new account placement', () => {
+  const record = rules.createTransactionRecord({
+    transactions: [tx('a', { sortOrder: 2 }), tx('b', { sortOrder: 7 })],
+    previous: tx('edit', { sortOrder: 1, accountId: 'bank-2' }),
+    id: 'edit', accountId: 'bank-1', date: '2026-02-01',
+    amount: -5, label: 'Déplacée', createdAt: 100
+  });
+  assert.equal(record.sortOrder, 8);
+  assert.equal(record.isPaid, false);
+});
+
+test('transaction record assigns order one when the account has no other transactions', () => {
+  const record = rules.createTransactionRecord({
+    transactions: [], id: 'new', accountId: 'bank-1',
+    date: '2026-02-01', amount: 0, label: 'Nouvelle', createdAt: 100
+  });
+  assert.equal(record.sortOrder, 1);
+});
