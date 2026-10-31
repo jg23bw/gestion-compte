@@ -421,3 +421,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le tri travaille sur une copie de la liste et ne modifie pas les opérations persistées. La mutation des `sortOrder` reste confiée à `TransactionCommands.reorder`.
 - Tests unitaires ajoutés pour les tris manuel, chronologique et pointé, ainsi que l'absence de mutation de l'état.
 - Aucun changement du format des données, du schéma Supabase ou de la synchronisation. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction du modèle de lignes de l'écran Opérations (31 octobre 2026)
+
+- Le cas d'usage `TransactionQueries.accountTransactionDisplayRows` prépare désormais les lignes de l'écran Opérations : filtrage/tri existants, solde après chaque opération selon l'ordre manuel du compte, position et nombre total d'opérations.
+- Les soldes et positions sont calculés en une seule passe sur les opérations du compte, au lieu de recalculer le solde et de rechercher la position pour chaque ligne du tableau.
+- `app.js` conserve la lecture des contrôles, le rendu HTML, les logos, le formatage, les interactions et les calculs propres à l'affichage professionnel.
+- Tests unitaires ajoutés pour vérifier l'ordre d'affichage, les soldes cumulés et les positions manuelles. Aucun format de données ni schéma Supabase n'est modifié.
+- Aucun test navigateur ni scénario Supabase réel n'est revendiqué pour cette tranche.
