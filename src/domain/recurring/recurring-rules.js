@@ -29,7 +29,11 @@
     return year + '-' + String(monthNumber).padStart(2, '0') + '-' + String(day).padStart(2, '0');
   }
 
-  function isProfessionalProvisionLabel(label) {\n    return /^(?:TVA|Charges sociales|Marge)(?:\\s|$)/i.test(String(label || '').trim());\n  }\n\n  function buildTransactionsForMonth(templates, transactions, month, options = {}) {
+  function isProfessionalProvisionLabel(label) {
+    return /^(?:TVA|Charges sociales|Marge)(?:\s|$)/i.test(String(label || '').trim());
+  }
+
+  function buildTransactionsForMonth(templates, transactions, month, options = {}) {
     if (!/^\d{4}-\d{2}$/.test(month)) return [];
     const existingKeys = new Set((transactions || []).map(item => item.recurringKey).filter(Boolean));
     const createId = options.createId || (() => {
