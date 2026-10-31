@@ -7,6 +7,7 @@ on:
       - 'index.html'
       - 'technical-indicators.js'
       - 'src/**'
+      - 'package.json'
       - 'tests/**'
       - 'package.json'
       - '.github/workflows/**'
@@ -31,5 +32,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm test
