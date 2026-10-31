@@ -1,0 +1,53 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const RecurringRules = require('../../../src/domain/recurring/recurring-rules.js');
+const { generateTransactions } = require('../../../src/application/recurring/recurring-commands.js');
+
+test('generation creates enabled transactions with due date and recurring key', () => {
+  const templates = [
+    { id: 'rent', accountId: 'bank', label: 'Loyer', amount: 850, day: 31, frequency: 'monthly', enabled: true },
+    { id: 'disabled', accountId: 'bank', label: 'Disabled', amount: 20, day: 5, frequency: 'monthly', enabled: false },
+    { id: 'empty', accountId: 'bank', label: 'À renseigner', amount: null, day: 5, frequency: 'monthly', enabled: true }
+  ];
+  assert.deepEqual(RecurringRules.buildTransactionsForMonth(templates, [], '2026-04', {
+    createId: () => 'generated-id', now: () => 1000
+  }), [{
+    id: 'generated-id', accountId: 'bank', date: '2026-04-30', amount: 850,
+    label: 'Loyer', createdAt: 1000, recurringKey: 'rent@2026-04-30', recurringTemplateId: 'rent'
+  }]);
+});
+
+test('generation skips existing recurring keys and invalid amounts', () => {
+  const templates = [
+    { id: 'rent', accountId: 'bank', label: 'Loyer', amount: 850, day: 5, frequency: 'monthly', enabled: true },
+    { id: 'bad', accountId: 'bank', label: 'Bad', amount: 'invalid', day: 5, frequency: 'monthly', enabled: true }
+  ];
+  assert.deepEqual(RecurringRules.buildTransactionsForMonth(templates, [{ recurringKey: 'rent@2026-04-05' }], '2026-04', {
+    createId: () => 'unused', now: () => 100
+  }), []);
+});
+
+test('generation is deterministic and avoids duplicate templates in the same batch', () => {
+  const template = { id: 'rent', accountId: 'bank', label: 'Loyer', amount: '12.5', day: 5, frequency: 'monthly', enabled: true };
+  let id = 0;
+  const result = RecurringRules.buildTransactionsForMonth([template, template], [], '2026-04', {
+    createId: () => 'id-' + (++id), now: () => 1000
+  });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].id, 'id-1');
+  assert.equal(result[0].amount, 12.5);
+  assert.equal(result[0].createdAt, 1000);
+  assert.equal(result[0].recurringKey, 'rent@2026-04-05');
+});
+
+test('application use case delegates generation to the domain', () => {
+  const template = { id: 't', accountId: 'a', label: 'Test', amount: 10, day: 1, frequency: 'monthly', enabled: true };
+  const result = generateTransactions({ templates: [template], transactions: [], month: '2026-04' });
+  assert.equal(result.length, 1);
+  assert.equal(result[0].recurringKey, 't@2026-04-01');
+});
+
+test('invalid month produces no generated transactions', () => {
+  assert.deepEqual(RecurringRules.buildTransactionsForMonth([], [], '2026-13'), []);
+});
