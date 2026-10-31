@@ -2254,20 +2254,9 @@ async function deleteLombardCredit(){
   }
 }
 const MCP_TOKEN_ENDPOINT='https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-tokens';
+const mcpTokenService = McpTokenService.create({ authenticationService: { getSession: () => getAuthenticationService().getSession() }, endpoint: MCP_TOKEN_ENDPOINT, publishableKey: window.GESTION_SUPABASE_CONFIG.publishableKey });
 async function mcpTokenRequest(payload){
-  if(!cloud.user)throw new Error('Connectez-vous avant de gérer les jetons MCP.');
-  const session=await getAuthenticationService().getSession();
-  const accessToken=session?.access_token;
-  if(!accessToken)throw new Error('Session expirée. Reconnectez-vous.');
-  const config=window.GESTION_SUPABASE_CONFIG;
-  const response=await fetch(MCP_TOKEN_ENDPOINT,{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+accessToken,'apikey':config.publishableKey,'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  });
-  const result=await response.json().catch(()=>({error:'Réponse serveur illisible.'}));
-  if(!response.ok)throw new Error(result.error||'Impossible de gérer le jeton MCP.');
-  return result;
+  return mcpTokenService.request({ user: cloud.user, payload });
 }
 function fillMcpAccountSelect(){
   const select=$('mcp-default-account');
