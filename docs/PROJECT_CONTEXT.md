@@ -493,3 +493,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - La lecture et la sauvegarde du champ existant `user_metadata.stockHoldings` sont déléguées à `StockHoldingMetadataCommands`.
 - Les catalogues de marchés/devises et la fonction de date sont injectés depuis la composition applicative ; aucun format de données ni schéma Supabase n'est modifié.
 - L'interface, les cours, le FX et le rafraîchissement des prix restent dans `app.js` à ce stade.
+
+
+## Extraction des mappers Supabase (31 octobre 2026)
+
+- Les conversions compte, modèle récurrent et position crypto ont été déplacées dans des adaptateurs dédiés et testées indépendamment.
+- Les clés de colonnes Supabase et les formes des objets applicatifs sont conservées. Aucun changement de schéma n'est introduit.
