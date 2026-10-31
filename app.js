@@ -154,6 +154,7 @@ let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[]
 const transactionQueries = TransactionQueries.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
 const transactionCommands = TransactionCommands.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
 const recurringTemplateCommands = RecurringTemplateCommands.create({repository: StateRecurringTemplateRepository.create(() => state)});
+const stockHoldingCommands = StockHoldingCommands.create({repository: StateStockHoldingRepository.create(() => state)});
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -670,7 +671,7 @@ function moveTransaction(id,direction){
 function balanceAt(accountId,untilDate=null){return transactionQueries.balanceAt(accountId,untilDate);}
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
-function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+manualHoldingValue(h);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
+function stockValueForAccount(accountId){return stockHoldingCommands.findAll().filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+manualHoldingValue(h);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
 function totalStockValue(){return state.accounts.reduce((sum,a)=>sum+stockValueForAccount(a.id),0);}
 function totalCryptoValue(){return (state.cryptoHoldings||[]).reduce((sum,h)=>{const price=cryptoPrice(h);return sum+(price!==null?Number(h.quantity||0)*price:Number(h.invested||0));},0);}
 function accountOverviewBalance(accountId){return balanceAt(accountId)+stockValueForAccount(accountId);}
@@ -1333,7 +1334,7 @@ async function refreshStockFx(currencies){
   }
 }
 async function loadStockPrices(){
-  const ids=[...new Set((state.stockHoldings||[]).filter(h=>!isManualValueHolding(h)).map(h=>h.priceId).filter(Boolean))];
+  const ids=[...new Set(stockHoldingCommands.findAll().filter(h=>!isManualValueHolding(h)).map(h=>h.priceId).filter(Boolean))];
   if(!ids.length){
     stockPrices.error='';
     stockPrices.loading=false;
@@ -1344,7 +1345,7 @@ async function loadStockPrices(){
   stockPrices.loading=true;
   stockPrices.error='';
   renderStocks();
-  const currencies=[...new Set((state.stockHoldings||[]).map(h=>normalizeStockCurrency(h.currency)).filter(code=>code!=='EUR'))];
+  const currencies=[...new Set(stockHoldingCommands.findAll().map(h=>normalizeStockCurrency(h.currency)).filter(code=>code!=='EUR'))];
   const fxTask=refreshStockFx(currencies);
   const values={};
   let successCount=0,lastError=null;
@@ -1380,7 +1381,7 @@ function renderStocks(){
   if(!$('stocks-rows'))return;
   syncMarketColumnHeaders('stocks');
   syncMarketSortHeaders('stocks');
-  const allHoldings=[...(state.stockHoldings||[])];
+  const allHoldings=[...stockHoldingCommands.findAll()];
   const query=$('stocks-search')?.value.trim().toLocaleLowerCase('fr')||'';
   const accountFilter=$('stocks-account-filter')?.value||'all';
   const sort=$('stocks-sort')?.value||'manual';
@@ -1549,7 +1550,7 @@ async function searchStocks(query){
   }
 }
 function openStockEditor(id=null){
-  const holding=id?(state.stockHoldings||[]).find(h=>h.id===id):null;
+  const holding=id?stockHoldingCommands.findAll().find(h=>h.id===id):null;
   if(id&&!holding)return;
   $('stock-form').reset();
   closeStockResults();
@@ -1568,12 +1569,12 @@ function openStockEditor(id=null){
   $('stock-modal-title').textContent=holding?'Modifier la position':'Ajouter une action';updateStockValueOnlyFields();$('stock-dialog').showModal();
 }
 function deleteStockHolding(id){
-  const holding=(state.stockHoldings||[]).find(h=>h.id===id);
+  const holding=stockHoldingCommands.findAll().find(h=>h.id===id);
   if(!holding)return;
   if(!window.confirm('Supprimer la position « '+holding.symbol+' » ? Les totaux seront recalculés.'))return;
   prepareUndo();
   cloud.stockHoldingsDirty=true;
-  state.stockHoldings=state.stockHoldings.filter(h=>h.id!==id);
+  stockHoldingCommands.delete(id);
   renderAll();
   showToast('Position actions supprimée.',true);
 }
@@ -1583,7 +1584,7 @@ function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.
 function wealthSnapshot(){
   const accounts=totalAccountsBalance(),stocks=totalStockValue(),crypto=totalCryptoValue();
   const gross=accounts+stocks+crypto, debt=lombardAmount();
-  const investments=(state.stockHoldings||[]).reduce((sum,h)=>sum+(isManualValueHolding(h)?manualHoldingValue(h):(()=>{const d=stockPriceDetails(h);return d.price!==null?Number(h.quantity||0)*d.price:Number(h.invested||0)})()),0);
+  const investments=stockHoldingCommands.findAll().reduce((sum,h)=>sum+(isManualValueHolding(h)?manualHoldingValue(h):(()=>{const d=stockPriceDetails(h);return d.price!==null?Number(h.quantity||0)*d.price:Number(h.invested||0)})()),0);
   const liquid=state.accounts.filter(a=>effectiveAccountType(a)!=='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
   return {accounts,stocks,crypto,gross,debt,net:gross-debt,investments,liquid};
 }
@@ -1803,7 +1804,7 @@ function renderWealthViews(){
 
 function opportunityAssets(){
   const crypto=(state.cryptoHoldings||[]).map(h=>{const price=Number(cryptoPrices.values[h.coingeckoId]);const value=Number.isFinite(price)&&price>0?price*Number(h.quantity||0):null;return {id:'c-'+h.id,type:'crypto',symbol:String(h.symbol||h.coingeckoId||'').toUpperCase(),name:h.name||h.symbol||h.coingeckoId,price,value,invested:Number(h.invested)||0,changes:cryptoPrices.market[h.coingeckoId]||{},updatedAt:cryptoPrices.updatedAt,raw:h};});
-  const stocks=(state.stockHoldings||[]).map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:{},updatedAt:stockPrices.updatedAt,raw:h};});
+  const stocks=stockHoldingCommands.findAll().map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:{},updatedAt:stockPrices.updatedAt,raw:h};});
   return [...crypto,...stocks];
 }
 function opportunityPercent(value){if(value===null||value===undefined||value===''||!Number.isFinite(Number(value)))return '—';const n=Math.abs(Number(value))<0.005?0:Number(value);return (n>0?'+':'')+n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %';}
@@ -2302,7 +2303,7 @@ function deleteAccount(){
   }
   const linkedTransactions=state.transactions.filter(t=>t.accountId===id);
   const linkedTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId===id);
-  const linkedStocks=(state.stockHoldings||[]).filter(t=>t.accountId===id);
+  const linkedStocks=stockHoldingCommands.findAll().filter(t=>t.accountId===id);
   const linked=[];
   if(linkedTransactions.length)linked.push(linkedTransactions.length+' opération'+(linkedTransactions.length>1?'s':''));
   if(linkedTemplates.length)linked.push(linkedTemplates.length+' récurrence'+(linkedTemplates.length>1?'s':''));
@@ -2321,7 +2322,7 @@ function deleteAccount(){
   state.accounts=state.accounts.filter(a=>a.id!==id);
   state.transactions=state.transactions.filter(t=>t.accountId!==id);
   state.recurringTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId!==id);
-  state.stockHoldings=(state.stockHoldings||[]).filter(t=>t.accountId!==id);
+  state.stockHoldings=stockHoldingCommands.findAll().filter(t=>t.accountId!==id);
   if(state.accountPledges?.[id]){const next={...state.accountPledges};delete next[id];state.accountPledges=next;}
   cloud.accountTypesDirty=true;
   cloud.accountPledgesDirty=true;
@@ -2702,7 +2703,7 @@ document.addEventListener('click',event=>{
 $('stock-form').addEventListener('submit',event=>{
   event.preventDefault();
   const id=$('stock-edit-id').value;
-  const existing=id?(state.stockHoldings||[]).find(h=>h.id===id):null;
+  const existing=id?stockHoldingCommands.findAll().find(h=>h.id===id):null;
   const accountId=$('stock-edit-account').value;
   const priceId=$('stock-edit-priceid').value.trim();
   const isin=$('stock-edit-isin').value.trim().toUpperCase();
@@ -2713,9 +2714,8 @@ $('stock-form').addEventListener('submit',event=>{
   const invested=parseFrenchNumber($('stock-edit-invested').value);
   const specialManual=isManualValueHolding({isin,priceId});const quantityText=$('stock-edit-quantity').value.trim();const manualValue=specialManual||quantityText==='';const quantity=manualValue?(specialManual?1:0):Number(quantityText);if(!accountById(accountId)||!isInvestmentAccount(accountById(accountId))){showToast('Choisissez un compte de type PEA, CTO ou assurance vie.');return;}if(!priceId||!symbol){showToast('Sélectionnez l’instrument dans la liste de recherche.');return;}if(!Number.isFinite(invested)||invested<0||(!manualValue&&(!Number.isFinite(quantity)||quantity<0))){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
   if(isin&&!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){showToast('ISIN invalide : vérifiez les 12 caractères.',false);return;}
-   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,manualValue,manualValueDate:manualValue?(existing?.manualValue&&Number(existing.invested)===invested?(existing.manualValueDate||today()):today()):undefined,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
-  if(existing)state.stockHoldings=state.stockHoldings.map(h=>h.id===id?record:h);
-  else state.stockHoldings=[...(state.stockHoldings||[]),record];
+   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,manualValue,manualValueDate:manualValue?(existing?.manualValue&&Number(existing.invested)===invested?(existing.manualValueDate||today()):today()):undefined,sortOrder:existing?.sortOrder??Math.max(0,...stockHoldingCommands.findAll().map(h=>Number(h.sortOrder)||0))+1};
+  stockHoldingCommands.save(record);
   cloud.stockHoldingsDirty=true;
   $('stock-dialog').close();
   renderAll();
@@ -2873,10 +2873,10 @@ setInterval(()=>{
   if(!document.hidden&&(state.cryptoHoldings||[]).length)loadCryptoPrices();
 },CRYPTO_REFRESH_MS);
 setInterval(()=>{
-  if(!document.hidden&&(state.stockHoldings||[]).length)loadStockPrices();
+  if(!document.hidden&&stockHoldingCommands.findAll().length)loadStockPrices();
 },STOCK_REFRESH_MS);
 document.addEventListener('visibilitychange',()=>{
   if(!document.hidden&&(state.cryptoHoldings||[]).length&&Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();
-  if(!document.hidden&&(state.stockHoldings||[]).length&&Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();
+  if(!document.hidden&&stockHoldingCommands.findAll().length&&Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();
 });
 initCloud();
