@@ -727,15 +727,16 @@ function renderAccounts(){
 }
 function isOperationalAccount(account){return !['av','pea','cto'].includes(effectiveAccountType(account));}
 function fillAccountSelects(){
-  const operationalAccounts=state.accounts.filter(isOperationalAccount);
+  const accountGroups=AccountListRules.selectGroups(state.accounts,{effectiveType:effectiveAccountType});
+  const operationalAccounts=accountGroups.operational;
   const opts=operationalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   const allOpts=state.accounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   $('transaction-account').innerHTML=opts;
-  const personalAccounts=operationalAccounts.filter(a=>effectiveAccountType(a)!=='pro'),personalOpts=personalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+  const personalAccounts=accountGroups.personal,personalOpts=personalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   const current=$('transaction-account-filter').value;
   $('transaction-account-filter').innerHTML=personalOpts;
   $('transaction-account-filter').value=personalAccounts.some(a=>a.id===current)?current:(personalAccounts[0]?.id||'');
-  const proAccounts=operationalAccounts.filter(a=>effectiveAccountType(a)==='pro'),proOpts=proAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+  const proAccounts=accountGroups.professional,proOpts=proAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   const proFilter=$('pro-transaction-account-filter');
   if(proFilter){const selected=proFilter.value;proFilter.innerHTML=proOpts;proFilter.value=proAccounts.some(a=>a.id===selected)?selected:(proAccounts[0]?.id||'');}
   for(const id of ['history-account-filter','recurring-account-filter']){
@@ -747,9 +748,9 @@ function fillAccountSelects(){
   const stockFilter=$('stocks-account-filter');
   if(stockFilter){
     const selected=stockFilter.value;
-    const investmentOpts=state.accounts.filter(isInvestmentAccount).map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
+    const investmentOpts=accountGroups.investment.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
     stockFilter.innerHTML='<option value="all">Tous les comptes d’investissement</option>'+investmentOpts;
-    stockFilter.value=selected==='all'||state.accounts.some(a=>isInvestmentAccount(a)&&a.id===selected)?selected:'all';
+    stockFilter.value=selected==='all'||accountGroups.investment.some(a=>a.id===selected)?selected:'all';
   }
 }
 function renderTransactions(){
