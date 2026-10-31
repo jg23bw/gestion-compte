@@ -255,9 +255,7 @@ function bankLogo(account={}){
     (src?'<img src="'+escapeHtml(src)+'" alt="Logo '+escapeHtml(bank.name)+'" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">':'')+
     '<span '+(src?'hidden':'')+'>'+escapeHtml(initials)+'</span></span>';
 }
-function isAccountType(value){
-  return ['bank','savings','pro','pea','av','cto'].includes(String(value||''));
-}
+function isAccountType(value){return AccountTypeRules.isAccountType(value);}
 const accountTypeCommands = AccountTypeCommands.create({ rules: AccountTypeRules });
 const accountCloudMapper = SupabaseAccountMapper.create({
   bankKeyForAccount, accountShort, bankKeyFromId, isBankKey, accountTypeCommands
@@ -615,10 +613,7 @@ function proAdjustedDelta(transaction){return TransactionRules.professionalAdjus
 function proAdjustedBalanceAt(account,untilDate=today()){return transactionQueries.professionalAdjustedBalanceAt(account.id,untilDate);}
 function tiimeNetBalance(account){return proAdjustedBalanceAt(account,today());}
 function tiimeNetBalanceAt(account,untilDate=today()){return proAdjustedBalanceAt(account,untilDate);}
-function effectiveAccountType(account){
-  const type=account?.accountType||account?.kind||'bank';
-  return isAccountType(type)?type:'bank';
-}
+function effectiveAccountType(account){return AccountTypeRules.effectiveType(account);}
 function kindLabel(a){
   const type=effectiveAccountType(a);
   return type==='pro'?'Professionnel':type==='pea'?'PEA':type==='av'?'Assurance vie':type==='cto'?'CTO':type==='savings'?'Épargne':'Compte courant';
