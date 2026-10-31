@@ -151,11 +151,17 @@ const dateInputFormat = value => String(value||'');
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
-const transactionQueries = TransactionQueries.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
-const transactionCommands = TransactionCommands.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
-const recurringTemplateCommands = RecurringTemplateCommands.create({repository: StateRecurringTemplateRepository.create(() => state)});
-const stockHoldingCommands = StockHoldingCommands.create({repository: StateStockHoldingRepository.create(() => state)});
-const accountCommands = AccountCommands.create({repository: StateAccountRepository.create(() => state), isBankKey, accountShort});
+const transactionRepository = StateTransactionRepository.create(() => state);
+const recurringTemplateRepository = StateRecurringTemplateRepository.create(() => state);
+const stockHoldingRepository = StateStockHoldingRepository.create(() => state);
+const transactionQueries = TransactionQueries.create({repository: transactionRepository, domain: TransactionRules});
+const transactionCommands = TransactionCommands.create({repository: transactionRepository, domain: TransactionRules});
+const recurringTemplateCommands = RecurringTemplateCommands.create({repository: recurringTemplateRepository});
+const stockHoldingCommands = StockHoldingCommands.create({repository: stockHoldingRepository});
+const accountCommands = AccountCommands.create({
+  repository: StateAccountRepository.create(() => state), isBankKey, accountShort,
+  transactionRepository, recurringTemplateRepository, stockHoldingCommands
+});
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -2264,8 +2270,8 @@ function deleteAccount(){
     showToast('Ajoutez un autre compte avant de supprimer le dernier.');
     return;
   }
-  const linkedTransactions=state.transactions.filter(t=>t.accountId===id);
-  const linkedTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId===id);
+  const linkedTransactions=transactionRepository.findByAccount(id);
+  const linkedTemplates=recurringTemplateRepository.findAll().filter(t=>t.accountId===id);
   const linkedStocks=stockHoldingCommands.findAll().filter(t=>t.accountId===id);
   const linked=[];
   if(linkedTransactions.length)linked.push(linkedTransactions.length+' opération'+(linkedTransactions.length>1?'s':''));
@@ -2279,14 +2285,11 @@ function deleteAccount(){
   if(accountPledgeFor(id))message+='\n\nLe nantissement enregistré sur ce compte sera aussi supprimé.';
   message+='\n\nCette action est définitive.';
   if(!window.confirm(message))return;
+  const removal=accountCommands.remove(id);
+  if(!removal)return;
   if(cloud.user)cloud.pendingAccountDeletes.add(id);
-  for(const transaction of linkedTransactions)cloud.pendingDeletes.delete(transaction.id);
-  for(const template of linkedTemplates)cloud.pendingTemplateDeletes.delete(template.id);
-  state.accounts=state.accounts.filter(a=>a.id!==id);
-  state.transactions=state.transactions.filter(t=>t.accountId!==id);
-  state.recurringTemplates=(state.recurringTemplates||[]).filter(t=>t.accountId!==id);
-  stockHoldingCommands.deleteByAccount(id);
-  if(state.accountPledges?.[id]){const next={...state.accountPledges};delete next[id];state.accountPledges=next;}
+  for(const transaction of removal.transactions)cloud.pendingDeletes.delete(transaction.id);
+  for(const template of removal.templates)cloud.pendingTemplateDeletes.delete(template.id);
   cloud.accountTypesDirty=true;
   cloud.accountPledgesDirty=true;
   cloud.stockHoldingsDirty=true;
