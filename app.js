@@ -2563,7 +2563,7 @@ $('cloud-signup').addEventListener('click',async()=>{
   cloudMessage('Création du compte…');
   try{
     const redirectUrl=new URL(window.location.href);redirectUrl.hash='';redirectUrl.search='';
-    const {data,error}=await cloudClient().auth.signUp({email,password,options:{emailRedirectTo:redirectUrl.toString()}});
+    const result=await getAuthenticationService().signUp({email,password,emailRedirectTo:redirectUrl.toString()});
     if(error)throw error;
     if(data.session){cloudMessage('Compte créé. Chargement des données…');$('cloud-dialog').close();}
     else cloudMessage('Compte créé. Consultez votre e-mail pour confirmer l’adresse, puis connectez-vous.');
