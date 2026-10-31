@@ -23,7 +23,7 @@ test('rejects anonymous users and expired sessions before sending requests', asy
     fetchImpl: async () => { calls++; return { ok: true, json: async () => ({}) }; }
   });
   await assert.rejects(service.request({ user: null, payload: { action: 'list' } }), /Connectez-vous/);
-  await assert.rejects(service.list({ user: { id: 'u1' } }), /Session expirée/);
+  await assert.rejects(service.request({ user: { id: 'u1' }, payload: { action: 'list' } }), /Session expirée/);
   assert.equal(calls, 0);
 });
 
