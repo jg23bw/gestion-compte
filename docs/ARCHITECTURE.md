@@ -264,3 +264,10 @@ Le cas d'usage `RecurringCommands` délègue au domaine et l'interface l'utilise
 Le stockage des mois générés est maintenant derrière le port `GeneratedMonthsRepositoryPort` et son adaptateur `LocalStorageGeneratedMonthsRepository`. La lecture tolère les données absentes, mal formées et les erreurs de lecture/écriture, comme auparavant. L'adaptateur expose aussi une sauvegarde brute/restauration exacte pour préserver le comportement d'annulation, y compris lorsque la clé n'existait pas avant l'action.
 
 La règle métier reste inchangée : les opérations récurrentes présentes dans l'état sont la source de vérité ; le marqueur local est un verrou secondaire et est retiré lorsqu'aucune opération récurrente du mois n'existe. L'interface garde l'orchestration de l'annulation, du rendu et de la synchronisation.
+
+
+### Crédit lombard
+
+- Les règles pures de normalisation du crédit lombard sont isolées dans `LombardCreditRules` ; le format historique (`label`, `amount`, `rate`, `notes`) reste inchangé.
+- `LombardCreditCommands` centralise la lecture depuis les métadonnées Auth et l'enregistrement via le port de métadonnées injecté. La vérification de l'utilisateur connecté et la normalisation sont couvertes par des tests unitaires.
+- `app.js` conserve la composition du repository Supabase Auth et l'interface ; aucune migration SQL ni transformation des données existantes n'est requise.
