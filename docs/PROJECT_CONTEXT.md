@@ -403,3 +403,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Les tris manuels continuent de s'appuyer sur l'ordre métier existant ; le filtrage travaille sur une nouvelle liste et ne modifie pas les opérations stockées.
 - Tests unitaires ajoutés pour les filtres, la recherche sur le libellé, le tri par montant, l'ordre manuel et les opérations pointées.
 - Aucun format de données, schéma Supabase ou comportement de synchronisation n'est modifié. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction des filtres et tris de la liste des comptes (31 octobre 2026)
+
+- Ajout de `AccountListRules.filterAndSort`, règle pure qui applique la recherche sur le nom, le raccourci, la banque et le type, le filtre de catégorie et les tris par nom, type ou solde.
+- Les sélecteurs métier (type effectif, libellé, banque) et le calcul du solde restent injectés depuis `app.js` ; le nouveau module ne dépend ni du DOM ni de l'état global.
+- Le rendu des cartes, les badges de nantissement, les compteurs et les interactions restent dans `app.js`. La liste source n'est pas mutée.
+- Tests unitaires ajoutés pour la recherche, le filtre de type, les tris et la validation des dépendances.
+- Aucun changement de modèle, de stockage ou de schéma Supabase. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
