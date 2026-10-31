@@ -67,6 +67,24 @@
         });
         return sortDisplayRows(rows, sort, domain);
       },
+      accountTransactionDisplayRows({ accountId, typeFilter = 'all', query = '', sort = 'date-asc' } = {}) {
+        const account = repository.findAccount(accountId);
+        const ordered = domain.sortAccountTransactions(repository.findByAccount(accountId), accountId);
+        const positions = new Map();
+        const balances = new Map();
+        let balance = Number(account?.opening || 0);
+        ordered.forEach((transaction, position) => {
+          positions.set(transaction.id, position);
+          balance += Number(transaction.amount);
+          balances.set(transaction.id, balance);
+        });
+        return this.filterAccountTransactions({ accountId, typeFilter, query, sort }).map(transaction => ({
+          transaction,
+          balance: account ? balances.get(transaction.id) ?? 0 : 0,
+          position: positions.get(transaction.id) ?? -1,
+          accountTransactionCount: ordered.length
+        }));
+      },
       accountTransactionsInDisplayOrder(accountId, sort = 'manual') {
         return sortDisplayRows(repository.findByAccount(accountId), sort, domain);
       },
