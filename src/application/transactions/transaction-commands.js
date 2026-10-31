@@ -40,6 +40,21 @@
         repository.save(transaction);
         return transaction;
       },
+      normalizeOrder(accounts) {
+        let changed = 0;
+        for (const account of accounts || []) {
+          const rows = repository.findAll()
+            .filter(transaction => transaction.accountId === account.id)
+            .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+          rows.forEach((transaction, index) => {
+            if (!Number.isFinite(Number(transaction.sortOrder)) || transaction.sortOrder === null) {
+              repository.save({ ...transaction, sortOrder: index + 1 });
+              changed += 1;
+            }
+          });
+        }
+        return changed;
+      },
       reorder(accountId, orderedIds) {
         const byId = new Map(repository.findAll()
           .filter(transaction => transaction.accountId === accountId)
