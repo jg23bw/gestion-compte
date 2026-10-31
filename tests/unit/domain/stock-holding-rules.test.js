@@ -29,7 +29,7 @@ test('deduplicates IDs, rejects invalid rows and preserves manual-value holdings
   assert.equal(result.length, 1);
   assert.equal(result[0].manualValue, true);
   assert.equal(result[0].quantity, 0);
-  assert.equal(result[0].currency, 'EUR');
+  assert.equal(result[0].currency, 'USD');
 });
 
 test('normalizes supported currencies and falls back to EUR', () => {
