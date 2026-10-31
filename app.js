@@ -333,22 +333,14 @@ function isMissingCryptoTable(error){
   const code=error?.code||'',message=error?.message||'';
   return code==='42P01'||code==='PGRST205'||/crypto_holdings/i.test(message)&&/does not exist|could not find|schema cache/i.test(message);
 }
-function normalizeLombardCredit(credit){
-  if(!credit)return null;
-  const rawRate=credit.rate;
-  const rate=rawRate===''||rawRate===null||rawRate===undefined?null:Number(rawRate);
-  return {
-    label:(String(credit.label||'Crédit lombard').trim()||'Crédit lombard').slice(0,120),
-    amount:Math.max(0,Number(credit.amount)||0),
-    rate:Number.isFinite(rate)?Math.min(100,Math.max(0,rate)):null,
-    notes:String(credit.notes||'').trim().slice(0,500)
-  };
-}
+const lombardCreditCommands = LombardCreditCommands.create({ rules: LombardCreditRules });
+function normalizeLombardCredit(credit){return lombardCreditCommands.normalize(credit);}
 async function saveLombardCreditToAuth(credit){
-  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer le crédit lombard.');
-  const normalized=normalizeLombardCredit(credit);
-  await authMetadataRepository().update({lombardCredit:normalized});
-  return normalized;
+  return lombardCreditCommands.save({
+    user:cloud.user,
+    metadataRepository:authMetadataRepository(),
+    credit
+  });
 }
 function uniqueTransactions(rows){
   const byId=new Map();rows.forEach(t=>byId.set(t.id,t));
