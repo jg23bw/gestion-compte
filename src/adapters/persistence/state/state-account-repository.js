@@ -22,6 +22,12 @@
           return index < 0 ? null : accounts.splice(index, 1)[0];
         },
         findPledgeByAccount(id) { return getState().accountPledges?.[id] || null; },
+        findAllPledges() { return getState().accountPledges || {}; },
+        savePledge(id, pledge) {
+          const state = getState();
+          state.accountPledges = { ...(state.accountPledges || {}), [id]: pledge };
+          return state.accountPledges[id];
+        },
         deletePledgeByAccount(id) {
           const state = getState();
           const pledge = state.accountPledges?.[id] || null;
