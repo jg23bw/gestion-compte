@@ -368,3 +368,11 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Cinq tests unitaires couvrent la lecture, la création/mise à jour, la suppression par identifiant, la suppression par compte et la validation du contrat.
 - Les modules sont chargés avant `app.js` et ajoutés à `npm run check`. Cache-busting de l'application : `stock-holding-repository-v1`.
 - Aucun test navigateur ni écriture dans le compte Supabase réel n'a été effectué pour cette extraction.
+
+
+## Fournisseurs de cours et de change (31 octobre 2026)
+
+- Les prix des actions/ETF passent par `StockPriceProviderPort` et `SupabaseStockPriceProvider`, qui encapsulent l'appel à l'Edge Function `stock-data`, la validation des cours et le cooldown HTTP 429.
+- Les taux de change passent par `ExchangeRateProviderPort` et `HttpExchangeRateProvider`. La conversion EUR-base, y compris GBX, est testée ; le cache et l'état UI restent dans `app.js`.
+- Les adaptateurs sont chargés avant `app.js` et couverts par cinq tests unitaires. Les sources externes et le schéma Supabase restent inchangés.
+- Aucun test navigateur, appel FX réel ou test sur un compte Supabase réel n'est revendiqué.
