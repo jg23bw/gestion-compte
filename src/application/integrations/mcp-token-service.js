@@ -19,14 +19,12 @@
       if (!response.ok) throw new Error(result.error || 'Impossible de gérer le jeton MCP.');
       return result;
     }
-    async function ensureUser(user) {
-      if (!user) throw new Error('Connectez-vous avant de gérer les jetons MCP.');
-    }
     return Object.freeze({
-      async list({ user }) { await ensureUser(user); return request({ action: 'list' }); },
-      async create({ user, ...payload }) { await ensureUser(user); return request({ action: 'create', ...payload }); },
-      async revoke({ user, ...payload }) { await ensureUser(user); return request({ action: 'revoke', ...payload }); }
-    });
+      async request({ user, payload }) {
+        if (!user) throw new Error('Connectez-vous avant de gérer les jetons MCP.');
+        return request(payload || {});
+      }
+    });;
   }
   return Object.freeze({ create });
 });
