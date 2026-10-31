@@ -326,3 +326,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les fonctions de recherche, de chargement des cours et du FX, de valorisation affichée, de rendu et d'édition des positions actions/ETF sont regroupées dans `src/adapters/ui/dom/stocks-screen.js`.
 - Les règles de normalisation et les cas d'usage de mutation restent dans leurs modules domaine/application dédiés. Le module d'écran utilise encore les bindings historiques du bootstrap.
+
+
+### Synthèse patrimoniale
+
+- `WealthSnapshotQueries` calcule les agrégats patrimoine brut/net, dette Lombard, investissements et liquidités à partir de dépendances applicatives injectées.
+- Le rendu des comparaisons et des vues patrimoniales reste dans l'adaptateur DOM.
