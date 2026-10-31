@@ -566,3 +566,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le rendu de la synthèse patrimoniale et de ses graphiques (environ 215 lignes) est déplacé vers `src/adapters/ui/dom/wealth-screen.js`.
 - `app.js` est réduit à environ 1 260 lignes ; les fonctions de l'écran restent accessibles au routeur historique.
+
+
+## Extraction des dialogues Comptes / Opérations / Lombard (31 octobre 2026)
+
+- Les fonctions de dialogue et d'édition (environ 113 lignes) sont déplacées dans `src/adapters/ui/dom/account-editors.js`.
+- `app.js` est réduit à environ 1 150 lignes.
