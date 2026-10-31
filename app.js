@@ -171,6 +171,10 @@ function normalizeAccountTypes(value){return accountTypeCommands.normalize(value
 function normalizeAccountPledges(value){return accountPledgeCommands.normalize(value);}
 function normalizeStockCurrency(value){return stockHoldingMetadataCommands.normalizeCurrency(value);}
 function normalizeStockHoldings(value){return stockHoldingMetadataCommands.normalize(value);}
+const legacyStateLoader = LegacyStateLoader.create({
+  storage:localStorage,storageKey:STORAGE_KEY,defaultAccounts:DEFAULT_ACCOUNTS,
+  bankKeyForAccount,normalizeStockHoldings,normalizeAccountPledges
+});
 function accountTypeOverrides(){return accountTypeCommands.overrides(state.accounts);}
 function accountPledgeOverrides(){return accountPledgeCommands.overrides(state.accounts);}
 function authMetadataRepository(){
@@ -304,19 +308,7 @@ async function initCloud(){
   }
 }
 
-function loadState(){
-  try{
-    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if(saved && Array.isArray(saved.accounts) && Array.isArray(saved.transactions)){
-      const accounts=saved.accounts.map(a=>{const merged={...a,...(DEFAULT_ACCOUNTS.find(d=>d.id===a.id)||{}),...a};if(merged.id==='cic-montevrayn'&&merged.name==='CIC Montévrayn')merged.name='CIC Montévrain';merged.bank=bankKeyForAccount(merged);return merged;});
-      const recurringTemplates=Array.isArray(saved.recurringTemplates)?saved.recurringTemplates.map(t=>({...t})):[];
-      DEFAULT_ACCOUNTS.forEach(d=>{if(!accounts.some(a=>a.id===d.id))accounts.push({...d});});
-      return {accounts,transactions:saved.transactions,recurringTemplates,stockHoldings:normalizeStockHoldings(saved.stockHoldings||[]),accountPledges:normalizeAccountPledges(saved.accountPledges||{}),lombardCredit:saved.lombardCredit||null};
-    }
-  }catch(e){console.warn('Données locales illisibles',e);}
-  return {accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
-}
-
+function loadState(){return legacyStateLoader.load();}
 function accountById(id){return state.accounts.find(a=>a.id===id);}
 function accountShort(name){
   const words=String(name||'').trim().split(/\s+/).filter(Boolean);
