@@ -338,3 +338,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les fonctions de recherche CoinGecko, d'édition, de suppression, de cache, de chargement des prix et de rendu du portefeuille crypto sont regroupées dans `src/adapters/ui/dom/crypto-screen.js`.
 - Les ports et adaptateurs de fournisseurs ainsi que les dépôts restent séparés ; le module d'écran garde encore des dépendances de composition historiques.
+
+
+### Interfaces Comptes, Opérations et Récurrences
+
+- Les fonctions de rendu et d'interaction des comptes, opérations, historique mensuel et récurrences sont regroupées dans `src/adapters/ui/dom/accounts-operations-screen.js`.
+- Les règles et cas d'usage restent dans `src/domain` et `src/application`; ce module est un adaptateur DOM encore connecté aux bindings du bootstrap legacy.
