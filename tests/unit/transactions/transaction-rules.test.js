@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const rules = require('../../src/domain/transactions/transaction-rules.js');
+const rules = require('../../../src/domain/transactions/transaction-rules.js');
 
 const tx = (id, overrides = {}) => ({
   id, accountId: 'bank-1', date: '2026-01-01', createdAt: 1,
