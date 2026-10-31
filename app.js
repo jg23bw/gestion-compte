@@ -151,6 +151,7 @@ const dateInputFormat = value => String(value||'');
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
+const transactionQueries = TransactionQueries.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -692,7 +693,7 @@ function pledgeNoteMarkup(id){
   return note?'<div class="account-pledge-note" title="'+escapeHtml(note)+'">Nantissement : '+escapeHtml(note)+'</div>':'';
 }
 function transactionOrder(a,b){return TransactionRules.transactionOrder(a,b);}
-function accountTransactions(accountId){return TransactionRules.sortAccountTransactions(state.transactions,accountId);}
+function accountTransactions(accountId){return transactionQueries.listAccountTransactions(accountId);}
 function normalizeTransactionOrder(){for(const account of state.accounts){const rows=state.transactions.filter(t=>t.accountId===account.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);rows.forEach((t,index)=>{if(!Number.isFinite(Number(t.sortOrder))||t.sortOrder===null)t.sortOrder=index+1;});}}
 function moveTransaction(id,direction){
   const current=state.transactions.find(t=>t.id===id);if(!current)return;
@@ -718,7 +719,7 @@ function moveTransaction(id,direction){
   renderAll();
   showToast('Ordre manuel des opérations mis à jour.',true);
 }
-function balanceAt(accountId,untilDate=null){const account=accountById(accountId);return account?TransactionRules.balanceAt(account.opening,state.transactions.filter(t=>t.accountId===accountId),untilDate):0;}
+function balanceAt(accountId,untilDate=null){return transactionQueries.balanceAt(accountId,untilDate);}
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
 function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+manualHoldingValue(h);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
@@ -738,7 +739,7 @@ function tiimeCalc(account,amount){return TransactionRules.calculateProfessional
 function proRecurringKind(transaction){return TransactionRules.professionalRecurringKind(transaction,state.recurringTemplates||[]);}
 function proAdjustedAmount(transaction){return TransactionRules.professionalAdjustedAmount(transaction,state.recurringTemplates||[]);}
 function proAdjustedDelta(transaction){return TransactionRules.professionalAdjustedDelta(transaction,state.recurringTemplates||[]);}
-function proAdjustedBalanceAt(account,untilDate=today()){return TransactionRules.professionalAdjustedBalanceAt(account,state.transactions,state.recurringTemplates||[],untilDate);}
+function proAdjustedBalanceAt(account,untilDate=today()){return transactionQueries.professionalAdjustedBalanceAt(account.id,untilDate);}
 function tiimeNetBalance(account){return proAdjustedBalanceAt(account,today());}
 function tiimeNetBalanceAt(account,untilDate=today()){return proAdjustedBalanceAt(account,untilDate);}
 function effectiveAccountType(account){
