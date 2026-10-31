@@ -344,3 +344,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les fonctions de rendu et d'interaction des comptes, opérations, historique mensuel et récurrences sont regroupées dans `src/adapters/ui/dom/accounts-operations-screen.js`.
 - Les règles et cas d'usage restent dans `src/domain` et `src/application`; ce module est un adaptateur DOM encore connecté aux bindings du bootstrap legacy.
+
+
+### Interface Patrimoine
+
+- Les graphiques et composants de synthèse patrimoniale (répartition, valeur nette, cartes et interactions associées) sont regroupés dans `src/adapters/ui/dom/wealth-screen.js`.
+- Les calculs de snapshot sont délégués à `wealthSnapshotQueries` ; le rendu reste dans l'adaptateur DOM.
