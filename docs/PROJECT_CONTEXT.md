@@ -499,3 +499,10 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Les conversions compte, modèle récurrent et position crypto ont été déplacées dans des adaptateurs dédiés et testées indépendamment.
 - Les clés de colonnes Supabase et les formes des objets applicatifs sont conservées. Aucun changement de schéma n'est introduit.
+
+
+## Compléments de la tranche de refactorisation
+
+- Le cas d'usage des opérations prend aussi en charge l'initialisation déterministe de l'ordre manuel, avec test de tri par date puis date de création.
+- La résolution du type effectif d'un compte et la validation des types sont maintenant des règles de domaine dans `AccountTypeRules`.
+- La CI la plus récente vérifiée sur le commit `474b0cb` passe : contrôle syntaxique réussi, 175 tests passés, 0 échec.
