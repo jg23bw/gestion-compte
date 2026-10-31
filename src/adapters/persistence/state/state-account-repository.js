@@ -13,8 +13,8 @@
           const accounts = getState().accounts;
           const index = accounts.findIndex(item => item.id === account.id);
           if (index < 0) accounts.push(account);
-          else accounts[index] = account;
-          return account;
+          else Object.assign(accounts[index], account);
+          return index < 0 ? account : accounts[index];
         }
       });
     }
