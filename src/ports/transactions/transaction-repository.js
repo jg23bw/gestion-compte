@@ -8,6 +8,10 @@
  * @property {(accountId: string) => Object[]} findByAccount
  * @property {(accountId: string, untilDate?: string|null) => Object|null} findAccount
  * @property {() => Object[]} findRecurringTemplates
+ * @property {() => Object[]} findAll
+ * @property {(id: string) => Object|null} findById
+ * @property {(transaction: Object) => Object} save
+ * @property {(id: string) => Object|null} delete
  */
 (function exposeTransactionRepositoryPort(root) {
   const api = Object.freeze({
@@ -15,7 +19,11 @@
       return Boolean(value
         && typeof value.findByAccount === 'function'
         && typeof value.findAccount === 'function'
-        && typeof value.findRecurringTemplates === 'function');
+        && typeof value.findRecurringTemplates === 'function'
+        && typeof value.findAll === 'function'
+        && typeof value.findById === 'function'
+        && typeof value.save === 'function'
+        && typeof value.delete === 'function');
     }
   });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
