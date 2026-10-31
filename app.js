@@ -144,7 +144,9 @@ const stockFx={rates:{EUR:1},updatedAt:0,error:'',loading:false};
 
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
-const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'short',year:'numeric'}).format(d); };
+const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d); };
+const dateInputFormat = value => {const m=String(value||'').match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:String(value||'');};
+const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\\d{1,2})[\\/. -](\\d{1,2})[\\/. -](\\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
 const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
 let toastTimer;
@@ -925,7 +927,7 @@ function openRecurringEditor(id=null){
   $('recurring-edit-day').value=String(template?.day||1);
   $('recurring-edit-start-month').value=template?.startMonth||'';
   $('recurring-edit-end-month').value=template?.endMonth||'';
-  $('recurring-edit-once-date').value=template?.date||today();
+  $('recurring-edit-once-date').value=dateInputFormat(template?.date||today());
   $('recurring-edit-enabled').checked=template?template.enabled!==false:true;
   const selectedMonths=template?.months?.length?template.months:(template?.frequency==='quarterly'?[1,4,7,10]:[Number((template?.date||today()).slice(5,7))||1]);
   document.querySelectorAll('[name="recurring-month-option"]').forEach(input=>{input.checked=selectedMonths.includes(Number(input.value));});
@@ -2364,7 +2366,7 @@ function navigate(view){
 function openTransaction(accountId=null,transaction=null){
   $('transaction-form').reset();$('transaction-id').value=transaction?.id||'';
   $('transaction-modal-title').textContent=transaction?'Modifier l’opération':'Nouvelle opération';
-  $('transaction-date').value=transaction?.date||today();$('transaction-amount').value=transaction?transaction.amount:'';
+  $('transaction-date').value=dateInputFormat(transaction?.date||today());$('transaction-amount').value=transaction?transaction.amount:'';
   $('transaction-label').value=transaction?.label||'';
   fillAccountSelects();$('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
   $('transaction-dialog').showModal();
@@ -2613,7 +2615,7 @@ $('recurring-form').addEventListener('submit',event=>{
   const amountText=$('recurring-edit-amount').value.trim();
   const amount=amountText===''?null:Number(amountText);
   const day=Math.min(31,Math.max(1,Number($('recurring-edit-day').value)||1));
-  const date=$('recurring-edit-once-date').value;
+  const date=dateInputParse($('recurring-edit-once-date').value);
   const months=[...document.querySelectorAll('[name="recurring-month-option"]:checked')].map(input=>Number(input.value)).sort((a,b)=>a-b);
   if(!label||!accountById(accountId)){showToast('Renseignez un libellé et un compte valide.');return;}
   if(amountText!==''&&!Number.isFinite(amount)){showToast('Le montant doit être un nombre valide.');return;}
@@ -2841,7 +2843,7 @@ $('stock-form').addEventListener('submit',event=>{
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>$(button.dataset.close).close()));
 $('transaction-form').addEventListener('submit',event=>{
   event.preventDefault();
-  const id=$('transaction-id').value,accountId=$('transaction-account').value,date=$('transaction-date').value,amount=Number($('transaction-amount').value),label=$('transaction-label').value.trim();
+  const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=Number($('transaction-amount').value),label=$('transaction-label').value.trim();
   if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
   const previous=id?state.transactions.find(t=>t.id===id):null;
   const oldOrder=previous?.sortOrder;const record={...(previous||{}),id:id||crypto.randomUUID(),accountId,date,amount,label,isPaid:previous?.isPaid===true,sortOrder:previous&&previous.accountId===accountId&&Number.isFinite(Number(oldOrder))&&oldOrder!==null?Number(oldOrder):Math.max(0,...state.transactions.filter(t=>t.accountId===accountId&&t.id!==id).map(t=>Number(t.sortOrder)||0))+1,createdAt:previous?.createdAt||Date.now()};
@@ -2939,12 +2941,12 @@ document.addEventListener('change',event=>{
   const dateInput=document.getElementById('point-date-value');
   const dateForm=document.getElementById('point-date-form');
   if(!dateDialog||!dateInput||!dateForm){paid.checked=false;showToast('Impossible d’ouvrir la sélection de date.',false);return;}
-  dateInput.max=today();dateInput.value=transaction.date<=today()?transaction.date:today();
+  dateInput.value=dateInputFormat(transaction.date<=today()?transaction.date:today());
   dateDialog.returnValue='';
   dateDialog.showModal();
   dateForm.onsubmit=(submitEvent)=>{
     submitEvent.preventDefault();
-    const chosenDate=dateInput.value;
+    const chosenDate=dateInputParse(dateInput.value);
     if(!chosenDate||chosenDate>today()){showToast('Choisissez aujourd’hui ou une date passée.',false);return;}
     prepareUndo();
     transaction.date=chosenDate;
