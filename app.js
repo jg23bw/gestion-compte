@@ -166,6 +166,12 @@ const transactionQueries = TransactionQueries.create({repository: transactionRep
 const transactionCommands = TransactionCommands.create({repository: transactionRepository, domain: TransactionRules});
 const recurringTemplateCommands = RecurringTemplateCommands.create({repository: recurringTemplateRepository});
 const stockHoldingCommands = StockHoldingCommands.create({repository: stockHoldingRepository});
+const wealthSnapshotQueries = WealthSnapshotQueries.create({
+  totalAccountsBalance, totalStockValue, totalCryptoValue, lombardAmount,
+  stockHoldings: () => stockHoldingCommands.findAll(), isManualValueHolding,
+  manualHoldingValue, stockPriceDetails, accounts: () => state.accounts,
+  effectiveAccountType, accountOverviewBalance
+});
 const accountCommands = AccountCommands.create({
   repository: accountRepository, isBankKey, accountShort,
   transactionRepository, recurringTemplateRepository, stockHoldingCommands
@@ -1090,13 +1096,7 @@ function deleteCryptoHolding(id){
 function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();if($('opportunities-view'))renderOpportunities();saveState();}
 function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.setAttribute('aria-label','Annuler la dernière action');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();try{undoLastAction();}catch(error){console.error('Undo failed',error);showToast('Impossible d’annuler cette action : '+(error.message||'erreur inconnue.'));}},{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},10000);}
 
-function wealthSnapshot(){
-  const accounts=totalAccountsBalance(),stocks=totalStockValue(),crypto=totalCryptoValue();
-  const gross=accounts+stocks+crypto, debt=lombardAmount();
-  const investments=stockHoldingCommands.findAll().reduce((sum,h)=>sum+(isManualValueHolding(h)?manualHoldingValue(h):(()=>{const d=stockPriceDetails(h);return d.price!==null?Number(h.quantity||0)*d.price:Number(h.invested||0)})()),0);
-  const liquid=state.accounts.filter(a=>effectiveAccountType(a)!=='pro').reduce((sum,a)=>sum+accountOverviewBalance(a.id),0);
-  return {accounts,stocks,crypto,gross,debt,net:gross-debt,investments,liquid};
-}
+function wealthSnapshot(){return wealthSnapshotQueries.snapshot();}
 function pieMarkup(items){
  const positive=items.map(x=>({...x,value:Math.max(0,Number(x.value)||0)}));
  const total=positive.reduce((sum,x)=>sum+x.value,0)||1;
