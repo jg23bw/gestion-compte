@@ -302,3 +302,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - La récupération de l'indice Alternative.me est isolée dans `AlternativeMeFearGreedProvider`, derrière `FearGreedProviderPort`.
 - Le rendu et le positionnement du marqueur restent dans l'interface ; l'adaptateur retourne uniquement le score et sa classification.
+
+
+### Catalogue crypto
+
+- La recherche de cryptomonnaies est isolée dans `CoinGeckoCatalogProvider`, derrière `CryptoCatalogProviderPort`.
+- L'adaptateur gère la requête HTTP, le signal d'annulation, les erreurs HTTP et la limite de résultats ; l'interface garde le rendu et la gestion de la recherche en cours.
