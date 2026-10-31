@@ -35,9 +35,9 @@
     if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
     const template = recurringTemplates.find(item => item.id === transaction.recurringTemplateId);
     const label = String(template?.label || transaction.label || '').trim().toLocaleLowerCase('fr');
-    if (/^tva(?:\\s|$)/i.test(label)) return 'vat';
-    if (/^charges sociales(?:\\s|$)/i.test(label)) return 'social';
-    if (/^marge(?:\\s|$)/i.test(label)) return 'margin';
+    if (/^tva(?:\s|$)/i.test(label)) return 'vat';
+    if (/^charges sociales(?:\s|$)/i.test(label)) return 'social';
+    if (/^marge(?:\s|$)/i.test(label)) return 'margin';
     return null;
   }
 
