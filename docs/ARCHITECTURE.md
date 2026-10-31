@@ -350,3 +350,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les graphiques et composants de synthèse patrimoniale (répartition, valeur nette, cartes et interactions associées) sont regroupés dans `src/adapters/ui/dom/wealth-screen.js`.
 - Les calculs de snapshot sont délégués à `wealthSnapshotQueries` ; le rendu reste dans l'adaptateur DOM.
+
+
+### Dialogues de gestion
+
+- Les dialogues de création/modification des opérations et comptes, les paramètres de nantissement et le formulaire Lombard sont regroupés dans `src/adapters/ui/dom/account-editors.js`.
+- Les cas d'usage de persistance restent dans les services applicatifs ; l'adaptateur DOM conserve les confirmations et les effets visuels.
