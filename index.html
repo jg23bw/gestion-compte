@@ -10,10 +10,80 @@
   <title>Gestion de comptes</title>
   <link rel="stylesheet" href="styles.css?v=fr-date-scroll-v4">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="technical-indicators.js"></script>
-  <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=fr-date-scroll-v4" defer></script>
+<script src="src/domain/transactions/transaction-rules.js"></script>
+  <script src="src/domain/accounts/account-list-rules.js"></script>
+  <script src="src/domain/finance/lombard-credit-rules.js"></script>
+  <script src="src/application/finance/lombard-credit-commands.js"></script>
+  <script src="src/domain/accounts/account-type-rules.js"></script>
+  <script src="src/application/accounts/account-type-commands.js"></script>
+  <script src="src/domain/accounts/account-pledge-rules.js"></script>
+  <script src="src/ports/accounts/account-repository.js"></script>
+  <script src="src/adapters/persistence/state/state-account-repository.js"></script>
+  <script src="src/application/accounts/account-commands.js"></script>
+  <script src="src/application/accounts/account-pledge-commands.js"></script>
+  <script src="src/ports/transactions/transaction-repository.js"></script>
+  <script src="src/adapters/persistence/state/state-transaction-repository.js"></script>
+  <script src="src/application/transactions/transaction-queries.js"></script>
+  <script src="src/application/transactions/transaction-commands.js"></script>
+  <script src="src/adapters/persistence/supabase/transaction-mapper.js"></script>
+  <script src="src/adapters/persistence/supabase/account-mapper.js"></script>
+  <script src="src/adapters/persistence/supabase/recurring-template-mapper.js"></script>
+  <script src="src/adapters/persistence/supabase/crypto-holding-mapper.js"></script>
+  <script src="src/ports/transactions/transaction-cloud-repository.js"></script>
+  <script src="src/adapters/persistence/supabase/transaction-repository.js"></script>
+  <script src="src/ports/accounts/cloud-account-repository.js"></script>
+  <script src="src/ports/recurring/cloud-recurring-template-repository.js"></script>
+  <script src="src/adapters/persistence/supabase/account-repository.js"></script>
+  <script src="src/adapters/persistence/supabase/recurring-template-repository.js"></script>
+  <script src="src/ports/crypto/crypto-holding-cloud-repository.js"></script>
+  <script src="src/ports/crypto/crypto-fallback-price-provider.js"></script>
+  <script src="src/ports/crypto/crypto-catalog-provider.js"></script>
+  <script src="src/adapters/market-data/coingecko-catalog-provider.js"></script>
+  <script src="src/adapters/market-data/coincap-fallback-provider.js"></script>
+  <script src="src/adapters/persistence/supabase/crypto-holding-repository.js"></script>
+  <script src="src/ports/authentication/authentication-repository.js"></script>
+  <script src="src/adapters/authentication/supabase-authentication-repository.js"></script>
+  <script src="src/application/authentication/authentication-service.js"></script>
+  <script src="src/ports/integrations/mcp-token-service.js"></script>
+  <script src="src/application/integrations/mcp-token-service.js"></script>
+  <script src="src/ports/authentication/auth-metadata-repository.js"></script>
+  <script src="src/adapters/persistence/supabase/auth-metadata-repository.js"></script>
+  <script src="src/application/synchronization/cloud-state-loader.js"></script>
+  <script src="src/application/synchronization/cloud-synchronization.js"></script>
+  <script src="src/domain/recurring/recurring-rules.js"></script>
+  <script src="src/domain/portfolio/stock-valuation.js"></script>
+  <script src="src/domain/portfolio/stock-holding-rules.js"></script>
+  <script src="src/ports/portfolio/stock-holding-repository.js"></script>
+  <script src="src/adapters/persistence/state/state-stock-holding-repository.js"></script>
+  <script src="src/application/portfolio/stock-holding-commands.js"></script>
+  <script src="src/application/portfolio/wealth-snapshot-queries.js"></script>
+  <script src="src/application/portfolio/stock-holding-metadata-commands.js"></script>
+  <script src="src/ports/portfolio/stock-price-provider.js"></script>
+  <script src="src/ports/portfolio/exchange-rate-provider.js"></script>
+  <script src="src/ports/market-data/fear-greed-provider.js"></script>
+  <script src="src/adapters/market-data/alternative-me-fear-greed-provider.js"></script>
+  <script src="src/adapters/market-data/supabase-stock-price-provider.js"></script>
+  <script src="src/adapters/market-data/http-exchange-rate-provider.js"></script>
+  <script src="src/application/recurring/recurring-commands.js"></script>
+  <script src="src/ports/recurring/recurring-template-repository.js"></script>
+  <script src="src/adapters/persistence/state/state-recurring-template-repository.js"></script>
+  <script src="src/application/recurring/recurring-template-commands.js"></script>
+  <script src="src/ports/recurring/generated-months-repository.js"></script>
+  <script src="src/adapters/persistence/local-storage/generated-months-repository.js"></script>
+  <script src="src/adapters/persistence/local-storage/legacy-state-loader.js"></script>
+    <script src="technical-indicators.js"></script>
+    <script src="src/config/catalogs.js"></script>
+    <script src="src/adapters/ui/dom/stocks-screen.js"></script>
+    <script src="src/adapters/ui/dom/crypto-screen.js"></script>
+    <script src="src/adapters/ui/dom/accounts-operations-screen.js"></script>
+    <script src="src/adapters/ui/dom/wealth-screen.js"></script>
+    <script src="src/adapters/ui/dom/account-editors.js"></script>
+    <script src="src/bootstrap/cloud-session.js"></script>
+    <script src="src/adapters/ui/dom/event-handlers.js"></script>
+    <script src="src/adapters/ui/dom/opportunities-screen.js"></script>
+  <script src="app.js?v=legacy-state-loader-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">

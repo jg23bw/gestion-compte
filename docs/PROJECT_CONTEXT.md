@@ -313,3 +313,287 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Un tooltip au survol/crosshair affiche la date, le cours, la MM200 et l’écart en pourcentage. Le listener de redimensionnement de secours est retiré lors de la destruction du graphique.
 - Tests ajoutés dans `tests/opportunity-mm200.test.js` et workflow GitHub Actions `.github/workflows/mm200-tests.yml` (Node.js 22).
 - 10 scénarios ont été exécutés dans l’environnement d’orchestration : fenêtre insuffisante, moyenne exacte, lacunes crypto/actions, weekends et jours fériés, clôtures invalides, normalisation UTC, timestamps secondes/millisecondes, reprise après lacune et déduplication déterministe. Résultat : 10 réussis, 0 échec. Le runner Node.js de GitHub Actions n’a pas encore été observé en exécution ; ne pas considérer ce résultat comme une validation navigateur.
+
+
+## 10. Refactoring — chargement de l'état cloud (31 octobre 2026)
+
+- Ajout de `src/application/synchronization/cloud-state-loader.js` : le cas d'usage orchestre la lecture des comptes, opérations, modèles récurrents et positions crypto via les repositories Supabase, puis normalise les métadonnées Auth (crédit lombard, sous-types de comptes, nantissements et positions actions).
+- `app.js` délègue désormais cette lecture à ce cas d'usage. La logique d'import volontaire de l'ancien cache local, la confirmation utilisateur, le rendu et la synchronisation initiale restent dans la couche d'orchestration UI.
+- Les opérations restent triées par date croissante comme dans l'ancien chargement. Une table crypto absente reste tolérée ; toute autre erreur de lecture est propagée.
+- Tests ajoutés dans `tests/unit/application/cloud-state-loader.test.js` : mapping des métadonnées, ordre des opérations, table crypto absente, erreur inattendue et validation des paramètres.
+- Le nouveau fichier est chargé avant `app.js` et inclus dans `npm run check`.
+- Validation GitHub Actions effectuée le 31 octobre 2026 sur le commit `2974f907751c512204b0255700f55b2d260d6d71` : `npm run check` et `npm test` réussis. Aucun test navigateur ni test sur le projet Supabase distant n'est revendiqué à ce stade.
+
+
+## 12. Extraction de l'authentification Supabase (31 octobre 2026)
+
+- Ajout du port `AuthenticationRepositoryPort`, de l'adaptateur `SupabaseAuthenticationRepository` et du cas d'usage `AuthenticationService`.
+- `app.js` utilise désormais le service pour lire la session, écouter les changements d'authentification, se connecter, créer un compte et se déconnecter. La logique d'interface (messages, visibilité des contrôles, verrouillage et chargement des données) reste dans `app.js`.
+- L'accès à la session pour obtenir le jeton d'accès MCP passe également par le service ; aucun jeton n'est stocké dans les nouveaux modules ou les tests.
+- L'adaptateur centralise le déballage des réponses Supabase et la propagation des erreurs. Le port permet de remplacer Supabase par un faux dépôt dans les tests.
+- Tests ajoutés pour la délégation des cas d'usage, l'abonnement/désabonnement, la traduction des arguments d'inscription et la propagation des erreurs.
+- Aucun changement de schéma ni migration Supabase n'est requis.
+
+**Validation CI :** sur le commit `53b311490ab8e45374ca48010faa3ac19579b1c5`, les étapes `npm run check` et `npm test` sont toutes deux réussies (workflow GitHub Actions `41199953854`). Le parcours navigateur réel (connexion, inscription, déconnexion et session expirée) reste à vérifier ; aucune connexion au compte réel n'a été effectuée.
+
+
+## 13. Extraction des mutations des modèles récurrents (31 octobre 2026)
+
+- Ajout du port `RecurringTemplateRepositoryPort`, de l'adaptateur mémoire `StateRecurringTemplateRepository` et du cas d'usage `RecurringTemplateCommands`.
+- Les opérations de recherche par identifiant, création, mise à jour partielle et suppression des modèles passent désormais par ce service. `app.js` conserve la validation des champs du formulaire, les confirmations, l'annulation, la sauvegarde locale, le rendu et les notifications UI.
+- Les mises à jour rapides (activation/désactivation, montant, jour et libellé) utilisent également le cas d'usage ; le modèle de données et le format stocké ne changent pas.
+- Six tests unitaires couvrent la création, la mise à jour partielle, la suppression, les identifiants inconnus, le rejet d'un modèle sans identifiant et la validation du port.
+- Aucun changement de schéma Supabase ni migration des données n'est nécessaire. Le dépôt mémoire encapsule toujours l'état historique ; l'adaptateur Supabase des modèles récurrents reste utilisé pour la synchronisation cloud.
+
+**Validation CI :** commit `5f32cf57bc91c2b977d10442a9e6faa204059c0f`, workflow GitHub Actions `41200579430` : `npm run check` et `npm test` réussis. Le commit précédent contenant les tests avait échoué car le port n'était pas chargé dans l'environnement Node ; le chargement CommonJS a été corrigé et la CI finale est verte. Aucun test navigateur ni test sur Supabase réel n'est revendiqué.
+
+
+## 14. Première extraction du domaine de valorisation actions/ETF (31 octobre 2026)
+
+- Ajout de `src/domain/portfolio/stock-valuation.js`, module pur qui centralise la détection des positions à valeur manuelle (dont Suravenir), la capitalisation prorata temporis de cette valeur, la conversion d'un cours natif en euros à partir d'un taux FX fourni et le calcul valeur/plus-value/performance d'une position.
+- Les cours, taux de change, date courante et hypothèse de rendement sont fournis en entrée : le domaine n'effectue aucun accès réseau, stockage ou lecture de l'horloge système. Cela rend les calculs déterministes en test.
+- `app.js` délègue désormais ces règles au domaine. La récupération des cours, le cache, les taux FX, la gestion des positions, l'affichage et les comportements de repli restent dans la couche legacy pour cette première tranche.
+- Huit tests unitaires couvrent la détection manuelle, la capitalisation, l'absence de rendement dans le futur, les cours/taux invalides, la valorisation, les cours absents, la valeur manuelle et le rendement non calculable si le capital investi est nul.
+- Aucun format de données ni schéma Supabase n'a été modifié.
+
+**Validation CI :** les tests unitaires du nouveau domaine ont réussi sur le commit `b490baf31acc093ea2fc1733a971aa32b6633c6b`, et le contrôle syntaxique de l'application a réussi sur `f313d6c1d4c30bd7009c6dd80df919c0f092c25a`. La validation finale incluant les derniers changements de chargement HTML et de configuration des checks est en cours au moment de cette note. Aucun test navigateur ni appel réel aux fournisseurs de marché n'est revendiqué.
+
+
+## Extraction du repository des positions actions/ETF (31 octobre 2026)
+
+- Ajout du port `StockHoldingRepositoryPort`, de l'adaptateur mémoire `StateStockHoldingRepository` et du cas d'usage `StockHoldingCommands`.
+- Les lectures par identifiant, créations, modifications et suppressions de positions actions/ETF passent désormais par ce repository. La suppression d'un compte supprime aussi ses positions via le même contrat.
+- Le modèle des positions et la structure de `state.stockHoldings` restent inchangés. Le repository mémoire encapsule l'état historique et suit les remplacements de l'objet `state` lors du chargement cloud ou de l'annulation.
+- La synchronisation distante des positions reste volontairement inchangée : elles sont stockées dans les métadonnées Supabase Auth (`user_metadata.stockHoldings`), et non dans une table dédiée. Cette étape ne crée aucune migration SQL.
+- Cinq tests unitaires couvrent la lecture, la création/mise à jour, la suppression par identifiant, la suppression par compte et la validation du contrat.
+- Les modules sont chargés avant `app.js` et ajoutés à `npm run check`. Cache-busting de l'application : `stock-holding-repository-v1`.
+- Aucun test navigateur ni écriture dans le compte Supabase réel n'a été effectué pour cette extraction.
+
+
+## Fournisseurs de cours et de change (31 octobre 2026)
+
+- Les prix des actions/ETF passent par `StockPriceProviderPort` et `SupabaseStockPriceProvider`, qui encapsulent l'appel à l'Edge Function `stock-data`, la validation des cours et le cooldown HTTP 429.
+- Les taux de change passent par `ExchangeRateProviderPort` et `HttpExchangeRateProvider`. La conversion EUR-base, y compris GBX, est testée ; le cache et l'état UI restent dans `app.js`.
+- Les adaptateurs sont chargés avant `app.js` et couverts par cinq tests unitaires. Les sources externes et le schéma Supabase restent inchangés.
+- Aucun test navigateur, appel FX réel ou test sur un compte Supabase réel n'est revendiqué.
+
+
+## Centralisation des appels Edge de données de marché (31 octobre 2026)
+
+- Le port `StockPriceProviderPort` et l'adaptateur `SupabaseStockPriceProvider` couvrent désormais tous les appels à l'Edge Function `stock-data` : cours, recherche d'instruments, historiques actions/ETF, données marché crypto et historiques crypto.
+- `app.js` ne construit plus directement les appels `supabase.functions.invoke` pour ces opérations ; il délègue au fournisseur. La gestion des erreurs HTTP, du réseau et des cooldowns HTTP 429 est centralisée dans l'adaptateur, avec un cooldown indépendant par action afin qu'un 429 sur l'historique ne bloque pas la recherche ou les cours.
+- Le fournisseur FX reste indépendant derrière `ExchangeRateProviderPort`. Le cache des cours/taux et les états de chargement restent dans l'interface.
+- Tests unitaires ajoutés pour les actions génériques et l'isolation des cooldowns. Aucun schéma Supabase ni contrat de l'Edge Function n'est modifié.
+- Aucun test navigateur ni appel réel à la fonction Edge ou au service FX n'est revendiqué.
+
+
+## Extraction de la requête d'historique mensuel des opérations (31 octobre 2026)
+
+- La recherche textuelle, les filtres par compte/type, les tris (date, libellé, montant, compte) et les agrégats entrées/sorties/net sont déplacés dans le cas d'usage `TransactionQueries.monthlyHistory`.
+- Le rendu DOM, la sélection du mois, les libellés, le formatage monétaire et la mise à jour des éléments HTML restent dans `app.js`.
+- Le cas d'usage lit les opérations et comptes via le repository d'état existant ; le format des objets persistés et les événements UI ne changent pas.
+- Tests unitaires ajoutés pour le tri, les filtres, les agrégats et la conservation de l'état.
+- Aucun test navigateur ni scénario Supabase réel n'est revendiqué pour cette tranche.
+
+
+## Extraction de la requête de l'écran Opérations (31 octobre 2026)
+
+- Le cas d'usage `TransactionQueries.filterAccountTransactions` centralise désormais le filtrage par compte/type/recherche et les tris date, libellé, montant, opérations pointées et ordre manuel.
+- `app.js` conserve le choix des filtres, la génération du tableau HTML, les soldes affichés, les boutons d'action et les interactions utilisateur.
+- Les tris manuels continuent de s'appuyer sur l'ordre métier existant ; le filtrage travaille sur une nouvelle liste et ne modifie pas les opérations stockées.
+- Tests unitaires ajoutés pour les filtres, la recherche sur le libellé, le tri par montant, l'ordre manuel et les opérations pointées.
+- Aucun format de données, schéma Supabase ou comportement de synchronisation n'est modifié. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction des filtres et tris de la liste des comptes (31 octobre 2026)
+
+- Ajout de `AccountListRules.filterAndSort`, règle pure qui applique la recherche sur le nom, le raccourci, la banque et le type, le filtre de catégorie et les tris par nom, type ou solde.
+- Les sélecteurs métier (type effectif, libellé, banque) et le calcul du solde restent injectés depuis `app.js` ; le nouveau module ne dépend ni du DOM ni de l'état global.
+- Le rendu des cartes, les badges de nantissement, les compteurs et les interactions restent dans `app.js`. La liste source n'est pas mutée.
+- Tests unitaires ajoutés pour la recherche, le filtre de type, les tris et la validation des dépendances.
+- Aucun changement de modèle, de stockage ou de schéma Supabase. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Centralisation du tri des opérations pour le déplacement manuel (31 octobre 2026)
+
+- Le cas d'usage `TransactionQueries.accountTransactionsInDisplayOrder` fournit désormais l'ordre d'affichage d'un compte selon le tri actif (date, libellé, montant, pointage ou ordre manuel).
+- Le filtrage de l'écran Opérations et le déplacement haut/bas réutilisent le même comparateur applicatif ; `app.js` ne recalcule plus lui-même le tri avant une réorganisation.
+- Le tri travaille sur une copie de la liste et ne modifie pas les opérations persistées. La mutation des `sortOrder` reste confiée à `TransactionCommands.reorder`.
+- Tests unitaires ajoutés pour les tris manuel, chronologique et pointé, ainsi que l'absence de mutation de l'état.
+- Aucun changement du format des données, du schéma Supabase ou de la synchronisation. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction du modèle de lignes de l'écran Opérations (31 octobre 2026)
+
+- Le cas d'usage `TransactionQueries.accountTransactionDisplayRows` prépare désormais les lignes de l'écran Opérations : filtrage/tri existants, solde après chaque opération selon l'ordre manuel du compte, position et nombre total d'opérations.
+- Les soldes et positions sont calculés en une seule passe sur les opérations du compte, au lieu de recalculer le solde et de rechercher la position pour chaque ligne du tableau.
+- `app.js` conserve la lecture des contrôles, le rendu HTML, les logos, le formatage, les interactions et les calculs propres à l'affichage professionnel.
+- Tests unitaires ajoutés pour vérifier l'ordre d'affichage, les soldes cumulés et les positions manuelles. Aucun format de données ni schéma Supabase n'est modifié.
+- Aucun test navigateur ni scénario Supabase réel n'est revendiqué pour cette tranche.
+
+
+## Extraction du regroupement des sélecteurs de comptes (31 octobre 2026)
+
+- `AccountListRules.selectGroups` centralise les règles de classement des comptes en comptes opérationnels, personnels, professionnels et comptes d’investissement.
+- `fillAccountSelects` dans `app.js` consomme ces groupes et conserve la responsabilité du DOM, des options HTML et de la préservation des sélections valides.
+- Les catégories restent cohérentes entre les filtres Opérations, Professionnel, Historique, Récurrences et portefeuille Actions ; les tests vérifient les groupes et l’absence de mutation de la liste source.
+- Aucun changement de données, de stockage ou de schéma Supabase. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction de l'enregistrement des comptes (31 octobre 2026)
+
+- Ajout du port `AccountRepositoryPort`, de l'adaptateur `StateAccountRepository` et du cas d'usage `AccountCommands.save`.
+- La création et la modification des comptes passent désormais par le cas d'usage applicatif ; `app.js` conserve la validation orientée utilisateur, la gestion de l'annulation, les nantissements, le rendu et les indicateurs de synchronisation.
+- Les règles de normalisation du nom, du type stocké (les comptes PEA/AV/CTO restent stockés avec `kind: savings`), de la banque et des valeurs par défaut sont testées indépendamment.
+- Les paramètres professionnels existants (TVA, cotisations et solde net initial) sont préservés lors d'une modification.
+- La suppression en cascade n'est pas encore extraite : elle reste dans `app.js` afin de traiter séparément et sans régression les suppressions cloud, l'undo et les données liées.
+- Aucun changement du schéma Supabase ou du format de persistance. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction de la suppression en cascade des comptes (31 octobre 2026)
+
+- `AccountCommands.remove` orchestre désormais la suppression du compte et de ses données liées : opérations, récurrences, positions actions/ETF et nantissement.
+- Les adaptateurs d'état exposent les suppressions unitaires nécessaires ; l'application récupère le résultat du cas d'usage pour mettre à jour les files de synchronisation cloud sans générer de suppressions individuelles redondantes pour les opérations et récurrences.
+- `app.js` conserve les règles d'interface : interdiction de supprimer le dernier compte, message de confirmation détaillant les éléments liés, fermeture de la fenêtre, rendu et notification.
+- La suppression reste volontairement définitive et ne crée pas de point d'annulation, comme avant cette extraction.
+- Aucun changement de schéma Supabase ou de format des données.
+
+
+### Nantissements des comptes — extraction des règles et commandes (31 octobre 2026)
+
+- Les règles pures de normalisation des nantissements (compatibilité avec l'ancien booléen `true`, note nettoyée et limitée à 160 caractères, rejet des formes invalides) sont dans `AccountPledgeRules`.
+- Le filtrage des métadonnées aux seuls comptes existants est également centralisé dans le domaine.
+- `AccountPledgeCommands` expose la lecture, la normalisation, la préparation des métadonnées cloud et l'enregistrement/suppression d'un nantissement via le port compte.
+- L'adaptateur d'état implémente désormais les opérations de lecture et d'écriture des nantissements ; l'UI conserve les champs, le rendu et les indicateurs de synchronisation.
+- Le format JSON stocké dans les métadonnées utilisateur Supabase reste inchangé.
+
+
+### Types de comptes — extraction des métadonnées Auth (31 octobre 2026)
+
+- Les règles de validation des sous-types PEA, assurance vie et CTO, de normalisation des métadonnées, de calcul des overrides et d'application aux comptes importés sont isolées dans `AccountTypeRules`.
+- `AccountTypeCommands` expose ces règles à l'application : normalisation des métadonnées Auth, calcul des overrides à partir des comptes, résolution du type effectif depuis le type Supabase et application des overrides à un ancien état local.
+- `app.js` ne contient plus la logique de validation/normalisation des sous-types ni le mapping des overrides ; il conserve la composition, le suivi de synchronisation et l'interface.
+- Le contrat est inchangé : seuls les sous-types `pea`, `av` et `cto` sont enregistrés dans `user_metadata.accountTypes`; les comptes restent stockés avec leur `kind` historique (notamment `savings` pour PEA/AV/CTO).
+- Aucun changement de schéma Supabase, de format JSON ou de migration des données. Les métadonnées de nantissement restent gérées par leur cas d'usage existant.
+- Aucun test navigateur ni accès à un compte Supabase réel n'est revendiqué.
+
+
+## Extraction du crédit lombard (31 octobre 2026)
+
+- Ajout de `LombardCreditRules` pour normaliser les métadonnées du crédit (libellé, dette, taux facultatif et notes), avec les mêmes valeurs par défaut et limites qu'auparavant.
+- Ajout de `LombardCreditCommands` pour lire le champ `user_metadata.lombardCredit` et l'enregistrer via le repository de métadonnées Auth. La sauvegarde conserve strictement le même nom de champ et le même format JSON.
+- `app.js` délègue désormais la normalisation et l'enregistrement au cas d'usage ; il conserve la composition Supabase et les interactions de l'écran Lombard.
+- Aucun changement de schéma Supabase, aucune migration et aucune conversion des données déjà stockées.
+- Tests unitaires couvrant la normalisation, la lecture, la sauvegarde, l'absence d'utilisateur connecté et l'absence de repository.
+
+
+## Extraction des métadonnées positions actions/ETF (31 octobre 2026)
+
+- Les règles de normalisation des positions, dédoublonnage, validation, devise et compatibilité Suravenir sont déplacées vers `StockHoldingRules`.
+- La lecture et la sauvegarde du champ existant `user_metadata.stockHoldings` sont déléguées à `StockHoldingMetadataCommands`.
+- Les catalogues de marchés/devises et la fonction de date sont injectés depuis la composition applicative ; aucun format de données ni schéma Supabase n'est modifié.
+- L'interface, les cours, le FX et le rafraîchissement des prix restent dans `app.js` à ce stade.
+
+
+## Extraction des mappers Supabase (31 octobre 2026)
+
+- Les conversions compte, modèle récurrent et position crypto ont été déplacées dans des adaptateurs dédiés et testées indépendamment.
+- Les clés de colonnes Supabase et les formes des objets applicatifs sont conservées. Aucun changement de schéma n'est introduit.
+
+
+## Compléments de la tranche de refactorisation
+
+- Le cas d'usage des opérations prend aussi en charge l'initialisation déterministe de l'ordre manuel, avec test de tri par date puis date de création.
+- La résolution du type effectif d'un compte et la validation des types sont maintenant des règles de domaine dans `AccountTypeRules`.
+- La CI la plus récente vérifiée sur le commit `474b0cb` passe : contrôle syntaxique réussi, 175 tests passés, 0 échec.
+
+
+## Extraction du fournisseur crypto secondaire (31 octobre 2026)
+
+- Le fallback CoinCap est isolé derrière un port et un adaptateur testés avec un faux réseau.
+- La conversion USD vers EUR et le mapping des identifiants sont conservés. Le rafraîchissement principal, le cache et le rendu restent pilotés par l'application.
+
+
+## Extraction de l'indice Fear & Greed (31 octobre 2026)
+
+- Le chargement de l'indice Alternative.me est maintenant délégué à un adaptateur testé avec des réponses réseau simulées.
+- L'interface conserve les libellés, le seuil de sentiment et le rendu de l'indicateur.
+
+
+## Extraction du catalogue crypto (31 octobre 2026)
+
+- La recherche CoinGecko passe maintenant par un port et un adaptateur dédiés, avec tests de limitation des résultats, HTTP 429 et annulation.
+- La gestion de l'AbortController et le rendu des résultats restent dans l'interface.
+
+
+## Extraction du service de jetons MCP (31 octobre 2026)
+
+- La communication avec la fonction Supabase `mcp-tokens` est déléguée à `McpTokenService`.
+- Les payloads historiques `list`, `revoke` et les autres actions sont transmis sans transformation afin de préserver le contrat de la fonction existante.
+
+
+## Extraction de l'écran Opportunités (31 octobre 2026)
+
+- Le bloc d'environ 445 lignes dédié à l'écran Opportunités a été déplacé de `app.js` vers `src/adapters/ui/dom/opportunities-screen.js` sans réécriture fonctionnelle.
+- Le script est chargé après `technical-indicators.js`. La compatibilité repose encore sur les bindings globaux du bootstrap historique ; cette extraction réduit le fichier principal mais ne termine pas le découplage UI.
+
+
+## Extraction de l'écran Actions / ETF (31 octobre 2026)
+
+- Le bloc UI d'environ 377 lignes de recherche, édition, affichage et rafraîchissement des positions actions/ETF est déplacé dans `src/adapters/ui/dom/stocks-screen.js`.
+- Le fichier `app.js` descend à environ 1 940 lignes. Le module conserve provisoirement les dépendances globales historiques, sans changement de parcours utilisateur intentionnel.
+
+
+## Extraction des agrégats patrimoniaux (31 octobre 2026)
+
+- Le calcul du snapshot de patrimoine est isolé dans `WealthSnapshotQueries`, avec tests sur valorisation cotée, valorisation manuelle et repli sur le montant investi.
+- Les règles de présentation restent dans l'interface ; les chiffres sont calculés à partir des mêmes sources applicatives qu'auparavant.
+
+
+## Extraction de l'écran Crypto (31 octobre 2026)
+
+- Le bloc UI Crypto (environ 252 lignes) a été déplacé dans `src/adapters/ui/dom/crypto-screen.js`.
+- Le fichier `app.js` est réduit à environ 1 690 lignes. Les contrats de données et le comportement de l'écran sont conservés ; aucun test navigateur n'a encore été effectué.
+
+
+## Extraction des écrans Comptes / Opérations / Récurrences (31 octobre 2026)
+
+- Le bloc d'environ 215 lignes de rendu et d'interaction de ces écrans est déplacé dans `src/adapters/ui/dom/accounts-operations-screen.js`.
+- `app.js` est réduit à environ 1 475 lignes. Les signatures globales historiques sont conservées afin de limiter le risque fonctionnel pendant cette phase.
+
+
+## Extraction de l'écran Patrimoine (31 octobre 2026)
+
+- Le rendu de la synthèse patrimoniale et de ses graphiques (environ 215 lignes) est déplacé vers `src/adapters/ui/dom/wealth-screen.js`.
+- `app.js` est réduit à environ 1 260 lignes ; les fonctions de l'écran restent accessibles au routeur historique.
+
+
+## Extraction des dialogues Comptes / Opérations / Lombard (31 octobre 2026)
+
+- Les fonctions de dialogue et d'édition (environ 113 lignes) sont déplacées dans `src/adapters/ui/dom/account-editors.js`.
+- `app.js` est réduit à environ 1 150 lignes.
+
+
+## Extraction de la session cloud (31 octobre 2026)
+
+- Les fonctions d'orchestration `syncCloudState` et `loadCloudState` (environ 153 lignes) sont déplacées dans `src/bootstrap/cloud-session.js`.
+- `app.js` est désormais réduit à moins de 1 000 lignes. Les bindings historiques restent provisoirement nécessaires à la composition et seront remplacés par injection explicite dans la phase finale.
+
+
+## Extraction des catalogues statiques (31 octobre 2026)
+
+- Les listes statiques de banques, devises, marchés, ISIN et comptes par défaut sont déplacées dans `src/config/catalogs.js`.
+- `app.js` passe sous les 900 lignes. Les données personnelles ne sont pas déplacées vers ce module.
+
+
+## Extraction du câblage DOM (31 octobre 2026)
+
+- Environ 438 lignes de listeners, formulaires, interactions, rafraîchissements et démarrage sont déplacées dans `src/adapters/ui/dom/event-handlers.js`.
+- `app.js` est réduit à environ 460 lignes et délègue l'initialisation de l'interface à `initializeDomEventHandlers()`.
+- Le comportement des événements n'a pas été réécrit ; les dépendances globales de composition restent à éliminer lors de l'étape de découplage explicite.
+
+
+## Extraction du lecteur d'état historique (31 octobre 2026)
+
+- Le chargement du cache local utilisé pour la migration volontaire est déplacé dans `src/adapters/persistence/local-storage/legacy-state-loader.js`.
+- Tests ajoutés pour la fusion des comptes par défaut, la correction du libellé CIC historique et les données locales absentes ou mal formées.
