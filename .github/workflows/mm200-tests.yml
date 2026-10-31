@@ -1,22 +1,28 @@
-name: MM200 technical indicators
+name: Application tests
+
 on:
   pull_request:
     paths:
-      - 'technical-indicators.js'
       - 'app.js'
       - 'index.html'
-      - 'styles.css'
+      - 'technical-indicators.js'
+      - 'src/**'
       - 'tests/**'
-      - '.github/workflows/mm200-tests.yml'
+      - 'package.json'
+      - '.github/workflows/**'
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'refactor/**'
     paths:
-      - 'technical-indicators.js'
       - 'app.js'
       - 'index.html'
-      - 'styles.css'
+      - 'technical-indicators.js'
+      - 'src/**'
       - 'tests/**'
-      - '.github/workflows/mm200-tests.yml'
+      - 'package.json'
+      - '.github/workflows/**'
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -25,6 +31,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check app.js
-      - run: node --check technical-indicators.js
-      - run: node --test tests/opportunity-mm200.test.js
+      - run: npm run check
+      - run: npm test
