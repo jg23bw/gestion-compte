@@ -853,12 +853,12 @@ function openRecurringEditor(id=null){
   $('recurring-dialog').showModal();
 }
 function deleteRecurringTemplate(id){
-  const template=(state.recurringTemplates||[]).find(t=>t.id===id);
+  const template=recurringTemplateCommands.findById(id);
   if(!template)return;
   if(!window.confirm('Supprimer la récurrence « '+template.label+' » ? Les opérations déjà générées resteront dans l’historique.'))return;
   prepareUndo();
   if(cloud.user)cloud.pendingTemplateDeletes.add(template.id);
-  state.recurringTemplates=state.recurringTemplates.filter(t=>t.id!==id);
+  recurringTemplateCommands.remove(id);
   renderAll();
   showToast('Récurrence supprimée. Les opérations déjà créées sont conservées.',true);
 }
@@ -2482,18 +2482,18 @@ $('recurring-month').value=nextMonthValue();
 $('history-month').value=monthValueNow();
 $('recurring-rows').addEventListener('change',event=>{
   const enabled=event.target.closest('[data-recurring-enabled]');
-  if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){prepareUndo();t.enabled=enabled.checked;saveState();renderRecurring();showToast('Récurrence mise à jour.',true);}return;}
+  if(enabled){const t=recurringTemplateCommands.findById(enabled.dataset.recurringEnabled);if(t){prepareUndo();recurringTemplateCommands.update(t.id,{enabled:enabled.checked});saveState();renderRecurring();showToast('Récurrence mise à jour.',true);}return;}
   const amount=event.target.closest('[data-recurring-amount]');
-  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){const parsed=amount.value.trim()===''?null:parseFrenchNumber(amount.value);if(parsed!==null&&!Number.isFinite(parsed)){showToast('Montant invalide. Utilisez une virgule pour les décimales.',false);amount.value=t.amount??'';return;}prepareUndo();t.amount=parsed;saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
+  if(amount){const t=recurringTemplateCommands.findById(amount.dataset.recurringAmount);if(t){const parsed=amount.value.trim()===''?null:parseFrenchNumber(amount.value);if(parsed!==null&&!Number.isFinite(parsed)){showToast('Montant invalide. Utilisez une virgule pour les décimales.',false);amount.value=t.amount??'';return;}prepareUndo();recurringTemplateCommands.update(t.id,{amount:parsed});saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
   const day=event.target.closest('[data-recurring-day]');
-  if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){prepareUndo();t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();showToast('Jour de la récurrence mis à jour.',true);}return;}
+  if(day){const t=recurringTemplateCommands.findById(day.dataset.recurringDay);if(t){prepareUndo();recurringTemplateCommands.update(t.id,{day:Math.min(31,Math.max(1,Number(day.value)||1))});saveState();renderRecurring();showToast('Jour de la récurrence mis à jour.',true);}return;}
   const label=event.target.closest('[data-recurring-label]');
-  if(label){const t=state.recurringTemplates.find(x=>x.id===label.dataset.recurringLabel);if(t){prepareUndo();t.label=label.value.trim()||t.label;saveState();renderRecurring();showToast('Libellé de la récurrence mis à jour.',true);}}
+  if(label){const t=recurringTemplateCommands.findById(label.dataset.recurringLabel);if(t){prepareUndo();recurringTemplateCommands.update(t.id,{label:label.value.trim()||t.label});saveState();renderRecurring();showToast('Libellé de la récurrence mis à jour.',true);}}
 });
 $('recurring-form').addEventListener('submit',event=>{
   event.preventDefault();
   const id=$('recurring-edit-id').value;
-  const existing=id?(state.recurringTemplates||[]).find(t=>t.id===id):null;
+  const existing=id?recurringTemplateCommands.findById(id):null;
   const label=$('recurring-edit-label').value.trim();
   const accountId=$('recurring-edit-account').value;
   const frequency=$('recurring-edit-frequency').value;
@@ -2511,7 +2511,7 @@ $('recurring-form').addEventListener('submit',event=>{
   if(startMonth&&endMonth&&endMonth<startMonth){showToast('Le mois de fin doit être postérieur ou égal au mois de début.');return;}
   const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,label,amount,frequency,day:frequency==='once'?Number(date.slice(8,10)):day,months:frequency==='quarterly'||frequency==='annual'?months:[],startMonth,endMonth,date:frequency==='once'?date:undefined,enabled:$('recurring-edit-enabled').checked};
   prepareUndo();
-  if(existing)state.recurringTemplates=state.recurringTemplates.map(t=>t.id===id?record:t);else state.recurringTemplates.push(record);
+  recurringTemplateCommands.save(record);
   $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.',true);
 });
 ['transactions-add'].forEach(id=>$(id).addEventListener('click',()=>openTransaction()));
