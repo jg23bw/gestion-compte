@@ -197,6 +197,13 @@ function frenchAuthError(error){
   return message||'Opération impossible.';
 }
 function cloudStatus(message,connected=false){const el=$('cloud-status');if(!el)return;el.innerHTML='<i></i> '+escapeHtml(message);el.classList.toggle('cloud-connected',connected);}
+let authenticationService=null;
+function getAuthenticationService(){
+  if(authenticationService)return authenticationService;
+  const repository=SupabaseAuthenticationRepository.create({getClient:cloudClient});
+  authenticationService=AuthenticationService.create({authenticationRepository:repository});
+  return authenticationService;
+}
 function cloudClient(){
   if(cloud.client)return cloud.client;
   const config=window.GESTION_SUPABASE_CONFIG;
