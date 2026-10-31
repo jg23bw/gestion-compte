@@ -2,18 +2,30 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Port = require('../../../src/ports/accounts/account-repository.js');
-const StateRepository = require('../../../src/adapters/persistence/state/state-account-repository.js');
+const StateAccountRepository = require('../../../src/adapters/persistence/state/state-account-repository.js');
+const StateTransactionRepository = require('../../../src/adapters/persistence/state/state-transaction-repository.js');
+const StateRecurringRepository = require('../../../src/adapters/persistence/state/state-recurring-template-repository.js');
 const AccountCommands = require('../../../src/application/accounts/account-commands.js');
 
 function setup(initial = []) {
-  const state = { accounts: initial };
-  const repository = StateRepository.create(() => state);
+  const state = { accounts: initial, transactions: [], recurringTemplates: [], stockHoldings: [], accountPledges: {} };
+  const repository = StateAccountRepository.create(() => state);
+  const transactionRepository = StateTransactionRepository.create(() => state);
+  const recurringTemplateRepository = StateRecurringRepository.create(() => state);
+  const stockHoldingCommands = {
+    findAll: () => state.stockHoldings,
+    deleteByAccount: id => {
+      const removed = state.stockHoldings.filter(item => item.accountId === id);
+      state.stockHoldings = state.stockHoldings.filter(item => item.accountId !== id);
+      return removed;
+    }
+  };
   const commands = AccountCommands.create({
-    repository,
+    repository, transactionRepository, recurringTemplateRepository, stockHoldingCommands,
     isBankKey: key => ['fortuneo', 'boursorama', 'other'].includes(key),
     accountShort: name => name.slice(0, 2).toUpperCase()
   });
-  return { state, commands };
+  return { state, commands, repository };
 }
 
 test('creates an account with normalized fields and professional defaults', () => {
@@ -42,6 +54,31 @@ test('updates an existing account without losing unrelated professional settings
   assert.equal(updated.vatRate, 10);
   assert.equal(updated.socialRate, 30);
   assert.equal(updated.netOpening, 5);
+  assert.equal(state.accounts.length, 1);
+});
+
+test('removes an account and all linked records, returning cloud cleanup details', () => {
+  const { state, commands } = setup([{ id: 'a', name: 'Compte A' }, { id: 'b', name: 'Compte B' }]);
+  state.transactions = [{ id: 't1', accountId: 'a' }, { id: 't2', accountId: 'b' }];
+  state.recurringTemplates = [{ id: 'r1', accountId: 'a' }, { id: 'r2', accountId: 'b' }];
+  state.stockHoldings = [{ id: 's1', accountId: 'a' }, { id: 's2', accountId: 'b' }];
+  state.accountPledges = { a: { note: 'Nanti' }, b: { note: 'Autre' } };
+  const result = commands.remove('a');
+  assert.equal(result.account.id, 'a');
+  assert.deepEqual(result.transactions.map(item => item.id), ['t1']);
+  assert.deepEqual(result.templates.map(item => item.id), ['r1']);
+  assert.deepEqual(result.stockHoldings.map(item => item.id), ['s1']);
+  assert.deepEqual(result.pledge, { note: 'Nanti' });
+  assert.deepEqual(state.accounts.map(item => item.id), ['b']);
+  assert.deepEqual(state.transactions.map(item => item.id), ['t2']);
+  assert.deepEqual(state.recurringTemplates.map(item => item.id), ['r2']);
+  assert.deepEqual(state.stockHoldings.map(item => item.id), ['s2']);
+  assert.deepEqual(state.accountPledges, { b: { note: 'Autre' } });
+});
+
+test('returns null without changing state when the account no longer exists', () => {
+  const { state, commands } = setup([{ id: 'a' }]);
+  assert.equal(commands.remove('missing'), null);
   assert.equal(state.accounts.length, 1);
 });
 
