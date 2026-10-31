@@ -649,16 +649,7 @@ function moveTransaction(id,direction){
   const accountId=current.accountId;
   const sortSelect=$('transaction-sort');
   const currentSort=sortSelect?.value||'date-asc';
-  const rows=state.transactions.filter(t=>t.accountId===accountId);
-  const visibleOrder=rows.slice().sort((a,b)=>{
-    if(currentSort==='date-asc')return a.date.localeCompare(b.date)||a.createdAt-b.createdAt;
-    if(currentSort==='date-desc')return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;
-    if(currentSort==='label')return a.label.localeCompare(b.label,'fr');
-    if(currentSort==='amount-asc')return Number(a.amount)-Number(b.amount);
-    if(currentSort==='amount-desc')return Number(b.amount)-Number(a.amount);
-    if(currentSort==='pointed')return Number(b.isPaid===true)-Number(a.isPaid===true)||transactionOrder(a,b);
-    return transactionOrder(a,b);
-  });
+  const visibleOrder=transactionQueries.accountTransactionsInDisplayOrder(accountId,currentSort);
   const index=visibleOrder.findIndex(t=>t.id===id),targetIndex=index+Number(direction);
   if(index<0||targetIndex<0||targetIndex>=visibleOrder.length)return;
   prepareUndo();
