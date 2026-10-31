@@ -214,3 +214,19 @@ L'interface garde la validation des champs et les effets UI/undo, mais délègue
 
 - [x] Opérations : cas d’usage d’écriture pour création, modification, suppression, pointage et réordonnancement ; orchestration undo/rendu/synchronisation conservée dans l’interface legacy.
 - [x] Tests unitaires des cas d’usage de mutation des opérations (5 scénarios).
+
+
+### Étape 3 — écritures des opérations et mapping Supabase
+
+**Implémentée et validée par CI.**
+
+- Les cas d'usage applicatifs couvrent désormais la création, la modification, la suppression, le pointage/dépointage et le réordonnancement des opérations.
+- Le dépôt de transactions expose les méthodes de lecture et d'écriture ; l'adaptateur d'état conserve le modèle mémoire historique.
+- L'orchestration de l'annulation, du rendu et des indicateurs de synchronisation reste volontairement dans la couche UI legacy à ce stade.
+- Les conversions des opérations vers/depuis les lignes Supabase sont isolées dans `src/adapters/persistence/supabase/transaction-mapper.js`.
+- L'horloge est injectable dans le mapper pour des tests déterministes ; les noms de colonnes et règles de compatibilité existants sont conservés.
+- Tests dédiés des cas d'usage d'écriture, de l'adaptateur d'état et du mapping Supabase.
+
+**CI vérifiée sur le commit `d0f1a4d` :** `npm run check` réussi ; 49 tests passés, 0 échec.
+
+**Limites restantes :** le mapper n'est pas encore utilisé par un dépôt Supabase complet ; les appels réseau, la synchronisation, les suppressions en attente, le chargement initial et les autres mappers restent dans `app.js`. Aucun test de contrat contre Supabase réel ni test navigateur n'a encore été exécuté.
