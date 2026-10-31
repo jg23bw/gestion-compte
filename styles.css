@@ -1594,8 +1594,7 @@ input,select,textarea{accent-color:#536dff}
 :root[data-theme="dark"] .opportunity-tv-tooltip{background:#1b2a40;color:#edf3ff;border-color:#3a4c66}
 
 /* Direct horizontal scrolling on table surfaces (mouse, trackpad and touch). */
-.table-scroll{display:block;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-gutter:stable;cursor:grab}
-.table-scroll:active{cursor:grabbing}
+.table-scroll{display:block;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-gutter:stable}
 .table-scroll table{width:max-content;min-width:100%}
 .table-scroll::-webkit-scrollbar{height:10px}
 .table-scroll::-webkit-scrollbar-thumb{background:rgba(115,130,155,.38);border-radius:99px}
