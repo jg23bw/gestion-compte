@@ -554,3 +554,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le bloc UI Crypto (environ 252 lignes) a été déplacé dans `src/adapters/ui/dom/crypto-screen.js`.
 - Le fichier `app.js` est réduit à environ 1 690 lignes. Les contrats de données et le comportement de l'écran sont conservés ; aucun test navigateur n'a encore été effectué.
+
+
+## Extraction des écrans Comptes / Opérations / Récurrences (31 octobre 2026)
+
+- Le bloc d'environ 215 lignes de rendu et d'interaction de ces écrans est déplacé dans `src/adapters/ui/dom/accounts-operations-screen.js`.
+- `app.js` est réduit à environ 1 475 lignes. Les signatures globales historiques sont conservées afin de limiter le risque fonctionnel pendant cette phase.
