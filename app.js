@@ -1274,6 +1274,7 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:StockValuation.euroPrice(nativePrice,rate)};
 }
+const stockProviderCooldowns={};
 async function stockFunction(action,payload={}){
   if(Date.now()<(Number(stockProviderCooldowns[action])||0))throw new Error('Fournisseur temporairement limité : réessaie dans une minute.');
   if(!cloud.client)throw new Error('connexion cloud requise pour les données boursières');
