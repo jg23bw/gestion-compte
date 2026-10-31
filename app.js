@@ -426,18 +426,21 @@ async function syncCloudState(){
       cloud.pendingTemplateDeletes.delete(id);
     }
     if(cryptoTableReady!==false){
-      const cryptoResult=await client.from('crypto_holdings').select('*');
-      if(cryptoResult.error){
-        if(isMissingCryptoTable(cryptoResult.error))cryptoTableReady=false;
-        else throw cryptoResult.error;
-      }else{
+      const cryptoRepository=SupabaseCryptoHoldingRepository.create({client,userId:uid});
+      let remoteCryptoRows;
+      try{
+        remoteCryptoRows=await cryptoRepository.listAll();
         cryptoTableReady=true;
-        const remoteCrypto=new Map((cryptoResult.data||[]).map(row=>[row.id,row]));
+      }catch(error){
+        if(isMissingCryptoTable(error))cryptoTableReady=false;
+        else throw error;
+      }
+      if(cryptoTableReady){
+        const remoteCrypto=new Map(remoteCryptoRows.map(row=>[row.id,row]));
         const changedCrypto=cryptoHoldings.filter(row=>!remoteCrypto.has(row.id)||!sameCloudValues(row,remoteCrypto.get(row.id),['symbol','name','coingecko_id','status','invested','quantity','sort_order']));
-        if(changedCrypto.length){const {error}=await client.from('crypto_holdings').upsert(changedCrypto,{onConflict:'user_id,id'});if(error)throw error;}
+        if(changedCrypto.length)await cryptoRepository.upsertMany(changedCrypto);
         for(const id of [...cloud.pendingCryptoDeletes]){
-          const {error}=await client.from('crypto_holdings').delete().eq('id',id).eq('user_id',uid);
-          if(error)throw error;
+          await cryptoRepository.deleteById(id);
           cloud.pendingCryptoDeletes.delete(id);
         }
       }
@@ -489,14 +492,14 @@ async function loadCloudState(user){
     if(!cloud.user||cloud.user.id!==user.id)return;
 
     // La table crypto peut ne pas encore exister : ne pas bloquer le reste de l'application.
-    const cryptoResult=await client.from('crypto_holdings').select('*');
+    const cryptoRepository=SupabaseCryptoHoldingRepository.create({client,userId:user.id});
     let remoteCrypto=[];
-    if(cryptoResult.error){
-      if(!isMissingCryptoTable(cryptoResult.error))throw cryptoResult.error;
-      cryptoTableReady=false;
-    }else{
+    try{
+      remoteCrypto=(await cryptoRepository.listAll()).map(fromCloudCryptoHolding);
       cryptoTableReady=true;
-      remoteCrypto=(cryptoResult.data||[]).map(fromCloudCryptoHolding);
+    }catch(error){
+      if(!isMissingCryptoTable(error))throw error;
+      cryptoTableReady=false;
     }
     let cryptoHoldings=[];
     if(cryptoTableReady&&remoteCrypto.length)cryptoHoldings=remoteCrypto;
