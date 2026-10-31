@@ -2602,7 +2602,7 @@ $('recurring-rows').addEventListener('change',event=>{
   const enabled=event.target.closest('[data-recurring-enabled]');
   if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){prepareUndo();t.enabled=enabled.checked;saveState();renderRecurring();showToast('Récurrence mise à jour.',true);}return;}
   const amount=event.target.closest('[data-recurring-amount]');
-  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){prepareUndo();t.amount=amount.value.trim()===''?null:parseFrenchNumber(amount.value);saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
+  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){const parsed=amount.value.trim()===''?null:parseFrenchNumber(amount.value);if(parsed!==null&&!Number.isFinite(parsed)){showToast('Montant invalide. Utilisez une virgule pour les décimales.',false);amount.value=t.amount??'';return;}prepareUndo();t.amount=parsed;saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
   const day=event.target.closest('[data-recurring-day]');
   if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){prepareUndo();t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();showToast('Jour de la récurrence mis à jour.',true);}return;}
   const label=event.target.closest('[data-recurring-label]');
