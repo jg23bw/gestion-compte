@@ -26,6 +26,25 @@
       findRecurringTemplates() {
         const templates = getState().recurringTemplates;
         return Array.isArray(templates) ? templates : [];
+      },
+      findAll() {
+        return getState().transactions;
+      },
+      findById(id) {
+        return getState().transactions.find(transaction => transaction.id === id) || null;
+      },
+      save(transaction) {
+        const current = getState().transactions;
+        const index = current.findIndex(item => item.id === transaction.id);
+        if (index < 0) current.push(transaction);
+        else current[index] = transaction;
+        return transaction;
+      },
+      delete(id) {
+        const current = getState().transactions;
+        const index = current.findIndex(transaction => transaction.id === id);
+        if (index < 0) return null;
+        return current.splice(index, 1)[0];
       }
     });
   }
