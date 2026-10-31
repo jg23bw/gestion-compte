@@ -560,3 +560,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le bloc d'environ 215 lignes de rendu et d'interaction de ces écrans est déplacé dans `src/adapters/ui/dom/accounts-operations-screen.js`.
 - `app.js` est réduit à environ 1 475 lignes. Les signatures globales historiques sont conservées afin de limiter le risque fonctionnel pendant cette phase.
+
+
+## Extraction de l'écran Patrimoine (31 octobre 2026)
+
+- Le rendu de la synthèse patrimoniale et de ses graphiques (environ 215 lignes) est déplacé vers `src/adapters/ui/dom/wealth-screen.js`.
+- `app.js` est réduit à environ 1 260 lignes ; les fonctions de l'écran restent accessibles au routeur historique.
