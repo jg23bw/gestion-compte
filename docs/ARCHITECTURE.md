@@ -199,3 +199,15 @@ Cette tranche est une première vertical slice hexagonale, pas une migration com
 Le calcul du solde courant après une opération a également été déplacé dans `TransactionQueries`. L'interface historique conserve sa signature, mais délègue désormais au cas d'usage. Les tests couvrent l'ordre d'affichage (du plus récent au plus ancien), l'arrêt sur l'opération demandée et le cas d'un compte supprimé.
 
 **Dernière CI vérifiée :** commit `ba79a22`, 32 tests passés, 0 échec ; `npm run check` réussi.
+
+
+#### Complément — création et modification d'opération
+
+La construction du modèle d'opération est maintenant une règle métier pure (`createTransactionRecord`) :
+- conservation de l'ordre manuel lors d'une modification dans le même compte ;
+- attribution du prochain ordre lorsqu'une opération est créée ou déplacée ;
+- conservation de l'état de pointage et de la date de création lors d'une modification.
+
+L'interface garde la validation des champs et les effets UI/undo, mais délègue la construction du modèle au domaine.
+
+**CI vérifiée :** commit `04a4e49`, 35 tests passés, 0 échec ; contrôle syntaxique réussi.
