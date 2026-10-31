@@ -82,6 +82,9 @@ const STOCK_MARKETS={
   NSE:{label:'NSE Inde',currency:'INR'},BSE:{label:'BSE Inde',currency:'INR'},KRX:{label:'Bourse de Corée',currency:'KRW'},TPE:{label:'Bourse de Taïwan',currency:'TWD'},SGX:{label:'Singapore Exchange',currency:'SGD'},JSE:{label:'Bourse de Johannesburg',currency:'ZAR'},BVMF:{label:'B3 Brésil',currency:'BRL'},BMV:{label:'Bourse du Mexique',currency:'MXN'},BCBA:{label:'Bourse de Buenos Aires',currency:'ARS'},BKK:{label:'Bourse de Thaïlande',currency:'THB'},QSE:{label:'Bourse du Qatar',currency:'QAR'},PSE:{label:'Bourse des Philippines',currency:'PHP'},MSM:{label:'Bourse de Mascate',currency:'OMR'},KASE:{label:'Bourse du Kazakhstan',currency:'KZT'},BVB:{label:'Bourse de Bucarest',currency:'RON'},
   OTC:{label:'OTC',currency:'USD'},NASDAQ:{label:'NASDAQ',currency:'USD'},NYSE:{label:'NYSE',currency:'USD'},AMEX:{label:'NYSE American',currency:'USD'},BATS:{label:'Cboe BZX',currency:'USD'},US:{label:'États-Unis',currency:'USD'}
 };
+const stockHoldingMetadataCommands = StockHoldingMetadataCommands.create({
+  rules: StockHoldingRules.create({ currencies: STOCK_CURRENCIES, markets: STOCK_MARKETS, today })
+});
 // Catalogue local ISIN : facilite la sélection quand la recherche par symbole ne retrouve pas l'instrument.
 // Les identifiants de cotation suivent le format renvoyé par StockAnalysis ; un cours peut rester indisponible selon la place.
 const STOCK_ISIN_CATALOG = [
@@ -258,38 +261,8 @@ function isAccountType(value){
 const accountTypeCommands = AccountTypeCommands.create({ rules: AccountTypeRules });
 function normalizeAccountTypes(value){return accountTypeCommands.normalize(value);}
 function normalizeAccountPledges(value){return accountPledgeCommands.normalize(value);}
-function normalizeStockCurrency(value){
-  const currency=String(value||'').trim().toUpperCase();
-  return STOCK_CURRENCIES.includes(currency)?currency:'EUR';
-}
-function normalizeStockHoldings(value){
-  if(!Array.isArray(value))return [];
-  const result=[],seen=new Set();
-  for(const raw of value){
-    if(!raw||typeof raw!=='object')continue;
-    const id=String(raw.id||'').trim();
-    const accountId=String(raw.accountId||'').trim();
-    const priceId=String(raw.priceId||raw.stockanalysisId||'').trim();
-    const isin=String(raw.isin||'').trim().toUpperCase().slice(0,12);
-    const symbol=String(raw.symbol||'').trim().toUpperCase().slice(0,24);
-    if(!id||seen.has(id)||!accountId||!priceId||!symbol)continue;
-    const invested=Number(raw.invested),quantity=Number(raw.quantity);
-    if(!Number.isFinite(invested)||invested<0||(!Number.isFinite(quantity)&&!raw.manualValue))continue;
-    const manualValue=Boolean(raw.manualValue)||isin==='SUR000001737'||priceId.toUpperCase()==='SUR-SUR000001737';
-    const market=STOCK_MARKETS[String(priceId).split('-')[0].toUpperCase()]||STOCK_MARKETS.US;
-    seen.add(id);
-    result.push({
-      id,accountId,priceId,symbol,isin,
-      name:String(raw.name||symbol).trim().slice(0,160)||symbol,
-      market:String(raw.market||market.label).trim().slice(0,80)||market.label,
-      currency:normalizeStockCurrency(raw.currency||market.currency),
-      invested,quantity:Number.isFinite(quantity)?quantity:0,manualValue,
-      manualValueDate:raw.manualValueDate||today(),
-      sortOrder:Number.isFinite(Number(raw.sortOrder))?Number(raw.sortOrder):0
-    });
-  }
-  return result;
-}
+function normalizeStockCurrency(value){return stockHoldingMetadataCommands.normalizeCurrency(value);}
+function normalizeStockHoldings(value){return stockHoldingMetadataCommands.normalize(value);}
 function accountTypeOverrides(){return accountTypeCommands.overrides(state.accounts);}
 function accountPledgeOverrides(){return accountPledgeCommands.overrides(state.accounts);}
 function authMetadataRepository(){
@@ -306,10 +279,11 @@ async function saveAccountMetadataToAuth(overrides=accountTypeOverrides(),pledge
   await authMetadataRepository().update({accountTypes:overrides,accountPledges:pledges});
 }
 async function saveStockHoldingsToAuth(holdings){
-  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer les positions actions.');
-  const normalized=normalizeStockHoldings(holdings);
-  await authMetadataRepository().update({stockHoldings:normalized});
-  return normalized;
+  return stockHoldingMetadataCommands.save({
+    user:cloud.user,
+    metadataRepository:authMetadataRepository(),
+    holdings
+  });
 }
 function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:'bank:'+bankKeyForAccount(a),kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
 function fromCloudAccount(a,accountTypes={}){
