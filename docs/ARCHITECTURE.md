@@ -362,3 +362,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - L'orchestration de synchronisation et de chargement de session est déplacée dans `src/bootstrap/cloud-session.js`.
 - Les cas d'usage de synchronisation et de chargement restent dans `src/application/synchronization` ; ce module bootstrap compose les repositories, état et retours UI historiques.
+
+
+### Catalogues statiques
+
+- Les catalogues de banques, devises, marchés, ISIN et comptes de démonstration sont regroupés dans `src/config/catalogs.js`.
+- Les données personnelles de comptes, transactions et positions restent chargées depuis leurs stockages ; aucun portefeuille personnel n'est ajouté aux fichiers de configuration.
