@@ -2,6 +2,12 @@
  * Static catalogs and default reference data used by the browser application.
  * Personal account/portfolio records are deliberately not stored here.
  */
+const STOCK_PRICE_CACHE_KEY='gestion-comptes-stock-prices-v1';
+const STOCK_FX_CACHE_KEY='gestion-comptes-stock-fx-v1';
+const STOCK_FUNCTION_NAME='stock-data';
+const STOCK_FX_ENDPOINT='https://open.er-api.com/v6/latest/EUR';
+const STOCK_REFRESH_MS=5*60*1000;
+
 const BANK_CATALOG = [
   {id:'banque-populaire',name:'Banque Populaire',logo:'assets/banks/banque-populaire.svg',color:'#0066b3',initials:'BP'},
   {id:'bforbank',name:'BforBank',color:'#111a2c',initials:'BF'},
