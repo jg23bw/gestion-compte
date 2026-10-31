@@ -112,7 +112,7 @@ test('prepareGeneration rejects invalid month without touching marker repository
   const calls = [];
   const repository = { add: month => calls.push(['add', month]), remove: month => calls.push(['remove', month]) };
   const result = require('../../../src/application/recurring/recurring-commands.js').prepareGeneration({
-    templates: [], transactions: [], month: '2026-13', generatedMonthsRepository: repository
+    templates: [], transactions: [], month: '2026-4', generatedMonthsRepository: repository
   });
   assert.equal(result.status, 'invalid-month');
   assert.deepEqual(calls, []);
