@@ -30,3 +30,12 @@ test('resolves cloud type overrides and preserves legacy local subtype values', 
     { id: 'b', kind: 'bank', accountType: 'bank' }
   ]);
 });
+
+test('classifies supported account types and safely falls back to bank', () => {
+  assert.equal(Rules.isAccountType('pea'), true);
+  assert.equal(Rules.isAccountType('unknown'), false);
+  assert.equal(Rules.effectiveType({ accountType: 'cto', kind: 'savings' }), 'cto');
+  assert.equal(Rules.effectiveType({ kind: 'pro' }), 'pro');
+  assert.equal(Rules.effectiveType({ accountType: 'invalid', kind: 'savings' }), 'bank');
+  assert.equal(Rules.effectiveType(null), 'bank');
+});
