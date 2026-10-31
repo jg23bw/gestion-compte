@@ -920,38 +920,32 @@ function deleteRecurringTemplate(id){
 function dueDateForTemplate(template,month){return RecurringRules.dueDateForTemplate(template,month);}
 function generatedMonths(){return generatedMonthsRepository.list();}
 function monthAlreadyGenerated(month){
-  // Les transactions réelles sont la source de vérité. Le marqueur local ne doit
-  // pas bloquer une régénération si les opérations ont été supprimées de Supabase.
-  if(state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month)){
-    generatedMonthsRepository.add(month);
-    return true;
-  }
-  generatedMonthsRepository.remove(month);
-  return false;
+  return RecurringCommands.inspectMonth({
+    transactions:state.transactions, month, generatedMonthsRepository
+  }).status==='already-generated';
 }
 function generateRecurringForMonth(month){
-  if(!/^\d{4}-\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
+  if(!/^\\d{4}-\\d{2}$/.test(month)){showToast('Choisissez un mois valide.');return;}
   if(generationInProgress.has(month))return;
-  if(monthAlreadyGenerated(month)){
+  const result=RecurringCommands.prepareGeneration({
+    templates:state.recurringTemplates||[], transactions:state.transactions,
+    month, generatedMonthsRepository
+  });
+  if(result.status==='already-generated'){
     const message='Erreur : les opérations de '+monthName(month)+' ont déjà été générées. La génération est bloquée pour éviter les doublons.';
     if($('recurring-summary'))$('recurring-summary').textContent=message;
     showToast(message);renderRecurring();return;
   }
+  if(result.status==='invalid-month'){showToast('Choisissez un mois valide.');return;}
   generationInProgress.add(month);
   const button=$('recurring-add-month');if(button)button.disabled=true;
-  const additions=RecurringCommands.generateTransactions({
-    templates:state.recurringTemplates||[], transactions:state.transactions, month
-  });
-  if(!additions.length){
+  if(result.status==='no-additions'){
     generationInProgress.delete(month);
     if(button)button.disabled=false;
-    const alreadyExists=state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month);
-    if(alreadyExists)generatedMonthsRepository.add(month);
-    const message=alreadyExists
-      ?'Les opérations de '+monthName(month)+' ont déjà été générées. Aucun doublon n’a été ajouté.'
-      :'Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.';
+    const message='Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.';
     if($('recurring-summary'))$('recurring-summary').textContent=message;showToast(message);renderRecurring();return;
   }
+  const additions=result.additions;
   prepareUndo();
   state.transactions.push(...additions);
   generatedMonthsRepository.add(month);
