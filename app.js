@@ -1274,7 +1274,6 @@ function stockPriceDetails(holding){
   const rate=stockFxRate(holding.currency);
   return {nativePrice,rate,price:StockValuation.euroPrice(nativePrice,rate)};
 }
-const stockProviderCooldowns={};
 async function stockFunction(action,payload={}){
   if(Date.now()<(Number(stockProviderCooldowns[action])||0))throw new Error('Fournisseur temporairement limité : réessaie dans une minute.');
   if(!cloud.client)throw new Error('connexion cloud requise pour les données boursières');
@@ -1297,11 +1296,10 @@ async function stockFunction(action,payload={}){
   if(data?.error)throw new Error(data.error);
   return data;
 }
+const stockPriceProvider=SupabaseStockPriceProvider.create({getClient:()=>cloud.client,functionName:STOCK_FUNCTION_NAME});
+const stockFxProvider=HttpExchangeRateProvider.create({endpoint:STOCK_FX_ENDPOINT});
 async function fetchStockNativePrice(priceId){
-  const data=await stockFunction('price',{id:priceId});
-  const price=Number(data?.price);
-  if(!Number.isFinite(price)||price<=0)throw new Error('aucun cours reçu');
-  return price;
+  return stockPriceProvider.getPrice(priceId);
 }
 async function refreshStockFx(currencies){
   if(!currencies.length){
@@ -1312,17 +1310,7 @@ async function refreshStockFx(currencies){
   stockFx.loading=true;
   stockFx.error='';
   try{
-    const response=await fetch(STOCK_FX_ENDPOINT,{headers:{Accept:'application/json'},cache:'no-store'});
-    if(!response.ok)throw new Error('réponse HTTP '+response.status);
-    const data=await response.json();
-    if(data?.result!=='success'||!data?.rates)throw new Error('taux de change indisponibles');
-    const rates={};
-    for(const currency of currencies){
-      const apiCode=currency==='GBX'?'GBP':currency;
-      const perEuro=Number(data.rates[apiCode]);
-      if(Number.isFinite(perEuro)&&perEuro>0)rates[currency]=(1/perEuro)/(currency==='GBX'?100:1);
-    }
-    if(!Object.keys(rates).length)throw new Error('aucun taux EUR reçu');
+    const rates=await stockFxProvider.fetchRates(currencies);
     stockFx.rates={...stockFx.rates,...rates};
     stockFx.updatedAt=Date.now();
     try{localStorage.setItem(STOCK_FX_CACHE_KEY,JSON.stringify({rates:stockFx.rates,updatedAt:stockFx.updatedAt}));}catch(error){}
