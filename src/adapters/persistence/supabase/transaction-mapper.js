@@ -45,7 +45,7 @@
           label: row.label,
           isPaid: row.is_paid === true,
           sortOrder: Number.isFinite(Number(row.sort_order)) && row.sort_order !== null ? Number(row.sort_order) : undefined,
-          createdAt: Number.isFinite(createdAt) ? createdAt : now().getTime(),
+          createdAt: Number.isFinite(createdAt) && createdAt > 0 ? createdAt : now().getTime(),
           recurringKey: row.recurring_key || undefined,
           recurringTemplateId: row.recurring_template_id || undefined
         };
