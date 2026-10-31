@@ -374,3 +374,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les listeners DOM, la configuration des interactions, les rafraîchissements périodiques et le démarrage de session sont regroupés dans `src/adapters/ui/dom/event-handlers.js`.
 - `app.js` appelle désormais `initializeDomEventHandlers()` après la déclaration de ses bindings de composition. Le script de listeners ne s'exécute pas avant l'initialisation de ces bindings.
+
+
+### Import des anciennes données locales
+
+- La lecture du cache historique pour la migration volontaire vers le cloud est isolée dans `LegacyStateLoader`, adaptateur localStorage.
+- L'adaptateur reçoit les comptes par défaut et les normaliseurs ; les données cloud restent la source de vérité après authentification.
