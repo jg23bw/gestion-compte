@@ -191,10 +191,10 @@
         <div class="page-heading"><div><p class="eyebrow">DETTE ET EXPOSITION BTC</p><h1>Lombard</h1><p class="subtitle">Séparez les BTC achetés avec le crédit de ceux achetés en fonds personnels.</p></div></div>
         <div class="lombard-intro panel">Hypothèses fournies : 101 000 € empruntés initialement, 39 000 € remboursés, 60 000 € investis en BTC via le Lombard à 70 100 $/BTC et 69 800 € investis en BTC personnels à 85 100 $/BTC. Le prix BTC et le taux EUR/USD sont modifiables pour simuler.</div>
         <div class="lombard-controls panel">
-          <label>Prix BTC actuel ($)<input id="lombard-btc-price" type="number" min="0" step="100" value="78000"></label>
-          <label>EUR / USD<input id="lombard-fx" type="number" min="0.1" step="0.01" value="1.08"></label>
-          <label>Capital emprunté initial (€)<input id="lombard-principal" type="number" min="0" step="1000" value="101000"></label>
-          <label>Remboursements déjà effectués (€)<input id="lombard-repaid" type="number" min="0" step="1000" value="39000"></label>
+          <label>Prix BTC actuel ($)<input id="lombard-btc-price" type="text" inputmode="decimal" autocomplete="off" min="0" step="100" value="78000"></label>
+          <label>EUR / USD<input id="lombard-fx" type="text" inputmode="decimal" autocomplete="off" min="0.1" step="0.01" value="1.08"></label>
+          <label>Capital emprunté initial (€)<input id="lombard-principal" type="text" inputmode="decimal" autocomplete="off" min="0" step="1000" value="101000"></label>
+          <label>Remboursements déjà effectués (€)<input id="lombard-repaid" type="text" inputmode="decimal" autocomplete="off" min="0" step="1000" value="39000"></label>
         </div>
         <div class="lombard-metrics history-summary-grid"><article class="history-summary-card"><span>Dette restante estimée</span><strong id="lombard-remaining">—</strong></article><article class="history-summary-card"><span>BTC achetés via Lombard</span><strong id="lombard-loan-btc">—</strong></article><article class="history-summary-card"><span>Valeur BTC Lombard</span><strong id="lombard-loan-value">—</strong></article><article class="history-summary-card"><span>Valeur BTC personnels</span><strong id="lombard-personal-value">—</strong></article></div>
         <div class="comparison-grid">
@@ -213,7 +213,7 @@
       <input type="hidden" id="recurring-edit-id">
       <label>Libellé<input id="recurring-edit-label" maxlength="120" required placeholder="Ex. Loyer, salaire, abonnement…"></label>
       <label>Compte<select id="recurring-edit-account" required></select></label>
-      <div class="form-row"><label>Montant (€)<input id="recurring-edit-amount" type="number" step="0.01" placeholder="À renseigner si inconnu"></label><label>Fréquence<select id="recurring-edit-frequency" required><option value="monthly">Tous les mois</option><option value="quarterly">Trimestrielle</option><option value="annual">Annuelle</option><option value="once">Une seule fois</option></select></label></div>
+      <div class="form-row"><label>Montant (€)<input id="recurring-edit-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" placeholder="À renseigner si inconnu"></label><label>Fréquence<select id="recurring-edit-frequency" required><option value="monthly">Tous les mois</option><option value="quarterly">Trimestrielle</option><option value="annual">Annuelle</option><option value="once">Une seule fois</option></select></label></div>
       <div id="recurring-day-field"><label>Jour du mois<input id="recurring-edit-day" type="number" min="1" max="31" step="1" value="1"></label></div>
       <fieldset id="recurring-months-field" class="recurring-months-field"><legend>Mois concernés</legend><div class="recurring-months-grid">
         <label><input type="checkbox" name="recurring-month-option" value="1"> Janvier</label><label><input type="checkbox" name="recurring-month-option" value="2"> Février</label><label><input type="checkbox" name="recurring-month-option" value="3"> Mars</label><label><input type="checkbox" name="recurring-month-option" value="4"> Avril</label><label><input type="checkbox" name="recurring-month-option" value="5"> Mai</label><label><input type="checkbox" name="recurring-month-option" value="6"> Juin</label><label><input type="checkbox" name="recurring-month-option" value="7"> Juillet</label><label><input type="checkbox" name="recurring-month-option" value="8"> Août</label><label><input type="checkbox" name="recurring-month-option" value="9"> Septembre</label><label><input type="checkbox" name="recurring-month-option" value="10"> Octobre</label><label><input type="checkbox" name="recurring-month-option" value="11"> Novembre</label><label><input type="checkbox" name="recurring-month-option" value="12"> Décembre</label>
@@ -230,7 +230,7 @@
       <div class="modal-heading"><div><p class="eyebrow">HISTORIQUE DU COMPTE</p><h2 id="transaction-modal-title">Nouvelle opération</h2></div><button type="button" class="close-button" data-close="transaction-dialog" aria-label="Fermer">×</button></div>
       <input type="hidden" id="transaction-id">
       <label>Compte<select id="transaction-account" required></select></label>
-      <div class="form-row"><label>Date<input id="transaction-date" type="text" inputmode="numeric" placeholder="JJ/MM/AAAA" autocomplete="off" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" required></label><label>Montant (€)<input id="transaction-amount" type="number" step="0.01" required placeholder="0,00"></label></div>
+      <div class="form-row"><label>Date<input id="transaction-date" type="text" inputmode="numeric" placeholder="JJ/MM/AAAA" autocomplete="off" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" required></label><label>Montant (€)<input id="transaction-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" required placeholder="0,00"></label></div>
       <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
       <p class="form-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="transaction-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
@@ -248,7 +248,7 @@
         <div id="account-bank-preview" class="logo-preview" aria-hidden="true"></div>
         <p class="form-help">Le logo est sélectionné automatiquement selon la banque. Choisissez « Autre / initiales » pour afficher les initiales du compte.</p>
       </div>
-      <label>Solde de départ (€)<input id="edit-account-opening" type="number" step="0.01" required></label>
+      <label>Solde de départ (€)<input id="edit-account-opening" type="text" inputmode="decimal" autocomplete="off" step="0.01" required></label>
       <p class="form-help">Le solde de départ correspond au montant présent avant la première opération enregistrée. Pour ajouter un nouveau compte, renseignez son nom, son type, sa banque et son solde actuel.</p>
       <fieldset class="pledge-field">
         <legend>Nantissement</legend>
@@ -264,8 +264,8 @@
     <form id="lombard-form">
       <div class="modal-heading"><div><p class="eyebrow">DETTE FINANCIÈRE</p><h2>Crédit lombard</h2></div><button type="button" class="close-button" data-close="lombard-dialog" aria-label="Fermer">×</button></div>
       <label>Libellé<input id="lombard-edit-label" maxlength="120" required placeholder="Ex. Crédit lombard"></label>
-      <label>Dette actuelle (€)<input id="lombard-edit-amount" type="number" min="0" step="0.01" required placeholder="0,00"></label>
-      <label>Taux annuel (%) — facultatif<input id="lombard-edit-rate" type="number" min="0" max="100" step="0.01" placeholder="Ex. 4,5"></label>
+      <label>Dette actuelle (€)<input id="lombard-edit-amount" type="text" inputmode="decimal" autocomplete="off" min="0" step="0.01" required placeholder="0,00"></label>
+      <label>Taux annuel (%) — facultatif<input id="lombard-edit-rate" type="text" inputmode="decimal" autocomplete="off" min="0" max="100" step="0.01" placeholder="Ex. 4,5"></label>
       <label>Notes<textarea id="lombard-edit-notes" rows="3" maxlength="500" placeholder="Contrepartie, échéance, établissement…"></textarea></label>
       <p class="form-help">Le montant de la dette est déduit des avoirs bruts de tous les comptes pour calculer le patrimoine net affiché dans la vue d’ensemble.</p>
       <div class="modal-actions"><button type="button" class="secondary-button danger-button" id="lombard-delete" hidden>Supprimer</button><button type="button" class="secondary-button" data-close="lombard-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
@@ -283,7 +283,7 @@
       <input type="hidden" id="crypto-edit-symbol">
       <input type="hidden" id="crypto-edit-name">
       <p class="form-help">Choisissez la crypto dans la liste : son nom et son identifiant de prix sont remplis automatiquement. Le prix est ensuite récupéré en euros chez CoinGecko.</p>
-      <div class="form-row"><label>Investi (€)<input id="crypto-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
+      <div class="form-row"><label>Investi (€)<input id="crypto-edit-invested" type="text" inputmode="decimal" autocomplete="off" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue<input id="crypto-edit-quantity" type="number" min="0" step="any" required placeholder="0"></label></div>
       <p class="form-help">La valeur actuelle est calculée en multipliant la quantité par le prix du marché. Le logo est récupéré automatiquement avec les données CoinGecko.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="crypto-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
@@ -302,7 +302,7 @@
       <input type="hidden" id="stock-edit-symbol">
       <input type="hidden" id="stock-edit-name">
       <p class="form-help">Choisissez l’action ou l’ETF dans la liste : le symbole, la place de cotation et la devise sont remplis automatiquement. Plusieurs places peuvent proposer le même nom, vérifiez la devise avant d’enregistrer. Le cours est récupéré chez StockAnalysis puis converti en euros.</p>
-      <div class="form-row"><label><span id="stock-invested-label">Investi / valeur détenue (€)</span><input id="stock-edit-invested" type="number" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue (facultatif)<input id="stock-edit-quantity" type="number" min="0" step="any" placeholder="Laisser vide pour une valeur manuelle"></label></div>
+      <div class="form-row"><label><span id="stock-invested-label">Investi / valeur détenue (€)</span><input id="stock-edit-invested" type="text" inputmode="decimal" autocomplete="off" min="0" step="0.01" required placeholder="0,00"></label><label>Quantité détenue (facultatif)<input id="stock-edit-quantity" type="number" min="0" step="any" placeholder="Laisser vide pour une valeur manuelle"></label></div>
       <div class="form-row"><label>Devise du cours<select id="stock-edit-currency" required></select></label><label>Place de cotation<input id="stock-edit-market" type="text" readonly placeholder="Choisie automatiquement"></label></div>
       <p class="form-help" id="stock-value-help">La valeur actuelle est calculée en euros à partir du dernier cours disponible et du taux de change de référence. Les cours peuvent être différés.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="stock-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
