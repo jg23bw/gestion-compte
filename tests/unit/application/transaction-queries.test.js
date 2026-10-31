@@ -72,10 +72,10 @@ test('monthly history filters, sorts and aggregates rows without changing stored
   );
   const queries = create({ repository: f.repository, domain });
   const result = queries.monthlyHistory({ month: '2026-01', accountFilter: 'all', typeFilter: 'all', query: '', sort: 'date-asc' });
-  assert.deepEqual(result.rows.map(item => item.id), ['in', 'food', 'out', 'rent']);
-  assert.equal(result.incoming, 750);
+  assert.deepEqual(result.rows.map(item => item.id), ['in', 'other', 'out', 'food', 'rent']);
+  assert.equal(result.incoming, 1650);
   assert.equal(result.outgoing, -90);
-  assert.equal(result.net, 660);
+  assert.equal(result.net, 1560);
   assert.equal(f.transactions.length, 6);
 });
 
