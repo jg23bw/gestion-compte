@@ -715,7 +715,7 @@ function moveTransaction(id,direction){
   if(index<0||targetIndex<0||targetIndex>=visibleOrder.length)return;
   prepareUndo();
   const [moved]=visibleOrder.splice(index,1);visibleOrder.splice(targetIndex,0,moved);
-  visibleOrder.forEach((transaction,position)=>{transaction.sortOrder=position+1;});
+  transactionCommands.reorder(accountId,visibleOrder.map(transaction=>transaction.id));
   if(sortSelect)sortSelect.value='manual';
   renderAll();
   showToast('Ordre manuel des opérations mis à jour.',true);
