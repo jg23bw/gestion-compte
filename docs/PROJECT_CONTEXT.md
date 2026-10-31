@@ -524,3 +524,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - La recherche CoinGecko passe maintenant par un port et un adaptateur dédiés, avec tests de limitation des résultats, HTTP 429 et annulation.
 - La gestion de l'AbortController et le rendu des résultats restent dans l'interface.
+
+
+## Extraction du service de jetons MCP (31 octobre 2026)
+
+- La communication avec la fonction Supabase `mcp-tokens` est déléguée à `McpTokenService`.
+- Les payloads historiques `list`, `revoke` et les autres actions sont transmis sans transformation afin de préserver le contrat de la fonction existante.
