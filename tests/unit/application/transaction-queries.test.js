@@ -60,3 +60,36 @@ test('balance after transaction returns zero when the account no longer exists',
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.balanceAfterTransaction({ id: 'gone', accountId: 'missing' }), 0);
 });
+
+
+test('monthly history filters, sorts and aggregates rows without changing stored transactions', () => {
+  const f = fixture();
+  f.accounts.push({ id: 'b', name: 'Compte B', opening: 0 });
+  f.transactions.push(
+    { id: 'rent', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 700, label: 'Loyer' },
+    { id: 'food', accountId: 'b', date: '2026-01-02', createdAt: 2, amount: -80, label: 'Courses' },
+    { id: 'other-month', accountId: 'a', date: '2026-02-01', createdAt: 4, amount: 1000, label: 'Hors période' }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const result = queries.monthlyHistory({ month: '2026-01', accountFilter: 'all', typeFilter: 'all', query: '', sort: 'date-asc' });
+  assert.deepEqual(result.rows.map(item => item.id), ['in', 'food', 'out', 'rent']);
+  assert.equal(result.incoming, 750);
+  assert.equal(result.outgoing, -90);
+  assert.equal(result.net, 660);
+  assert.equal(f.transactions.length, 6);
+});
+
+test('monthly history applies account, type and text filters with amount sorting', () => {
+  const f = fixture();
+  f.accounts[0].name = 'Compte courant';
+  f.transactions.push(
+    { id: 'salary', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 2000, label: 'Salaire' },
+    { id: 'bill', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -30, label: 'Facture énergie' }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const result = queries.monthlyHistory({ month: '2026-01', accountFilter: 'a', typeFilter: 'income', query: 'salaire', sort: 'amount-desc' });
+  assert.deepEqual(result.rows.map(item => item.id), ['salary']);
+  assert.equal(result.incoming, 2000);
+  assert.equal(result.outgoing, 0);
+  assert.equal(result.net, 2000);
+});
