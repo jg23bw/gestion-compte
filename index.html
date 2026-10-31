@@ -219,7 +219,7 @@
         <label><input type="checkbox" name="recurring-month-option" value="1"> Janvier</label><label><input type="checkbox" name="recurring-month-option" value="2"> Février</label><label><input type="checkbox" name="recurring-month-option" value="3"> Mars</label><label><input type="checkbox" name="recurring-month-option" value="4"> Avril</label><label><input type="checkbox" name="recurring-month-option" value="5"> Mai</label><label><input type="checkbox" name="recurring-month-option" value="6"> Juin</label><label><input type="checkbox" name="recurring-month-option" value="7"> Juillet</label><label><input type="checkbox" name="recurring-month-option" value="8"> Août</label><label><input type="checkbox" name="recurring-month-option" value="9"> Septembre</label><label><input type="checkbox" name="recurring-month-option" value="10"> Octobre</label><label><input type="checkbox" name="recurring-month-option" value="11"> Novembre</label><label><input type="checkbox" name="recurring-month-option" value="12"> Décembre</label>
       </div></fieldset>
       <div id="recurring-range-fields" class="form-row"><label>À partir du mois<input id="recurring-edit-start-month" type="month"></label><label>Jusqu’au mois<input id="recurring-edit-end-month" type="month"></label></div>
-      <div id="recurring-once-field"><label>Date de l’opération<input id="recurring-edit-once-date" type="date" lang="fr-FR"></label></div>
+      <div id="recurring-once-field"><label>Date de l’opération<input id="recurring-edit-once-date" type="text" inputmode="numeric" placeholder="JJ/MM/AAAA" autocomplete="off" pattern="\\d{2}\\/\\d{2}\\/\\d{4}"></label></div>
       <label class="recurring-enabled-label"><input id="recurring-edit-enabled" type="checkbox" checked> Récurrence active</label>
       <p class="form-help">Changer ou supprimer ce modèle ne modifie pas les opérations déjà générées. Un montant vide empêche la génération tant qu’il n’est pas renseigné.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="recurring-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
@@ -230,7 +230,7 @@
       <div class="modal-heading"><div><p class="eyebrow">HISTORIQUE DU COMPTE</p><h2 id="transaction-modal-title">Nouvelle opération</h2></div><button type="button" class="close-button" data-close="transaction-dialog" aria-label="Fermer">×</button></div>
       <input type="hidden" id="transaction-id">
       <label>Compte<select id="transaction-account" required></select></label>
-      <div class="form-row"><label>Date<input id="transaction-date" type="date" lang="fr-FR" required></label><label>Montant (€)<input id="transaction-amount" type="number" step="0.01" required placeholder="0,00"></label></div>
+      <div class="form-row"><label>Date<input id="transaction-date" type="text" inputmode="numeric" placeholder="JJ/MM/AAAA" autocomplete="off" pattern="\\d{2}\\/\\d{2}\\/\\d{4}" required></label><label>Montant (€)<input id="transaction-amount" type="number" step="0.01" required placeholder="0,00"></label></div>
       <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
       <p class="form-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="transaction-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
@@ -337,7 +337,7 @@
       <h2>Pointer l’opération</h2>
       <p class="form-help">Choisissez la date réelle de pointage. Les dates futures ne sont pas autorisées.</p>
       <label for="point-date-value">Date de pointage</label>
-      <input id="point-date-value" type="date" lang="fr-FR" required>
+      <input id="point-date-value" type="text" inputmode="numeric" placeholder="JJ/MM/AAAA" autocomplete="off" pattern="\\d{2}\\/\\d{2}\\/\\d{4}" required>
       <div class="modal-actions"><button type="button" class="secondary-button" id="point-date-cancel" onclick="document.getElementById('point-date-dialog').close('cancel')">Annuler</button><button type="submit" class="primary-button">Valider et pointer</button></div>
     </form>
   </dialog>
