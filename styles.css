@@ -1600,3 +1600,12 @@ input,select,textarea{accent-color:#536dff}
 .table-scroll::-webkit-scrollbar-thumb{background:rgba(115,130,155,.38);border-radius:99px}
 .table-scroll::-webkit-scrollbar-track{background:rgba(115,130,155,.08);border-radius:99px}
 #pro-view .table-scroll th:nth-child(8),#pro-view .table-scroll th:nth-child(9){white-space:normal;min-width:205px;max-width:235px}
+
+/* Tables are their own horizontal scroll surfaces; constrain the viewport, not the table. */
+.table-panel{min-width:0!important;max-width:100%;overflow:hidden}
+.table-panel>.table-scroll{display:block!important;position:relative;width:100%!important;min-width:0!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.table-panel>.table-scroll>table{width:max-content!important;min-width:100%;max-width:none!important;table-layout:auto}
+#pro-view .table-panel>.table-scroll>table{min-width:1120px!important;width:max-content!important}
+#transactions-view .table-panel>.table-scroll>table{min-width:980px}
+.table-panel,.table-panel *{scrollbar-width:thin}
+.modal input[type="text"][inputmode="numeric"]{font-variant-numeric:tabular-nums;letter-spacing:.03em}
