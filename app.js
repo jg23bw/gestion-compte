@@ -16,7 +16,7 @@ const coinCapFallbackProvider = CoinCapFallbackProvider.create({ endpoint: CRYPT
 const fearGreedProvider = AlternativeMeFearGreedProvider.create({ endpoint: 'https://api.alternative.me/fng/?limit=1&format=json' });
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const coinGeckoCatalogProvider = CoinGeckoCatalogProvider.create({ searchEndpoint: CRYPTO_SEARCH_ENDPOINT, resultLimit: 10 });
-const CRYPTO_REFRESH_MS=60000;
+const CRYPTO_REFRESH_MS=300000;
 const cryptoSearch={timer:null,controller:null,results:[]};
 // Les positions crypto sont des données personnelles : elles ne doivent pas être
 // codées en dur dans le dépôt public. Elles sont stockées dans Supabase
