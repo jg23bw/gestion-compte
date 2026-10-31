@@ -13,6 +13,7 @@ function fixture() {
   return {
     transactions, accounts, recurringTemplates: [],
     repository: {
+      findAll: () => transactions,
       findByAccount: id => transactions.filter(t => t.accountId === id),
       findAccount: id => accounts.find(a => a.id === id) || null,
       findRecurringTemplates: () => []
