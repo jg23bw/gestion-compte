@@ -314,3 +314,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les requêtes de gestion des jetons MCP sont centralisées dans `McpTokenService`, qui reçoit le service d'authentification, l'endpoint et la clé publique.
 - L'interface conserve la liste, les confirmations de révocation et les messages ; le service applicatif gère la session, les en-têtes et les erreurs HTTP.
+
+
+### Interface Opportunités
+
+- Le rendu du tableau de bord Opportunités, les graphiques MM200, l'historique, le Fear & Greed et les préférences de colonnes sont regroupés dans `src/adapters/ui/dom/opportunities-screen.js`.
+- Le module est chargé après les indicateurs techniques et avant le bootstrap historique. Cette première extraction conserve les points de compatibilité globaux ; l'injection explicite des dépendances UI reste une étape à terminer.
