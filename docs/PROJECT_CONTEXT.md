@@ -476,3 +476,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le contrat est inchangé : seuls les sous-types `pea`, `av` et `cto` sont enregistrés dans `user_metadata.accountTypes`; les comptes restent stockés avec leur `kind` historique (notamment `savings` pour PEA/AV/CTO).
 - Aucun changement de schéma Supabase, de format JSON ou de migration des données. Les métadonnées de nantissement restent gérées par leur cas d'usage existant.
 - Aucun test navigateur ni accès à un compte Supabase réel n'est revendiqué.
+
+
+## Extraction du crédit lombard (31 octobre 2026)
+
+- Ajout de `LombardCreditRules` pour normaliser les métadonnées du crédit (libellé, dette, taux facultatif et notes), avec les mêmes valeurs par défaut et limites qu'auparavant.
+- Ajout de `LombardCreditCommands` pour lire le champ `user_metadata.lombardCredit` et l'enregistrer via le repository de métadonnées Auth. La sauvegarde conserve strictement le même nom de champ et le même format JSON.
+- `app.js` délègue désormais la normalisation et l'enregistrement au cas d'usage ; il conserve la composition Supabase et les interactions de l'écran Lombard.
+- Aucun changement de schéma Supabase, aucune migration et aucune conversion des données déjà stockées.
+- Tests unitaires couvrant la normalisation, la lecture, la sauvegarde, l'absence d'utilisateur connecté et l'absence de repository.
