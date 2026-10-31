@@ -335,3 +335,14 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Aucun changement de schéma ni migration Supabase n'est requis.
 
 **Validation CI :** sur le commit `53b311490ab8e45374ca48010faa3ac19579b1c5`, les étapes `npm run check` et `npm test` sont toutes deux réussies (workflow GitHub Actions `41199953854`). Le parcours navigateur réel (connexion, inscription, déconnexion et session expirée) reste à vérifier ; aucune connexion au compte réel n'a été effectuée.
+
+
+## 13. Extraction des mutations des modèles récurrents (31 octobre 2026)
+
+- Ajout du port `RecurringTemplateRepositoryPort`, de l'adaptateur mémoire `StateRecurringTemplateRepository` et du cas d'usage `RecurringTemplateCommands`.
+- Les opérations de recherche par identifiant, création, mise à jour partielle et suppression des modèles passent désormais par ce service. `app.js` conserve la validation des champs du formulaire, les confirmations, l'annulation, la sauvegarde locale, le rendu et les notifications UI.
+- Les mises à jour rapides (activation/désactivation, montant, jour et libellé) utilisent également le cas d'usage ; le modèle de données et le format stocké ne changent pas.
+- Six tests unitaires couvrent la création, la mise à jour partielle, la suppression, les identifiants inconnus, le rejet d'un modèle sans identifiant et la validation du port.
+- Aucun changement de schéma Supabase ni migration des données n'est nécessaire. Le dépôt mémoire encapsule toujours l'état historique ; l'adaptateur Supabase des modèles récurrents reste utilisé pour la synchronisation cloud.
+
+**Validation CI :** commit `5f32cf57bc91c2b977d10442a9e6faa204059c0f`, workflow GitHub Actions `41200579430` : `npm run check` et `npm test` réussis. Le commit précédent contenant les tests avait échoué car le port n'était pas chargé dans l'environnement Node ; le chargement CommonJS a été corrigé et la CI finale est verte. Aucun test navigateur ni test sur Supabase réel n'est revendiqué.
