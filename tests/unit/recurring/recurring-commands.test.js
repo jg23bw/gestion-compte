@@ -117,3 +117,46 @@ test('prepareGeneration rejects invalid month without touching marker repository
   assert.equal(result.status, 'invalid-month');
   assert.deepEqual(calls, []);
 });
+
+
+test('commitGeneration snapshots before mutating transactions and marker', () => {
+  const commands = require('../../../src/application/recurring/recurring-commands.js');
+  const transactions = [{ id: 'existing' }];
+  const repository = createMarkerRepository();
+  const addition = { id: 'new' };
+  const events = [];
+  const result = commands.commitGeneration({
+    additions: [addition], transactions, month: '2026-04',
+    generatedMonthsRepository: {
+      add(month) { events.push(['marker', month, transactions.includes(addition)]); repository.add(month); }
+    },
+    beforeMutation() { events.push(['undo', transactions.includes(addition), repository.has('2026-04')]); }
+  });
+  assert.deepEqual(events, [['undo', false, false], ['marker', '2026-04', true]]);
+  assert.equal(result.status, 'committed');
+  assert.equal(result.count, 1);
+  assert.deepEqual(transactions, [{ id: 'existing' }, addition]);
+  assert.deepEqual(repository.values(), ['2026-04']);
+});
+
+test('commitGeneration does not mutate when there are no additions', () => {
+  const commands = require('../../../src/application/recurring/recurring-commands.js');
+  const transactions = [];
+  let snapshots = 0;
+  const result = commands.commitGeneration({
+    additions: [], transactions, month: '2026-04',
+    generatedMonthsRepository: createMarkerRepository(),
+    beforeMutation() { snapshots++; }
+  });
+  assert.deepEqual(result, { status: 'no-additions', count: 0 });
+  assert.deepEqual(transactions, []);
+  assert.equal(snapshots, 0);
+});
+
+test('commitGeneration validates its mutation dependencies', () => {
+  const commands = require('../../../src/application/recurring/recurring-commands.js');
+  assert.throws(() => commands.commitGeneration({
+    additions: [{ id: 'new' }], transactions: [], month: '2026-04',
+    generatedMonthsRepository: {}
+  }), /repository are required/);
+});
