@@ -55,6 +55,7 @@ const CRYPTO_MARKET_ENDPOINT='https://api.coingecko.com/api/v3/coins/markets';
 const CRYPTO_FALLBACK_ENDPOINT='https://api.coincap.io/v2/assets';
 const CRYPTO_HISTORY_ENDPOINT='https://api.coingecko.com/api/v3/coins/';
 const COINCAP_IDS={'bitcoin':'bitcoin','ethereum':'ethereum','tether':'tether','binancecoin':'binance-coin','solana':'solana','ripple':'xrp','usd-coin':'usd-coin','dogecoin':'dogecoin','cardano':'cardano','avalanche-2':'avalanche','chainlink':'chainlink','polkadot':'polkadot','tron':'tron','litecoin':'litecoin','bitcoin-cash':'bitcoin-cash','stellar':'stellar','shiba-inu':'shiba-inu','near':'near-protocol','uniswap':'uniswap','render-token':'render-token','aave':'aave','ondo-finance':'ondo','bittensor':'bittensor','sui':'sui','aptos':'aptos','toncoin':'toncoin','cosmos':'cosmos','hedera-hashgraph':'hedera-hashgraph','internet-computer':'internet-computer','ethereum-classic':'ethereum-classic','monero':'monero','kaspa':'kaspa','pepe':'pepe','arbitrum':'arbitrum','optimism':'optimism','maker':'maker','the-graph':'the-graph'};
+const coinCapFallbackProvider = CoinCapFallbackProvider.create({ endpoint: CRYPTO_FALLBACK_ENDPOINT, coinIds: COINCAP_IDS });
 const CRYPTO_SEARCH_ENDPOINT='https://api.coingecko.com/api/v3/search';
 const CRYPTO_REFRESH_MS=60000;
 const cryptoSearch={timer:null,controller:null,results:[]};
@@ -901,23 +902,10 @@ async function loadCryptoPrices(){
     }catch(error){sourceError=error.message||'CoinGecko indisponible';}
     const missingIds=ids.filter(id=>!Number.isFinite(Number(values[id]))||Number(values[id])<=0);
     if(missingIds.length){
-      const mapped=missingIds.map(id=>COINCAP_IDS[id]).filter(Boolean);
-      if(mapped.length){
-        try{
-          const response=await fetch(CRYPTO_FALLBACK_ENDPOINT+'?ids='+encodeURIComponent(mapped.join(',')),{headers:{Accept:'application/json'},cache:'no-store'});
-          if(response.ok){
-            const payload=await response.json();
-            const idByCoincap=Object.fromEntries(Object.entries(COINCAP_IDS).map(([coingecko,coincap])=>[coincap,coingecko]));
-            const eurPerUsd=Number(stockFx.rates?.USD);
-            for(const asset of Array.isArray(payload?.data)?payload.data:[]){
-              const id=idByCoincap[asset.id],usd=Number(asset.priceUsd);
-              if(id&&Number.isFinite(usd)&&usd>0&&Number.isFinite(eurPerUsd)&&eurPerUsd>0)values[id]=usd*eurPerUsd;
-            }
-          }else{
-            console.warn('Fournisseur crypto secondaire indisponible (HTTP '+response.status+')');
-          }
-        }catch(fallbackError){console.warn('Fournisseur crypto secondaire inaccessible',fallbackError);}
-      }
+      try{
+        const fallbackValues=await coinCapFallbackProvider.fetchPrices(missingIds,stockFx.rates?.USD);
+        Object.assign(values,fallbackValues);
+      }catch(fallbackError){console.warn('Fournisseur crypto secondaire inaccessible',fallbackError);}
     }
     if(!Object.keys(values).length)throw new Error(/load failed|failed to fetch|networkerror/i.test(sourceError)?'connexion aux fournisseurs de prix impossible. Vérifiez le réseau puis réessayez.':sourceError||'aucun prix reçu');
     const unresolved=ids.filter(id=>!Number.isFinite(Number(values[id]))||Number(values[id])<=0);
