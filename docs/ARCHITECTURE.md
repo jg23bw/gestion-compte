@@ -257,3 +257,10 @@ La construction des opérations récurrentes d'un mois est isolée des événeme
 - injection possible de l'identifiant et de l'horloge pour des tests déterministes.
 
 Le cas d'usage `RecurringCommands` délègue au domaine et l'interface l'utilise pour construire les ajouts. L'interface conserve volontairement l'annulation, la mutation de l'état, les marqueurs localStorage, le rendu et la synchronisation cloud : ces effets ne sont pas encore déplacés vers des ports/adaptateurs. Le verrouillage mensuel et la détection de génération déjà effectuée restent donc orchestrés dans `app.js`.
+
+
+### Étape 5 — marqueurs de génération
+
+Le stockage des mois générés est maintenant derrière le port `GeneratedMonthsRepositoryPort` et son adaptateur `LocalStorageGeneratedMonthsRepository`. La lecture tolère les données absentes, mal formées et les erreurs de lecture/écriture, comme auparavant. L'adaptateur expose aussi une sauvegarde brute/restauration exacte pour préserver le comportement d'annulation, y compris lorsque la clé n'existait pas avant l'action.
+
+La règle métier reste inchangée : les opérations récurrentes présentes dans l'état sont la source de vérité ; le marqueur local est un verrou secondaire et est retiré lorsqu'aucune opération récurrente du mois n'existe. L'interface garde l'orchestration de l'annulation, du rendu et de la synchronisation.
