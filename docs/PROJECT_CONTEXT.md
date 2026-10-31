@@ -438,3 +438,13 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - `fillAccountSelects` dans `app.js` consomme ces groupes et conserve la responsabilité du DOM, des options HTML et de la préservation des sélections valides.
 - Les catégories restent cohérentes entre les filtres Opérations, Professionnel, Historique, Récurrences et portefeuille Actions ; les tests vérifient les groupes et l’absence de mutation de la liste source.
 - Aucun changement de données, de stockage ou de schéma Supabase. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
+
+
+## Extraction de l'enregistrement des comptes (31 octobre 2026)
+
+- Ajout du port `AccountRepositoryPort`, de l'adaptateur `StateAccountRepository` et du cas d'usage `AccountCommands.save`.
+- La création et la modification des comptes passent désormais par le cas d'usage applicatif ; `app.js` conserve la validation orientée utilisateur, la gestion de l'annulation, les nantissements, le rendu et les indicateurs de synchronisation.
+- Les règles de normalisation du nom, du type stocké (les comptes PEA/AV/CTO restent stockés avec `kind: savings`), de la banque et des valeurs par défaut sont testées indépendamment.
+- Les paramètres professionnels existants (TVA, cotisations et solde net initial) sont préservés lors d'une modification.
+- La suppression en cascade n'est pas encore extraite : elle reste dans `app.js` afin de traiter séparément et sans régression les suppressions cloud, l'undo et les données liées.
+- Aucun changement du schéma Supabase ou du format de persistance. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
