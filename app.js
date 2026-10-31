@@ -259,6 +259,9 @@ function isAccountType(value){
   return ['bank','savings','pro','pea','av','cto'].includes(String(value||''));
 }
 const accountTypeCommands = AccountTypeCommands.create({ rules: AccountTypeRules });
+const accountCloudMapper = SupabaseAccountMapper.create({
+  bankKeyForAccount, accountShort, bankKeyFromId, isBankKey, accountTypeCommands
+});
 function normalizeAccountTypes(value){return accountTypeCommands.normalize(value);}
 function normalizeAccountPledges(value){return accountPledgeCommands.normalize(value);}
 function normalizeStockCurrency(value){return stockHoldingMetadataCommands.normalizeCurrency(value);}
@@ -285,24 +288,15 @@ async function saveStockHoldingsToAuth(holdings){
     holdings
   });
 }
-function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:'bank:'+bankKeyForAccount(a),kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
-function fromCloudAccount(a,accountTypes={}){
-  const rawShort=String(a.short||'');
-  const token=/^bank:([a-z0-9-]+)$/i.exec(rawShort);
-  const bank=token&&isBankKey(token[1])?token[1].toLowerCase():bankKeyFromId(a.id);
-  const kind=a.kind||'bank';
-  const accountType=accountTypeCommands.typeFor(kind,accountTypes?.[a.id]);
-  return {id:a.id,name:a.name,short:accountShort(a.name),bank,kind,accountType,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};
-}
+function toCloudAccount(account,userId){return accountCloudMapper.toCloud(account,userId);}
+function fromCloudAccount(account,accountTypes={}){return accountCloudMapper.fromCloud(account,accountTypes);}
 const transactionCloudMapper = SupabaseTransactionMapper.create();
 function toCloudTransaction(t,userId){return transactionCloudMapper.toCloud(t,userId);}
 function fromCloudTransaction(t){return transactionCloudMapper.fromCloud(t);}
-function toCloudTemplate(t,userId){return {id:t.id,user_id:userId,account_id:t.accountId,day_of_month:Number(t.day)||1,frequency:t.frequency,months:t.months||[],start_month:t.startMonth||null,end_month:t.endMonth||null,once_date:t.date||null,label:t.label,amount:t.amount===''||t.amount===undefined?null:t.amount,enabled:t.enabled!==false};}
-function fromCloudTemplate(t){return {id:t.id,accountId:t.account_id,day:Number(t.day_of_month)||1,frequency:t.frequency,months:t.months||[],startMonth:t.start_month||undefined,endMonth:t.end_month||undefined,date:t.once_date||undefined,label:t.label,amount:t.amount===null?null:Number(t.amount),enabled:t.enabled};}
-function toCloudCryptoHolding(h,userId){return {id:h.id,user_id:userId,symbol:h.symbol,name:h.name||h.symbol,coingecko_id:h.coingeckoId,status:'Détenu',invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sort_order:Number(h.sortOrder)||0,updated_at:new Date().toISOString()};}
-function fromCloudCryptoHolding(h){
-  return {id:h.id,symbol:h.symbol,name:h.name||h.symbol,coingeckoId:h.coingecko_id,invested:Number(h.invested)||0,quantity:Number(h.quantity)||0,sortOrder:Number(h.sort_order)||0};
-}
+function toCloudTemplate(template,userId){return SupabaseRecurringTemplateMapper.toCloud(template,userId);}
+function fromCloudTemplate(template){return SupabaseRecurringTemplateMapper.fromCloud(template);}
+function toCloudCryptoHolding(holding,userId){return SupabaseCryptoHoldingMapper.toCloud(holding,userId);}
+function fromCloudCryptoHolding(holding){return SupabaseCryptoHoldingMapper.fromCloud(holding);}
 function isMissingCryptoTable(error){
   const code=error?.code||'',message=error?.message||'';
   return code==='42P01'||code==='PGRST205'||/crypto_holdings/i.test(message)&&/does not exist|could not find|schema cache/i.test(message);
