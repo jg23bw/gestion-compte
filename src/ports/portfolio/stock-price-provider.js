@@ -1,7 +1,7 @@
 (function exposeStockPriceProviderPort(root) {
   const api = Object.freeze({
     assert(provider) {
-      if (!provider || (typeof provider.getPrice !== 'function' || typeof provider.invoke !== 'function') || typeof provider.invoke !== 'function') {
+      if (!provider || typeof provider.getPrice !== 'function' || typeof provider.invoke !== 'function') {
         throw new TypeError('stock market data provider port is required');
       }
       return provider;
