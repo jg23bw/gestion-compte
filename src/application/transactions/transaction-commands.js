@@ -39,6 +39,20 @@
         };
         repository.save(transaction);
         return transaction;
+      },
+      reorder(accountId, orderedIds) {
+        const byId = new Map(repository.findAll()
+          .filter(transaction => transaction.accountId === accountId)
+          .map(transaction => [transaction.id, transaction]));
+        const updated = [];
+        orderedIds.forEach((id, index) => {
+          const previous = byId.get(id);
+          if (!previous) return;
+          const transaction = { ...previous, sortOrder: index + 1 };
+          repository.save(transaction);
+          updated.push(transaction);
+        });
+        return updated;
       }
     });
   }
