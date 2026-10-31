@@ -548,3 +548,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le calcul du snapshot de patrimoine est isolé dans `WealthSnapshotQueries`, avec tests sur valorisation cotée, valorisation manuelle et repli sur le montant investi.
 - Les règles de présentation restent dans l'interface ; les chiffres sont calculés à partir des mêmes sources applicatives qu'auparavant.
+
+
+## Extraction de l'écran Crypto (31 octobre 2026)
+
+- Le bloc UI Crypto (environ 252 lignes) a été déplacé dans `src/adapters/ui/dom/crypto-screen.js`.
+- Le fichier `app.js` est réduit à environ 1 690 lignes. Les contrats de données et le comportement de l'écran sont conservés ; aucun test navigateur n'a encore été effectué.
