@@ -332,3 +332,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - `WealthSnapshotQueries` calcule les agrégats patrimoine brut/net, dette Lombard, investissements et liquidités à partir de dépendances applicatives injectées.
 - Le rendu des comparaisons et des vues patrimoniales reste dans l'adaptateur DOM.
+
+
+### Interface Crypto
+
+- Les fonctions de recherche CoinGecko, d'édition, de suppression, de cache, de chargement des prix et de rendu du portefeuille crypto sont regroupées dans `src/adapters/ui/dom/crypto-screen.js`.
+- Les ports et adaptateurs de fournisseurs ainsi que les dépôts restent séparés ; le module d'écran garde encore des dépendances de composition historiques.
