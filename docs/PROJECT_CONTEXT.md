@@ -572,3 +572,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Les fonctions de dialogue et d'édition (environ 113 lignes) sont déplacées dans `src/adapters/ui/dom/account-editors.js`.
 - `app.js` est réduit à environ 1 150 lignes.
+
+
+## Extraction de la session cloud (31 octobre 2026)
+
+- Les fonctions d'orchestration `syncCloudState` et `loadCloudState` (environ 153 lignes) sont déplacées dans `src/bootstrap/cloud-session.js`.
+- `app.js` est désormais réduit à moins de 1 000 lignes. Les bindings historiques restent provisoirement nécessaires à la composition et seront remplacés par injection explicite dans la phase finale.
