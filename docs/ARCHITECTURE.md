@@ -176,3 +176,19 @@ Les tests utilisant des données financières utilisent uniquement des fixtures 
 Cette première étape n'est pas la refonte hexagonale complète. Les ports, adaptateurs de persistance, cas d'usage, tests de contrat Supabase/localStorage et tests navigateur restent à implémenter. Les autres domaines (récurrences complètes, portefeuille, Lombard, FIRE, authentification et synchronisation) ne sont pas encore extraits ni intégralement couverts.
 
 La suite doit poursuivre domaine par domaine, sans déclarer la migration terminée tant que les critères d'acceptation de ce document ne sont pas atteints.
+
+
+### Étape 2 — premier flux applicatif hexagonal
+
+**Implémentée et validée par CI.**
+
+- Définition du port `TransactionRepository`.
+- Adaptateur `StateTransactionRepository` qui encapsule l'état historique sans modifier le format des données.
+- Cas d'usage de lecture `TransactionQueries` pour lister les opérations, calculer un solde à date et calculer le solde professionnel ajusté.
+- Injection du dépôt et du domaine dans le cas d'usage ; l'interface historique passe désormais par ce service pour ces lectures.
+- L'adaptateur reçoit un fournisseur d'état, afin de rester correct lorsque l'application remplace son objet d'état après chargement/synchronisation.
+- Ajout de tests du cas d'usage et vérification de syntaxe de chaque module de cette tranche.
+
+**CI vérifiée sur le commit `6b9c3e4` :** contrôle syntaxique réussi, 30 tests passés, 0 échec.
+
+Cette tranche est une première vertical slice hexagonale, pas une migration complète : les écritures d'opérations, la persistance Supabase/localStorage et les autres domaines restent à isoler.
