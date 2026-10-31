@@ -5,6 +5,12 @@
 (function exposeAccountTypeRules(root) {
   'use strict';
   const SUBTYPES = Object.freeze(['pea', 'av', 'cto']);
+  const ACCOUNT_TYPES = Object.freeze(['bank', 'savings', 'pro', 'pea', 'av', 'cto']);
+  function isAccountType(value) { return ACCOUNT_TYPES.includes(String(value || '')); }
+  function effectiveType(account) {
+    const type = account?.accountType || account?.kind || 'bank';
+    return isAccountType(type) ? type : 'bank';
+  }
   function isSubtype(value) {
     return SUBTYPES.includes(String(value || ''));
   }
@@ -38,7 +44,7 @@
   function hasOverrides(accounts = []) {
     return Object.keys(overrides(accounts)).length > 0;
   }
-  const api = Object.freeze({ SUBTYPES, isSubtype, normalize, overrides, typeFor, applyOverrides, hasOverrides });
+  const api = Object.freeze({ SUBTYPES, ACCOUNT_TYPES, isAccountType, effectiveType, isSubtype, normalize, overrides, typeFor, applyOverrides, hasOverrides });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.AccountTypeRules = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
