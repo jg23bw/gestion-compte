@@ -271,3 +271,10 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 - Les règles pures de normalisation du crédit lombard sont isolées dans `LombardCreditRules` ; le format historique (`label`, `amount`, `rate`, `notes`) reste inchangé.
 - `LombardCreditCommands` centralise la lecture depuis les métadonnées Auth et l'enregistrement via le port de métadonnées injecté. La vérification de l'utilisateur connecté et la normalisation sont couvertes par des tests unitaires.
 - `app.js` conserve la composition du repository Supabase Auth et l'interface ; aucune migration SQL ni transformation des données existantes n'est requise.
+
+
+### Positions actions et ETF
+
+- `StockHoldingRules` porte la normalisation pure des positions et des devises, avec les catalogues de devises/marchés et la date courante injectés par la composition.
+- `StockHoldingMetadataCommands` centralise la lecture de `user_metadata.stockHoldings` et la sauvegarde via le repository de métadonnées Auth.
+- Le format JSON existant, y compris les positions manuelles Suravenir, reste inchangé ; les cours, conversions FX et interactions d'écran restent dans leurs composants respectifs.
