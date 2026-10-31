@@ -155,6 +155,7 @@ const transactionQueries = TransactionQueries.create({repository: StateTransacti
 const transactionCommands = TransactionCommands.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
 const recurringTemplateCommands = RecurringTemplateCommands.create({repository: StateRecurringTemplateRepository.create(() => state)});
 const stockHoldingCommands = StockHoldingCommands.create({repository: StateStockHoldingRepository.create(() => state)});
+const accountCommands = AccountCommands.create({repository: StateAccountRepository.create(() => state), isBankKey, accountShort});
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
@@ -2731,25 +2732,20 @@ $('account-form').addEventListener('submit',event=>{
   event.preventDefault();
   const id=$('edit-account-id').value;
   const existing=id?accountById(id):null;
-  const accountId=existing?.id||crypto.randomUUID();
-  const name=$('edit-account-name').value.trim();
   const accountType=$('edit-account-kind').value;
-  const kind=['pea','av','cto'].includes(accountType)?'savings':accountType;
   const bank=$('edit-account-bank').value;
   const opening=parseFrenchNumber($('edit-account-opening').value)||0;
+  const name=$('edit-account-name').value.trim();
   if(!name){showToast('Renseignez le nom du compte.');return;}
   if(!['bank','savings','pro','pea','av','cto'].includes(accountType)){showToast('Choisissez un type de compte valide.');return;}
   if(!isBankKey(bank)){showToast('Choisissez une banque dans la liste.');return;}
-  if(existing){
-    prepareUndo();
-    existing.name=name;
-    existing.short=accountShort(name);
-    existing.bank=bank;
-    existing.kind=kind;
-    existing.accountType=accountType;
-    existing.opening=opening;
-  }else{
-    state.accounts.push({id:accountId,name,short:accountShort(name),bank,kind,accountType,opening,vatRate:20,socialRate:45,netOpening:0});
+  if(existing)prepareUndo();
+  const accountId=existing?.id||crypto.randomUUID();
+  try{
+    accountCommands.save({id:accountId,name,accountType,bank,opening,existing});
+  }catch(error){
+    showToast('Compte non enregistré : '+(error.message||'vérifiez les informations.'));
+    return;
   }
   const pledged=$('edit-account-pledged').checked;
   const pledgeNote=$('edit-account-pledge-note').value.trim().slice(0,160);
