@@ -29,6 +29,10 @@
     return year + '-' + String(monthNumber).padStart(2, '0') + '-' + String(day).padStart(2, '0');
   }
 
+  function isProfessionalProvisionLabel(label) {
+    return /^(?:TVA|Charges sociales|Marge)(?:\s|$)/i.test(String(label || '').trim());
+  }
+
   function buildTransactionsForMonth(templates, transactions, month, options = {}) {
     if (!/^\d{4}-\d{2}$/.test(month)) return [];
     const existingKeys = new Set((transactions || []).map(item => item.recurringKey).filter(Boolean));
@@ -47,7 +51,7 @@
       if (existingKeys.has(recurringKey)) return;
       additions.push({
         id: createId(), accountId: template.accountId, date,
-        amount: Number(template.amount), label: template.label,
+        amount: isProfessionalProvisionLabel(template.label) ? 0 : Number(template.amount), label: template.label,
         createdAt: now() + additions.length, recurringKey, recurringTemplateId: template.id
       });
       existingKeys.add(recurringKey);
@@ -55,5 +59,5 @@
     return additions;
   }
 
-  return Object.freeze({ dueDateForTemplate, buildTransactionsForMonth });
+  return Object.freeze({ dueDateForTemplate, buildTransactionsForMonth, isProfessionalProvisionLabel });
 });

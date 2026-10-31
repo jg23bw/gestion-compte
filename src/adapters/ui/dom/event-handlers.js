@@ -293,9 +293,21 @@ function initializeDomEventHandlers() {
     const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
     if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
     const previous=id?transactionCommands.findById(id):null;
+    // TVA, Charges sociales et Marge sont des provisions : leur valeur est portée
+    // par le modèle de récurrence, jamais par le montant bancaire réel.
+    const previousAccount=previous?accountById(previous.accountId):null;
+    const provisionKind=previous&&previousAccount&&effectiveAccountType(previousAccount)==='pro'
+      ?proRecurringKind(previous):null;
+    const provisionTemplate=provisionKind&&previous.recurringTemplateId
+      ?recurringTemplateCommands.findById(previous.recurringTemplateId):null;
+    if(provisionKind&&!provisionTemplate){
+      showToast('Modèle de récurrence introuvable : le montant n’a pas été modifié.',false);
+      return;
+    }
     // Capture l'état avant toute création ou modification pour rendre « Annuler » opérationnel.
     prepareUndo();
-    transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount,label,createdAt:Date.now()});
+    if(provisionTemplate)recurringTemplateCommands.update(provisionTemplate.id,{amount});
+    transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount:provisionKind?0:amount,label,createdAt:Date.now()});
     $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.',true);
   });
   $('lombard-form').addEventListener('submit',async event=>{
