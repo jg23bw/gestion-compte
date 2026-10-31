@@ -145,6 +145,8 @@ const stockFx={rates:{EUR:1},updatedAt:0,error:'',loading:false};
 const $ = id => document.getElementById(id);
 const euro = value => new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(Number(value)||0);
 const dateFormat = value => { if(!value)return '—'; const d=new Date(value+'T12:00:00'); return Number.isNaN(d.getTime())?value:new Intl.DateTimeFormat('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d); };
+const parseFrenchNumber = value => {if(value===null||value===undefined)return NaN;const raw=String(value).trim().replace(/[\s\u00a0\u202f']/g,'');if(!raw)return NaN;const normalized=raw.includes(',')?raw.replace(/\./g,'').replace(',','.'):raw;return /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(normalized)?Number(normalized):NaN;};
+const formatFrenchNumberInput = value => {if(value===null||value===undefined||value==='')return '';const n=Number(value);return Number.isFinite(n)?String(n).replace('.',','):String(value);};
 const dateInputFormat = value => {const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?m[3]+'/'+m[2]+'/'+m[1]:String(value||'');};
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\\d{1,2})[\\/. -](\\d{1,2})[\\/. -](\\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
@@ -897,7 +899,7 @@ function renderRecurring(){
   $('recurring-rows').innerHTML=templates.length?templates.map(t=>{
     const a=accountById(t.accountId)||{name:'Compte inconnu'};
     const value=t.amount===null||t.amount===undefined?'':String(t.amount);
-    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+escapeHtml(t.id)+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td><div class="recurring-account-cell">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td><div>'+escapeHtml(recurringFrequencyLabel(t))+'</div>'+(t.frequency==='once'?'':'<label class="recurring-day-label">Jour <input class="recurring-day" type="number" min="1" max="31" step="1" data-recurring-day="'+escapeHtml(t.id)+'" value="'+Number(t.day||1)+'" aria-label="Jour du mois"></label>')+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+escapeHtml(t.id)+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="number" step="0.01" data-recurring-amount="'+escapeHtml(t.id)+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td><td class="recurring-actions"><button type="button" class="secondary-button" data-edit-recurring="'+escapeHtml(t.id)+'">Modifier</button><button type="button" class="secondary-button danger-button" data-delete-recurring="'+escapeHtml(t.id)+'">Supprimer</button></td></tr>';
+    return '<tr><td><input class="recurring-enabled" type="checkbox" data-recurring-enabled="'+escapeHtml(t.id)+'" '+(t.enabled?'checked':'')+' aria-label="Activer '+escapeHtml(t.label)+'"></td><td><div class="recurring-account-cell">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td><td><div>'+escapeHtml(recurringFrequencyLabel(t))+'</div>'+(t.frequency==='once'?'':'<label class="recurring-day-label">Jour <input class="recurring-day" type="number" min="1" max="31" step="1" data-recurring-day="'+escapeHtml(t.id)+'" value="'+Number(t.day||1)+'" aria-label="Jour du mois"></label>')+'</td><td><input class="recurring-label" type="text" data-recurring-label="'+escapeHtml(t.id)+'" value="'+escapeHtml(t.label)+'" aria-label="Libellé"></td><td><input class="recurring-amount" type="text" inputmode="decimal" autocomplete="off" data-recurring-amount="'+escapeHtml(t.id)+'" value="'+escapeHtml(value)+'" placeholder="À renseigner" aria-label="Montant"></td><td class="recurring-actions"><button type="button" class="secondary-button" data-edit-recurring="'+escapeHtml(t.id)+'">Modifier</button><button type="button" class="secondary-button danger-button" data-delete-recurring="'+escapeHtml(t.id)+'">Supprimer</button></td></tr>';
   }).join(''):'<tr><td colspan="6" class="recurring-empty">Aucune récurrence pour le moment. Cliquez sur « Ajouter une récurrence » pour commencer.</td></tr>';
   const blank=templates.filter(t=>t.enabled&&(t.amount===null||t.amount===undefined||t.amount==='')).length;
   const month=nextMonthValue(),alreadyGenerated=monthAlreadyGenerated(month),button=$('recurring-add-month');
@@ -1906,7 +1908,7 @@ function renderWealthViews(){
 
  const taxRegime=$('fire-tax-regime'),customLabel=$('fire-custom-tax-label');
  if(taxRegime&&customLabel)customLabel.hidden=taxRegime.value!=='custom';
- const btc=Number($('lombard-btc-price')?.value)||0,fx=Number($('lombard-fx')?.value)||1,principal=Number($('lombard-principal')?.value)||0,repaid=Number($('lombard-repaid')?.value)||0;
+ const btc=parseFrenchNumber($('lombard-btc-price')?.value)||0,fx=parseFrenchNumber($('lombard-fx')?.value)||1,principal=parseFrenchNumber($('lombard-principal')?.value)||0,repaid=parseFrenchNumber($('lombard-repaid')?.value)||0;
  const remaining=Math.max(0,principal-repaid),loanBtc=60000/(70100/fx),personalBtc=69800/(85100/fx),loanValue=loanBtc*btc/fx,personalValue=personalBtc*btc/fx;
  const loanGain=loanValue-60000,personalGain=personalValue-69800;
  $('lombard-remaining').textContent=euro(remaining);$('lombard-loan-btc').textContent=loanBtc.toFixed(6)+' BTC';$('lombard-loan-value').textContent=euro(loanValue);$('lombard-personal-value').textContent=euro(personalValue);
@@ -2600,7 +2602,7 @@ $('recurring-rows').addEventListener('change',event=>{
   const enabled=event.target.closest('[data-recurring-enabled]');
   if(enabled){const t=state.recurringTemplates.find(x=>x.id===enabled.dataset.recurringEnabled);if(t){prepareUndo();t.enabled=enabled.checked;saveState();renderRecurring();showToast('Récurrence mise à jour.',true);}return;}
   const amount=event.target.closest('[data-recurring-amount]');
-  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){prepareUndo();t.amount=amount.value.trim()===''?null:Number(amount.value);saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
+  if(amount){const t=state.recurringTemplates.find(x=>x.id===amount.dataset.recurringAmount);if(t){prepareUndo();t.amount=amount.value.trim()===''?null:parseFrenchNumber(amount.value);saveState();renderRecurring();showToast('Montant de la récurrence mis à jour.',true);}return;}
   const day=event.target.closest('[data-recurring-day]');
   if(day){const t=state.recurringTemplates.find(x=>x.id===day.dataset.recurringDay);if(t){prepareUndo();t.day=Math.min(31,Math.max(1,Number(day.value)||1));saveState();renderRecurring();showToast('Jour de la récurrence mis à jour.',true);}return;}
   const label=event.target.closest('[data-recurring-label]');
@@ -2614,7 +2616,7 @@ $('recurring-form').addEventListener('submit',event=>{
   const accountId=$('recurring-edit-account').value;
   const frequency=$('recurring-edit-frequency').value;
   const amountText=$('recurring-edit-amount').value.trim();
-  const amount=amountText===''?null:Number(amountText);
+  const amount=amountText===''?null:parseFrenchNumber(amountText);
   const day=Math.min(31,Math.max(1,Number($('recurring-edit-day').value)||1));
   const date=dateInputParse($('recurring-edit-once-date').value);
   const months=[...document.querySelectorAll('[name="recurring-month-option"]:checked')].map(input=>Number(input.value)).sort((a,b)=>a-b);
@@ -2747,7 +2749,7 @@ $('crypto-form').addEventListener('submit',event=>{
   const symbol=$('crypto-edit-symbol').value.trim().toUpperCase();
   const name=$('crypto-edit-name').value.trim()||symbol;
   const coingeckoId=$('crypto-edit-coingecko').value.trim().toLowerCase();
-  const invested=Number($('crypto-edit-invested').value);
+  const invested=parseFrenchNumber($('crypto-edit-invested').value);
   const quantity=Number($('crypto-edit-quantity').value);
   if(!symbol||!coingeckoId){
     showToast('Sélectionnez une crypto dans la liste de recherche.');
@@ -2828,7 +2830,7 @@ $('stock-form').addEventListener('submit',event=>{
   const name=$('stock-edit-name').value.trim()||symbol;
   const market=$('stock-edit-market').value.trim()||stockMarketInfo(priceId).label;
   const currency=normalizeStockCurrency($('stock-edit-currency').value);
-  const invested=Number($('stock-edit-invested').value);
+  const invested=parseFrenchNumber($('stock-edit-invested').value);
   const specialManual=isManualValueHolding({isin,priceId});const quantityText=$('stock-edit-quantity').value.trim();const manualValue=specialManual||quantityText==='';const quantity=manualValue?(specialManual?1:0):Number(quantityText);if(!accountById(accountId)||!isInvestmentAccount(accountById(accountId))){showToast('Choisissez un compte de type PEA, CTO ou assurance vie.');return;}if(!priceId||!symbol){showToast('Sélectionnez l’instrument dans la liste de recherche.');return;}if(!Number.isFinite(invested)||invested<0||(!manualValue&&(!Number.isFinite(quantity)||quantity<0))){showToast('Vérifiez le montant investi et la quantité détenue.');return;}
   if(isin&&!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(isin)){showToast('ISIN invalide : vérifiez les 12 caractères.',false);return;}
    const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,priceId,isin,symbol,name,market,currency,invested,quantity,manualValue,manualValueDate:manualValue?(existing?.manualValue&&Number(existing.invested)===invested?(existing.manualValueDate||today()):today()):undefined,sortOrder:existing?.sortOrder??Math.max(0,...(state.stockHoldings||[]).map(h=>Number(h.sortOrder)||0))+1};
@@ -2844,7 +2846,7 @@ $('stock-form').addEventListener('submit',event=>{
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>$(button.dataset.close).close()));
 $('transaction-form').addEventListener('submit',event=>{
   event.preventDefault();
-  const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=Number($('transaction-amount').value),label=$('transaction-label').value.trim();
+  const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
   if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
   const previous=id?state.transactions.find(t=>t.id===id):null;
   const oldOrder=previous?.sortOrder;const record={...(previous||{}),id:id||crypto.randomUUID(),accountId,date,amount,label,isPaid:previous?.isPaid===true,sortOrder:previous&&previous.accountId===accountId&&Number.isFinite(Number(oldOrder))&&oldOrder!==null?Number(oldOrder):Math.max(0,...state.transactions.filter(t=>t.accountId===accountId&&t.id!==id).map(t=>Number(t.sortOrder)||0))+1,createdAt:previous?.createdAt||Date.now()};
@@ -2855,9 +2857,9 @@ $('transaction-form').addEventListener('submit',event=>{
 });
 $('lombard-form').addEventListener('submit',async event=>{
   event.preventDefault();
-  const amount=Number($('lombard-edit-amount').value);
+  const amount=parseFrenchNumber($('lombard-edit-amount').value);
   const rateValue=$('lombard-edit-rate').value.trim();
-  const rate=rateValue===''?null:Number(rateValue);
+  const rate=rateValue===''?null:parseFrenchNumber(rateValue);
   if(!Number.isFinite(amount)||amount<0){showToast('Renseignez une dette lombard valide (zéro ou plus).');return;}
   if(rate!==null&&(!Number.isFinite(rate)||rate<0||rate>100)){showToast('Le taux annuel doit être compris entre 0 et 100 %.');return;}
   const credit={
@@ -2893,7 +2895,7 @@ $('account-form').addEventListener('submit',event=>{
   const accountType=$('edit-account-kind').value;
   const kind=['pea','av','cto'].includes(accountType)?'savings':accountType;
   const bank=$('edit-account-bank').value;
-  const opening=Number($('edit-account-opening').value)||0;
+  const opening=parseFrenchNumber($('edit-account-opening').value)||0;
   if(!name){showToast('Renseignez le nom du compte.');return;}
   if(!['bank','savings','pro','pea','av','cto'].includes(accountType)){showToast('Choisissez un type de compte valide.');return;}
   if(!isBankKey(bank)){showToast('Choisissez une banque dans la liste.');return;}
