@@ -284,3 +284,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Les conversions des lignes comptes, modèles récurrents et positions crypto sont isolées dans `SupabaseAccountMapper`, `SupabaseRecurringTemplateMapper` et `SupabaseCryptoHoldingMapper`.
 - Le mapper de comptes reçoit les règles d'identification de banque et de type de compte depuis la composition applicative ; les noms de colonnes et conversions restent compatibles avec le schéma existant.
+
+
+### Compléments — opérations et classification des comptes
+
+- La normalisation de l'ordre initial des opérations est désormais un cas d'usage de `TransactionCommands`, exécuté via le repository ; l'interface conserve uniquement le déclenchement au chargement.
+- La classification et le type effectif d'un compte sont centralisés dans `AccountTypeRules`, sans dépendance UI.
