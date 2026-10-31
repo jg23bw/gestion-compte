@@ -320,3 +320,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 
 - Le rendu du tableau de bord Opportunités, les graphiques MM200, l'historique, le Fear & Greed et les préférences de colonnes sont regroupés dans `src/adapters/ui/dom/opportunities-screen.js`.
 - Le module est chargé après les indicateurs techniques et avant le bootstrap historique. Cette première extraction conserve les points de compatibilité globaux ; l'injection explicite des dépendances UI reste une étape à terminer.
+
+
+### Interface Actions / ETF
+
+- Les fonctions de recherche, de chargement des cours et du FX, de valorisation affichée, de rendu et d'édition des positions actions/ETF sont regroupées dans `src/adapters/ui/dom/stocks-screen.js`.
+- Les règles de normalisation et les cas d'usage de mutation restent dans leurs modules domaine/application dédiés. Le module d'écran utilise encore les bindings historiques du bootstrap.
