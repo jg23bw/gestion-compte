@@ -946,9 +946,10 @@ function generateRecurringForMonth(month){
     if($('recurring-summary'))$('recurring-summary').textContent=message;showToast(message);renderRecurring();return;
   }
   const additions=result.additions;
-  prepareUndo();
-  state.transactions.push(...additions);
-  generatedMonthsRepository.add(month);
+  RecurringCommands.commitGeneration({
+    additions, transactions:state.transactions, month, generatedMonthsRepository,
+    beforeMutation:prepareUndo
+  });
   generationInProgress.delete(month);
   renderAll();
   const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'. Cette génération est maintenant verrouillée.';
