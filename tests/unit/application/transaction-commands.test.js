@@ -66,3 +66,15 @@ test('setPaid updates status and optional date without changing other fields', (
   assert.equal(unpaid.isPaid, false);
   assert.equal(f.commands.setPaid('missing', { isPaid: true }), null);
 });
+
+
+test('reorder updates only the requested account and persists the requested order', () => {
+  const f = fixture();
+  f.transactions.push(
+    { id: 'second', accountId: 'a', date: '2026-01-02', amount: 5, label: 'Deuxième', createdAt: 6, sortOrder: 3 },
+    { id: 'other-account', accountId: 'b', date: '2026-01-01', amount: 99, label: 'Autre', createdAt: 7, sortOrder: 1 }
+  );
+  const reordered = f.commands.reorder('a', ['second', 'existing']);
+  assert.deepEqual(reordered.map(item => [item.id, item.sortOrder]), [['second', 1], ['existing', 2]]);
+  assert.equal(f.transactions.find(item => item.id === 'other-account').sortOrder, 1);
+});
