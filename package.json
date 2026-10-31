@@ -1,0 +1,13 @@
+{
+  "name": "gestion-compte",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Application personnelle de gestion financière",
+  "scripts": {
+    "test": "node --test tests",
+    "check": "node --check app.js && node --check technical-indicators.js && node --check src/domain/transactions/transaction-rules.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
