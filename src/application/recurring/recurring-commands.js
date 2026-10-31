@@ -14,7 +14,7 @@
   }
 
   function inspectMonth({ transactions, month, generatedMonthsRepository }) {
-    if (!/^\\d{4}-\\d{2}$/.test(month)) return { status: 'invalid-month' };
+    if (!/^\d{4}-\d{2}$/.test(month)) return { status: 'invalid-month' };
     const alreadyGenerated = transactions.some(transaction =>
       transaction.recurringKey && String(transaction.date || '').slice(0, 7) === month
     );
