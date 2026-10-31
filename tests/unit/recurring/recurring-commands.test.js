@@ -51,3 +51,69 @@ test('application use case delegates generation to the domain', () => {
 test('invalid month produces no generated transactions', () => {
   assert.deepEqual(RecurringRules.buildTransactionsForMonth([], [], '2026-13'), []);
 });
+
+
+function createMarkerRepository(initial = []) {
+  const markers = new Set(initial);
+  return {
+    add: month => markers.add(month),
+    remove: month => markers.delete(month),
+    has: month => markers.has(month),
+    values: () => [...markers]
+  };
+}
+
+test('inspectMonth trusts generated transactions and repairs the local marker', () => {
+  const repository = createMarkerRepository();
+  const result = require('../../../src/application/recurring/recurring-commands.js').inspectMonth({
+    transactions: [{ recurringKey: 'rent@2026-04-05', date: '2026-04-05' }],
+    month: '2026-04',
+    generatedMonthsRepository: repository
+  });
+  assert.equal(result.status, 'already-generated');
+  assert.deepEqual(repository.values(), ['2026-04']);
+});
+
+test('inspectMonth removes stale markers when no generated transaction remains', () => {
+  const repository = createMarkerRepository(['2026-04']);
+  const result = require('../../../src/application/recurring/recurring-commands.js').inspectMonth({
+    transactions: [], month: '2026-04', generatedMonthsRepository: repository
+  });
+  assert.equal(result.status, 'not-generated');
+  assert.deepEqual(repository.values(), []);
+});
+
+test('prepareGeneration returns additions without mutating the transaction collection', () => {
+  const repository = createMarkerRepository();
+  const transactions = [];
+  const template = { id: 'rent', accountId: 'bank', label: 'Loyer', amount: 850, day: 5, frequency: 'monthly', enabled: true };
+  const result = require('../../../src/application/recurring/recurring-commands.js').prepareGeneration({
+    templates: [template], transactions, month: '2026-04', generatedMonthsRepository: repository
+  });
+  assert.equal(result.status, 'ready');
+  assert.equal(result.additions.length, 1);
+  assert.deepEqual(transactions, []);
+  assert.deepEqual(repository.values(), []);
+});
+
+test('prepareGeneration blocks existing month and reports empty months', () => {
+  const commands = require('../../../src/application/recurring/recurring-commands.js');
+  const repository = createMarkerRepository();
+  assert.equal(commands.prepareGeneration({
+    templates: [], transactions: [{ recurringKey: 'x', date: '2026-04-01' }],
+    month: '2026-04', generatedMonthsRepository: repository
+  }).status, 'already-generated');
+  assert.equal(commands.prepareGeneration({
+    templates: [], transactions: [], month: '2026-04', generatedMonthsRepository: repository
+  }).status, 'no-additions');
+});
+
+test('prepareGeneration rejects invalid month without touching marker repository', () => {
+  const calls = [];
+  const repository = { add: month => calls.push(['add', month]), remove: month => calls.push(['remove', month]) };
+  const result = require('../../../src/application/recurring/recurring-commands.js').prepareGeneration({
+    templates: [], transactions: [], month: '2026-13', generatedMonthsRepository: repository
+  });
+  assert.equal(result.status, 'invalid-month');
+  assert.deepEqual(calls, []);
+});
