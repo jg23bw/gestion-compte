@@ -323,3 +323,15 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Tests ajoutés dans `tests/unit/application/cloud-state-loader.test.js` : mapping des métadonnées, ordre des opérations, table crypto absente, erreur inattendue et validation des paramètres.
 - Le nouveau fichier est chargé avant `app.js` et inclus dans `npm run check`.
 - Validation GitHub Actions effectuée le 31 octobre 2026 sur le commit `2974f907751c512204b0255700f55b2d260d6d71` : `npm run check` et `npm test` réussis. Aucun test navigateur ni test sur le projet Supabase distant n'est revendiqué à ce stade.
+
+
+## 12. Extraction de l'authentification Supabase (31 octobre 2026)
+
+- Ajout du port `AuthenticationRepositoryPort`, de l'adaptateur `SupabaseAuthenticationRepository` et du cas d'usage `AuthenticationService`.
+- `app.js` utilise désormais le service pour lire la session, écouter les changements d'authentification, se connecter, créer un compte et se déconnecter. La logique d'interface (messages, visibilité des contrôles, verrouillage et chargement des données) reste dans `app.js`.
+- L'accès à la session pour obtenir le jeton d'accès MCP passe également par le service ; aucun jeton n'est stocké dans les nouveaux modules ou les tests.
+- L'adaptateur centralise le déballage des réponses Supabase et la propagation des erreurs. Le port permet de remplacer Supabase par un faux dépôt dans les tests.
+- Tests ajoutés pour la délégation des cas d'usage, l'abonnement/désabonnement, la traduction des arguments d'inscription et la propagation des erreurs.
+- Aucun changement de schéma ni migration Supabase n'est requis.
+
+**Validation à cette étape :** tests unitaires et contrôle syntaxique à exécuter dans la CI après le commit. Le parcours navigateur réel (connexion, inscription, déconnexion et session expirée) reste à vérifier ; aucune connexion au compte réel n'a été effectuée.
