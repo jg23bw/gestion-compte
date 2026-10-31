@@ -385,3 +385,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le fournisseur FX reste indépendant derrière `ExchangeRateProviderPort`. Le cache des cours/taux et les états de chargement restent dans l'interface.
 - Tests unitaires ajoutés pour les actions génériques et l'isolation des cooldowns. Aucun schéma Supabase ni contrat de l'Edge Function n'est modifié.
 - Aucun test navigateur ni appel réel à la fonction Edge ou au service FX n'est revendiqué.
+
+
+## Extraction de la requête d'historique mensuel des opérations (31 octobre 2026)
+
+- La recherche textuelle, les filtres par compte/type, les tris (date, libellé, montant, compte) et les agrégats entrées/sorties/net sont déplacés dans le cas d'usage `TransactionQueries.monthlyHistory`.
+- Le rendu DOM, la sélection du mois, les libellés, le formatage monétaire et la mise à jour des éléments HTML restent dans `app.js`.
+- Le cas d'usage lit les opérations et comptes via le repository d'état existant ; le format des objets persistés et les événements UI ne changent pas.
+- Tests unitaires ajoutés pour le tri, les filtres, les agrégats et la conservation de l'état.
+- Aucun test navigateur ni scénario Supabase réel n'est revendiqué pour cette tranche.
