@@ -394,3 +394,12 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le cas d'usage lit les opérations et comptes via le repository d'état existant ; le format des objets persistés et les événements UI ne changent pas.
 - Tests unitaires ajoutés pour le tri, les filtres, les agrégats et la conservation de l'état.
 - Aucun test navigateur ni scénario Supabase réel n'est revendiqué pour cette tranche.
+
+
+## Extraction de la requête de l'écran Opérations (31 octobre 2026)
+
+- Le cas d'usage `TransactionQueries.filterAccountTransactions` centralise désormais le filtrage par compte/type/recherche et les tris date, libellé, montant, opérations pointées et ordre manuel.
+- `app.js` conserve le choix des filtres, la génération du tableau HTML, les soldes affichés, les boutons d'action et les interactions utilisateur.
+- Les tris manuels continuent de s'appuyer sur l'ordre métier existant ; le filtrage travaille sur une nouvelle liste et ne modifie pas les opérations stockées.
+- Tests unitaires ajoutés pour les filtres, la recherche sur le libellé, le tri par montant, l'ordre manuel et les opérations pointées.
+- Aucun format de données, schéma Supabase ou comportement de synchronisation n'est modifié. Aucun test navigateur ni parcours Supabase réel n'est revendiqué.
