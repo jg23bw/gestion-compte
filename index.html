@@ -13,6 +13,9 @@
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
 <script src="src/domain/transactions/transaction-rules.js"></script>
   <script src="src/domain/accounts/account-list-rules.js"></script>
+  <script src="src/ports/accounts/account-repository.js"></script>
+  <script src="src/adapters/persistence/state/state-account-repository.js"></script>
+  <script src="src/application/accounts/account-commands.js"></script>
   <script src="src/ports/transactions/transaction-repository.js"></script>
   <script src="src/adapters/persistence/state/state-transaction-repository.js"></script>
   <script src="src/application/transactions/transaction-queries.js"></script>
@@ -50,7 +53,7 @@
   <script src="src/adapters/persistence/local-storage/generated-months-repository.js"></script>
     <script src="technical-indicators.js"></script>
   <script src="supabase-config.js" defer></script>
-  <script src="app.js?v=account-selector-groups-v1" defer></script>
+  <script src="app.js?v=account-commands-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
