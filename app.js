@@ -387,18 +387,19 @@ async function syncCloudState(){
   cloud.isSyncing=true;
   try{
     const client=cloudClient(),uid=cloud.user.id;
+    const transactionRepository=SupabaseTransactionRepository.create({client,userId:uid});
     const accounts=state.accounts.map(a=>toCloudAccount(a,uid));
     const templates=(state.recurringTemplates||[]).map(t=>toCloudTemplate(t,uid));
     const transactions=state.transactions.map(t=>toCloudTransaction(t,uid));
     const cryptoHoldings=(state.cryptoHoldings||[]).map(h=>toCloudCryptoHolding(h,uid));
-    const [ar,tr,rr]=await Promise.all([
+    const [ar,remoteTransactionRows,rr]=await Promise.all([
       client.from('accounts').select('*'),
-      client.from('transactions').select('*'),
+      transactionRepository.listAll(),
       client.from('recurring_templates').select('*')
     ]);
-    for(const result of [ar,tr,rr])if(result.error)throw result.error;
+    for(const result of [ar,rr])if(result.error)throw result.error;
     const remoteAccounts=new Map((ar.data||[]).map(row=>[row.id,row]));
-    const remoteTransactions=new Map((tr.data||[]).map(row=>[row.id,row]));
+    const remoteTransactions=new Map(remoteTransactionRows.map(row=>[row.id,row]));
     const remoteTemplates=new Map((rr.data||[]).map(row=>[row.id,row]));
     const changedAccounts=accounts.filter(row=>!remoteAccounts.has(row.id)||!sameCloudValues(row,remoteAccounts.get(row.id),['name','short','kind','opening','vat_rate','social_rate','net_opening']));
     const changedTemplates=templates.filter(row=>!remoteTemplates.has(row.id)||!sameCloudValues(row,remoteTemplates.get(row.id),['account_id','day_of_month','frequency','months','start_month','end_month','once_date','label','amount','enabled']));
@@ -411,20 +412,13 @@ async function syncCloudState(){
     }
     if(changedTemplates.length){const {error}=await client.from('recurring_templates').upsert(changedTemplates,{onConflict:'user_id,id'});if(error)throw error;}
     if(changedTransactions.length){
-      let transactionResult=await client.from('transactions').upsert(changedTransactions,{onConflict:'id'});
-      if(transactionResult.error&&/recurring.?key|is_paid|sort_order|schema cache|column.*not found/i.test(transactionResult.error.message||'')){
-        // Compatibility fallback for older databases; the SQL migration is still required for full functionality.
-        const compatibleRows=changedTransactions.map(({recurring_key,is_paid,sort_order,...row})=>row);
-        transactionResult=await client.from('transactions').upsert(compatibleRows,{onConflict:'id'});
-        if(!transactionResult.error){
-          showToast('Migration Supabase requise : exécutez supabase/migrations/202610180002_transaction_pointage_order.sql dans SQL Editor. Le pointage et l’ordre manuel ne seront pas conservés avant cela.');
-        }
+      const result=await transactionRepository.upsertMany(changedTransactions);
+      if(result.compatibilityFallback){
+        showToast('Migration Supabase requise : exécutez supabase/migrations/202610180002_transaction_pointage_order.sql dans SQL Editor. Le pointage et l’ordre manuel ne seront pas conservés avant cela.');
       }
-      if(transactionResult.error)throw transactionResult.error;
     }
     for(const id of [...cloud.pendingDeletes]){
-      const {error}=await client.from('transactions').delete().eq('id',id).eq('user_id',uid);
-      if(error)throw error;
+      await transactionRepository.deleteById(id);
       cloud.pendingDeletes.delete(id);
     }
     for(const id of [...cloud.pendingTemplateDeletes]){
