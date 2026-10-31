@@ -549,13 +549,11 @@ function lockApp(message=''){
 
 async function initCloud(){
   try{
-    const client=cloudClient();
-    const {data,error}=await client.auth.getSession();
-    if(error)throw error;
-    cloud.session=data.session;
-    cloud.user=data.session?.user||null;
+    const authentication=getAuthenticationService();
+    cloud.session=await authentication.getSession();
+    cloud.user=cloud.session?.user||null;
 
-    client.auth.onAuthStateChange((event,session)=>{
+    authentication.onAuthStateChange((event,session)=>{
       const previousUserId=cloud.user?.id||null;
       cloud.session=session;
       cloud.user=session?.user||null;
@@ -2360,9 +2358,8 @@ async function deleteLombardCredit(){
 const MCP_TOKEN_ENDPOINT='https://gpzqvkkysolqksimiqac.supabase.co/functions/v1/mcp-tokens';
 async function mcpTokenRequest(payload){
   if(!cloud.user)throw new Error('Connectez-vous avant de gérer les jetons MCP.');
-  const {data,error}=await cloudClient().auth.getSession();
-  if(error)throw error;
-  const accessToken=data.session?.access_token;
+  const session=await getAuthenticationService().getSession();
+  const accessToken=session?.access_token;
   if(!accessToken)throw new Error('Session expirée. Reconnectez-vous.');
   const config=window.GESTION_SUPABASE_CONFIG;
   const response=await fetch(MCP_TOKEN_ENDPOINT,{
@@ -2545,9 +2542,8 @@ $('mcp-copy-token').addEventListener('click',async()=>{
 $('cloud-form').addEventListener('submit',async event=>{
   event.preventDefault();cloudMessage('Connexion en cours…');
   try{
-    const {data,error}=await cloudClient().auth.signInWithPassword({email:$('cloud-email').value.trim(),password:$('cloud-password').value});
-    if(error)throw error;
-    if(data.session){cloudMessage('Connexion réussie. Chargement de vos données…');$('cloud-dialog').close();}
+    const result=await getAuthenticationService().signIn({email:$('cloud-email').value.trim(),password:$('cloud-password').value});
+    if(result.session){cloudMessage('Connexion réussie. Chargement de vos données…');$('cloud-dialog').close();}
   }catch(error){cloudMessage(frenchAuthError(error));}
 });
 $('cloud-signup').addEventListener('click',async()=>{
@@ -2569,7 +2565,7 @@ $('cloud-signup').addEventListener('click',async()=>{
 });
 $('cloud-logout-sidebar').addEventListener('click',()=> $('cloud-logout').click());
 $('cloud-logout').addEventListener('click',async()=>{
-  try{const {error}=await cloudClient().auth.signOut();if(error)throw error;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');if($('cloud-dialog').open)$('cloud-dialog').close();lockApp('Déconnexion effectuée. Reconnectez-vous pour accéder à vos données.');}
+  try{await getAuthenticationService().signOut();localStorage.removeItem(STORAGE_KEY);localStorage.removeItem('gestion-comptes-cloud-migration-backup-v1');if($('cloud-dialog').open)$('cloud-dialog').close();lockApp('Déconnexion effectuée. Reconnectez-vous pour accéder à vos données.');}
   catch(error){cloudMessage(error.message||'Déconnexion impossible.');}
 });
 $('crypto-add').addEventListener('click',()=>openCryptoEditor());
