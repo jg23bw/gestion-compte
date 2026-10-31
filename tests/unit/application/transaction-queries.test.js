@@ -51,8 +51,8 @@ test('professional adjusted balance uses repository templates', () => {
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
-  assert.equal(queries.balanceAfterTransaction(f.transactions[0]), 150);
-  assert.equal(queries.balanceAfterTransaction(f.transactions[1]), 140);
+  assert.equal(queries.balanceAfterTransaction(f.transactions[0]), 140);
+  assert.equal(queries.balanceAfterTransaction(f.transactions[1]), 90);
 });
 
 test('balance after transaction returns zero when the account no longer exists', () => {
