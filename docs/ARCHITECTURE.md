@@ -154,3 +154,25 @@ Les tests utilisant des données financières utilisent uniquement des fixtures 
 - `app.js` ne contient plus de règles métier ni d'implémentations d'adaptateurs.
 - Les dépendances respectent les frontières hexagonales.
 - La documentation explique comment ajouter un nouveau cas d'usage, adaptateur et test.
+
+
+## Avancement réel de la migration
+
+### Étape 1 — socle de tests et premier domaine extrait
+
+**Terminée sur la branche `refactor/hexagonal-architecture`.**
+
+- Ajout de `package.json` avec les commandes `npm run check` et `npm test`, sans dépendance externe.
+- CI exécutée sur `main` et les branches `refactor/**`.
+- Extraction des règles de transactions et de compte professionnel dans `src/domain/transactions/transaction-rules.js`.
+- Le module est pur : pas d'accès au DOM, au réseau, à Supabase, au stockage ou à l'horloge.
+- `app.js` délègue désormais le tri des opérations, le calcul des soldes, la classification des provisions, les soldes ajustés et le calcul TVA/cotisations à ce module.
+- Ajout de tests unitaires sur ces règles, en complément des tests MM200 existants.
+
+**Dernière vérification CI :** `npm run check` réussi ; `npm test` réussi ; 26 tests passés, 0 échec.
+
+### Périmètre restant
+
+Cette première étape n'est pas la refonte hexagonale complète. Les ports, adaptateurs de persistance, cas d'usage, tests de contrat Supabase/localStorage et tests navigateur restent à implémenter. Les autres domaines (récurrences complètes, portefeuille, Lombard, FIRE, authentification et synchronisation) ne sont pas encore extraits ni intégralement couverts.
+
+La suite doit poursuivre domaine par domaine, sans déclarer la migration terminée tant que les critères d'acceptation de ce document ne sont pas atteints.
