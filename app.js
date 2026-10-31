@@ -154,6 +154,7 @@ const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getM
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
 const transactionQueries = TransactionQueries.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
 const transactionCommands = TransactionCommands.create({repository: StateTransactionRepository.create(() => state), domain: TransactionRules});
+const recurringTemplateCommands = RecurringTemplateCommands.create({repository: StateRecurringTemplateRepository.create(() => state)});
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
