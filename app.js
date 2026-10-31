@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'gestion-comptes-v1';
 const GENERATED_MONTHS_KEY = 'gestion-comptes-generated-months-v1';
 const generationInProgress = new Set();
+const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const generatedMonthsRepository = LocalStorageGeneratedMonthsRepository.create(localStorage, GENERATED_MONTHS_KEY);
 // Catalogue des établissements proposés dans le formulaire de compte. Les logos
 // locaux sont utilisés en priorité ; les banques sans logo utilisent un monogramme
@@ -24,11 +25,6 @@ const cryptoSearch={timer:null,controller:null,results:[]};
 // Les actions et ETF sont stockés dans les métadonnées privées du compte Auth
 // (comme les sous-types de comptes et le crédit lombard). Cette approche évite
 // une migration SQL supplémentaire pour les positions et le nantissement.
-const STOCK_PRICE_CACHE_KEY='gestion-comptes-stock-prices-v1';
-const STOCK_FX_CACHE_KEY='gestion-comptes-stock-fx-v1';
-const STOCK_FUNCTION_NAME='stock-data';
-const STOCK_FX_ENDPOINT='https://open.er-api.com/v6/latest/EUR';
-const STOCK_REFRESH_MS=5*60*1000;
 const stockHoldingMetadataCommands = StockHoldingMetadataCommands.create({
   rules: StockHoldingRules.create({ currencies: STOCK_CURRENCIES, markets: STOCK_MARKETS, today })
 });
@@ -53,7 +49,6 @@ const parseFrenchNumber = value => {if(value===null||value===undefined)return Na
 const formatFrenchNumberInput = value => {if(value===null||value===undefined||value==='')return '';const n=Number(value);return Number.isFinite(n)?String(n).replace('.',','):String(value);};
 const dateInputFormat = value => String(value||'');
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
-const today = () => {const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
 const transactionRepository = StateTransactionRepository.create(() => state);
 const recurringTemplateRepository = StateRecurringTemplateRepository.create(() => state);
