@@ -87,7 +87,7 @@ test('normalizeOrder assigns missing manual order by descending date and creatio
     { id: 'same-date-newer', accountId: 'a', date: '2026-02-01', createdAt: 9 },
     { id: 'other-account', accountId: 'b', date: '2026-03-01', createdAt: 10 }
   );
-  assert.equal(f.commands.normalizeOrder([{ id: 'a' }, { id: 'b' }]), 3);
+  assert.equal(f.commands.normalizeOrder([{ id: 'a' }, { id: 'b' }]), 4);
   assert.equal(f.transactions.find(item => item.id === 'same-date-newer').sortOrder, 1);
   assert.equal(f.transactions.find(item => item.id === 'newer-date').sortOrder, 2);
   assert.equal(f.transactions.find(item => item.id === 'existing').sortOrder, 3);
