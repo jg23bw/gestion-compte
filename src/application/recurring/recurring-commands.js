@@ -35,5 +35,20 @@
     return { status: 'ready', additions };
   }
 
-  return Object.freeze({ generateTransactions, inspectMonth, prepareGeneration });
+  function commitGeneration({ additions, transactions, month, generatedMonthsRepository, beforeMutation }) {
+    if (!Array.isArray(additions) || additions.length === 0) {
+      return { status: 'no-additions', count: 0 };
+    }
+    if (!Array.isArray(transactions) || !generatedMonthsRepository ||
+        typeof generatedMonthsRepository.add !== 'function') {
+      throw new TypeError('Transactions and a generated-months repository are required');
+    }
+    // Undo snapshot must be captured before either the transaction list or marker changes.
+    if (typeof beforeMutation === 'function') beforeMutation();
+    transactions.push(...additions);
+    generatedMonthsRepository.add(month);
+    return { status: 'committed', count: additions.length };
+  }
+
+  return Object.freeze({ generateTransactions, inspectMonth, prepareGeneration, commitGeneration });
 });
