@@ -2815,7 +2815,7 @@ $('transaction-form').addEventListener('submit',event=>{
   const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
   if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
   const previous=id?state.transactions.find(t=>t.id===id):null;
-  const oldOrder=previous?.sortOrder;const record={...(previous||{}),id:id||crypto.randomUUID(),accountId,date,amount,label,isPaid:previous?.isPaid===true,sortOrder:previous&&previous.accountId===accountId&&Number.isFinite(Number(oldOrder))&&oldOrder!==null?Number(oldOrder):Math.max(0,...state.transactions.filter(t=>t.accountId===accountId&&t.id!==id).map(t=>Number(t.sortOrder)||0))+1,createdAt:previous?.createdAt||Date.now()};
+  const record=TransactionRules.createTransactionRecord({transactions:state.transactions,previous,id:id||crypto.randomUUID(),accountId,date,amount,label,createdAt:Date.now()});
   // Capture l'état avant toute création ou modification pour rendre « Annuler » opérationnel.
   prepareUndo();
   if(previous)state.transactions=state.transactions.map(t=>t.id===id?record:t);else state.transactions.push(record);
