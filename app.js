@@ -303,24 +303,23 @@ function accountPledgeOverrides(){
   for(const id of Object.keys(result))if(!accountById(id))delete result[id];
   return result;
 }
+function authMetadataRepository(){
+  return SupabaseAuthMetadataRepository.create({
+    auth:cloudClient().auth,
+    onUserUpdated(user){
+      cloud.user=user;
+      if(cloud.session)cloud.session.user=user;
+    }
+  });
+}
 async function saveAccountMetadataToAuth(overrides=accountTypeOverrides(),pledges=accountPledgeOverrides()){
   if(!cloud.user)throw new Error('Connectez-vous pour enregistrer les paramètres des comptes.');
-  const {data,error}=await cloudClient().auth.updateUser({data:{accountTypes:overrides,accountPledges:pledges}});
-  if(error)throw error;
-  if(data?.user){
-    cloud.user=data.user;
-    if(cloud.session)cloud.session.user=data.user;
-  }
+  await authMetadataRepository().update({accountTypes:overrides,accountPledges:pledges});
 }
 async function saveStockHoldingsToAuth(holdings){
   if(!cloud.user)throw new Error('Connectez-vous pour enregistrer les positions actions.');
   const normalized=normalizeStockHoldings(holdings);
-  const {data,error}=await cloudClient().auth.updateUser({data:{stockHoldings:normalized}});
-  if(error)throw error;
-  if(data?.user){
-    cloud.user=data.user;
-    if(cloud.session)cloud.session.user=data.user;
-  }
+  await authMetadataRepository().update({stockHoldings:normalized});
   return normalized;
 }
 function toCloudAccount(a,userId){return {id:a.id,user_id:userId,name:a.name,short:'bank:'+bankKeyForAccount(a),kind:a.kind,opening:Number(a.opening)||0,vat_rate:Number(a.vatRate??20),social_rate:Number(a.socialRate??45),net_opening:Number(a.netOpening)||0};}
@@ -359,12 +358,7 @@ function normalizeLombardCredit(credit){
 async function saveLombardCreditToAuth(credit){
   if(!cloud.user)throw new Error('Connectez-vous pour enregistrer le crédit lombard.');
   const normalized=normalizeLombardCredit(credit);
-  const {data,error}=await cloudClient().auth.updateUser({data:{lombardCredit:normalized}});
-  if(error)throw error;
-  if(data?.user){
-    cloud.user=data.user;
-    if(cloud.session)cloud.session.user=data.user;
-  }
+  await authMetadataRepository().update({lombardCredit:normalized});
   return normalized;
 }
 function uniqueTransactions(rows){
