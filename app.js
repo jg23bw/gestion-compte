@@ -255,15 +255,8 @@ function bankLogo(account={}){
 function isAccountType(value){
   return ['bank','savings','pro','pea','av','cto'].includes(String(value||''));
 }
-function isAccountSubtype(value){
-  return ['pea','av','cto'].includes(String(value||''));
-}
-function normalizeAccountTypes(value){
-  if(!value||typeof value!=='object'||Array.isArray(value))return {};
-  const result={};
-  for(const [id,type] of Object.entries(value))if(isAccountSubtype(type))result[id]=type;
-  return result;
-}
+const accountTypeCommands = AccountTypeCommands.create({ rules: AccountTypeRules });
+function normalizeAccountTypes(value){return accountTypeCommands.normalize(value);}
 function normalizeAccountPledges(value){return accountPledgeCommands.normalize(value);}
 function normalizeStockCurrency(value){
   const currency=String(value||'').trim().toUpperCase();
@@ -297,14 +290,7 @@ function normalizeStockHoldings(value){
   }
   return result;
 }
-function accountTypeOverrides(){
-  const result={};
-  for(const account of state.accounts||[]){
-    const type=account.accountType||account.kind;
-    if(isAccountSubtype(type)&&type!==account.kind)result[account.id]=type;
-  }
-  return result;
-}
+function accountTypeOverrides(){return accountTypeCommands.overrides(state.accounts);}
 function accountPledgeOverrides(){return accountPledgeCommands.overrides(state.accounts);}
 function authMetadataRepository(){
   return SupabaseAuthMetadataRepository.create({
@@ -331,8 +317,8 @@ function fromCloudAccount(a,accountTypes={}){
   const token=/^bank:([a-z0-9-]+)$/i.exec(rawShort);
   const bank=token&&isBankKey(token[1])?token[1].toLowerCase():bankKeyFromId(a.id);
   const kind=a.kind||'bank';
-  const override=accountTypes?.[a.id];
-  return {id:a.id,name:a.name,short:accountShort(a.name),bank,kind,accountType:isAccountSubtype(override)?override:kind,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};
+  const accountType=accountTypeCommands.typeFor(kind,accountTypes?.[a.id]);
+  return {id:a.id,name:a.name,short:accountShort(a.name),bank,kind,accountType,opening:Number(a.opening)||0,vatRate:Number(a.vat_rate??20),socialRate:Number(a.social_rate??45),netOpening:Number(a.net_opening)||0};
 }
 const transactionCloudMapper = SupabaseTransactionMapper.create();
 function toCloudTransaction(t,userId){return transactionCloudMapper.toCloud(t,userId);}
@@ -476,14 +462,14 @@ async function loadCloudState(user){
     let importLocal=false;
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
-      const importedAccounts=legacy?(legacy.accounts||[]).map(account=>({...account,accountType:remoteAccountTypes[account.id]||account.accountType||account.kind})):[];
+      const importedAccounts=legacy?accountTypeCommands.applyOverrides(legacy.accounts||[],remoteAccountTypes):[];
       state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
       state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard};
     }
 
-    cloud.accountTypesDirty=importLocal&&state.accounts.some(account=>isAccountSubtype(account.accountType)&&account.accountType!==account.kind);
+    cloud.accountTypesDirty=importLocal&&accountTypeCommands.hasOverrides(state.accounts);
     cloud.accountPledgesDirty=false;
     cloud.stockHoldingsDirty=false;
     normalizeTransactionOrder();
