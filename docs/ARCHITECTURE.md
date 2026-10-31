@@ -245,3 +245,15 @@ L'interface garde la validation des champs et les effets UI/undo, mais délègue
 **CI vérifiée sur le commit `a5d9521` :** `npm run check` réussi ; 54 tests passés, 0 échec.
 
 **Limites restantes :** la génération des opérations, l'idempotence, le stockage des marqueurs de mois, l'annulation et les mutations des modèles restent dans `app.js`. Cette extraction ne constitue pas encore le cas d'usage complet de génération des récurrences.
+
+
+### Étape 4 — génération des opérations récurrentes
+
+La construction des opérations récurrentes d'un mois est isolée des événements DOM :
+- filtrage des modèles désactivés, montants absents ou non numériques ;
+- calcul de l'échéance via les règles de domaine ;
+- construction du modèle d'opération et de sa clé `recurringKey` ;
+- déduplication contre les opérations existantes et au sein du lot généré ;
+- injection possible de l'identifiant et de l'horloge pour des tests déterministes.
+
+Le cas d'usage `RecurringCommands` délègue au domaine et l'interface l'utilise pour construire les ajouts. L'interface conserve volontairement l'annulation, la mutation de l'état, les marqueurs localStorage, le rendu et la synchronisation cloud : ces effets ne sont pas encore déplacés vers des ports/adaptateurs. Le verrouillage mensuel et la détection de génération déjà effectuée restent donc orchestrés dans `app.js`.
