@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'gestion-comptes-v1';
 const GENERATED_MONTHS_KEY = 'gestion-comptes-generated-months-v1';
 const generationInProgress = new Set();
+const generatedMonthsRepository = LocalStorageGeneratedMonthsRepository.create(localStorage, GENERATED_MONTHS_KEY);
 // Catalogue des établissements proposés dans le formulaire de compte. Les logos
 // locaux sont utilisés en priorité ; les banques sans logo utilisent un monogramme
 // coloré. Le choix de la banque est enregistré dans `accounts.short` sous la forme
@@ -156,7 +157,7 @@ const transactionCommands = TransactionCommands.create({repository: StateTransac
 let toastTimer;
 let undoPoint=null;
 function cloneData(value){return JSON.parse(JSON.stringify(value));}
-function prepareUndo(){undoPoint={state:cloneData(state),pendingDeletes:[...cloud.pendingDeletes],pendingTemplateDeletes:[...cloud.pendingTemplateDeletes],generatedMonths:localStorage.getItem(GENERATED_MONTHS_KEY)};}
+function prepareUndo(){undoPoint={state:cloneData(state),pendingDeletes:[...cloud.pendingDeletes],pendingTemplateDeletes:[...cloud.pendingTemplateDeletes],generatedMonths:generatedMonthsRepository.getRaw()};}
 function undoLastAction(){
   if(!undoPoint)return;
   const target=undoPoint;
@@ -178,7 +179,7 @@ function undoLastAction(){
     cloud.accountPledgesDirty=true;
     cloud.stockHoldingsDirty=true;
   }
-  if(target.generatedMonths===null)localStorage.removeItem(GENERATED_MONTHS_KEY);else localStorage.setItem(GENERATED_MONTHS_KEY,target.generatedMonths);
+  generatedMonthsRepository.restoreRaw(target.generatedMonths);
   undoPoint=null;renderAll();showToast('Action annulée.');
 }
 
@@ -917,23 +918,15 @@ function deleteRecurringTemplate(id){
   showToast('Récurrence supprimée. Les opérations déjà créées sont conservées.',true);
 }
 function dueDateForTemplate(template,month){return RecurringRules.dueDateForTemplate(template,month);}
-function generatedMonths(){
-  try{const value=JSON.parse(localStorage.getItem(GENERATED_MONTHS_KEY)||'[]');return Array.isArray(value)?value:[];}catch(error){return [];}
-}
+function generatedMonths(){return generatedMonthsRepository.list();}
 function monthAlreadyGenerated(month){
   // Les transactions réelles sont la source de vérité. Le marqueur local ne doit
   // pas bloquer une régénération si les opérations ont été supprimées de Supabase.
   if(state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month)){
-    const months=generatedMonths();
-    if(!months.includes(month)){months.push(month);try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}}
+    generatedMonthsRepository.add(month);
     return true;
   }
-  const months=generatedMonths();
-  const index=months.indexOf(month);
-  if(index!==-1){
-    months.splice(index,1);
-    try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}
-  }
+  generatedMonthsRepository.remove(month);
   return false;
 }
 function generateRecurringForMonth(month){
@@ -953,7 +946,7 @@ function generateRecurringForMonth(month){
     generationInProgress.delete(month);
     if(button)button.disabled=false;
     const alreadyExists=state.transactions.some(t=>t.recurringKey&&String(t.date||'').slice(0,7)===month);
-    if(alreadyExists){const months=generatedMonths();if(!months.includes(month)){months.push(month);try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}}}
+    if(alreadyExists)generatedMonthsRepository.add(month);
     const message=alreadyExists
       ?'Les opérations de '+monthName(month)+' ont déjà été générées. Aucun doublon n’a été ajouté.'
       :'Aucune nouvelle opération à ajouter pour '+monthName(month)+'. Vérifiez les montants et les fréquences.';
@@ -961,8 +954,7 @@ function generateRecurringForMonth(month){
   }
   prepareUndo();
   state.transactions.push(...additions);
-  const months=generatedMonths();if(!months.includes(month))months.push(month);
-  try{localStorage.setItem(GENERATED_MONTHS_KEY,JSON.stringify(months));}catch(error){}
+  generatedMonthsRepository.add(month);
   generationInProgress.delete(month);
   renderAll();
   const message=additions.length+' opération(s) ajoutée(s) pour '+monthName(month)+'. Cette génération est maintenant verrouillée.';
