@@ -37,24 +37,42 @@ test('stock price provider rejects missing clients and invalid prices', async ()
   assert.throws(() => StockPricePort.assert({}), /provider port is required/);
 });
 
-test('market data provider isolates one-minute HTTP 429 cooldowns by action', async () => {
+test('market data provider applies a shared one-minute HTTP 429 cooldown across actions', async () => {
   let now = 1000;
   const actions = [];
   const provider = StockPriceProvider.create({
     getClient: () => ({ functions: { invoke: async (_name, options) => {
       actions.push(options.body.action);
-      if (options.body.action === 'price') return { data: null, error: { message: 'Too many requests', status: 429 } };
-      return { data: { points: [] }, error: null };
+      return { data: null, error: { message: 'Too many requests', status: 429 } };
     } } }),
     functionName: 'stock-data',
     now: () => now
   });
   await assert.rejects(provider.getPrice('AAPL'), /HTTP 429/);
-  await assert.rejects(provider.getPrice('AAPL'), /temporairement limité/);
-  assert.deepEqual(await provider.invoke('history', { id: 'AAPL' }), { points: [] });
+  await assert.rejects(provider.invoke('history', { id: 'AAPL' }), /temporairement limité/);
+  assert.deepEqual(actions, ['price']);
   now += 60001;
-  await assert.rejects(provider.getPrice('AAPL'), /HTTP 429/);
-  assert.deepEqual(actions, ['price', 'history', 'price']);
+  await assert.rejects(provider.invoke('history', { id: 'AAPL' }), /HTTP 429/);
+  assert.deepEqual(actions, ['price', 'history']);
+});
+
+test('market data provider coalesces identical concurrent requests', async () => {
+  let calls = 0;
+  let release;
+  const provider = StockPriceProvider.create({
+    getClient: () => ({ functions: { invoke: async () => {
+      calls++;
+      await new Promise(resolve => { release = resolve; });
+      return { data: { points: [1, 2] }, error: null };
+    } } }),
+    functionName: 'stock-data'
+  });
+  const first = provider.invoke('history', { id: 'AAPL', period: '1y' });
+  const second = provider.invoke('history', { id: 'AAPL', period: '1y' });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 1);
+  release();
+  assert.deepEqual(await Promise.all([first, second]), [{ points: [1, 2] }, { points: [1, 2] }]);
 });
 
 test('FX provider converts EUR-base rates into EUR per unit and handles GBX', async () => {
