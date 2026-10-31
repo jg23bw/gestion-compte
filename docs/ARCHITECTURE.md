@@ -278,3 +278,9 @@ La règle métier reste inchangée : les opérations récurrentes présentes dan
 - `StockHoldingRules` porte la normalisation pure des positions et des devises, avec les catalogues de devises/marchés et la date courante injectés par la composition.
 - `StockHoldingMetadataCommands` centralise la lecture de `user_metadata.stockHoldings` et la sauvegarde via le repository de métadonnées Auth.
 - Le format JSON existant, y compris les positions manuelles Suravenir, reste inchangé ; les cours, conversions FX et interactions d'écran restent dans leurs composants respectifs.
+
+
+### Mappers Supabase
+
+- Les conversions des lignes comptes, modèles récurrents et positions crypto sont isolées dans `SupabaseAccountMapper`, `SupabaseRecurringTemplateMapper` et `SupabaseCryptoHoldingMapper`.
+- Le mapper de comptes reçoit les règles d'identification de banque et de type de compte depuis la composition applicative ; les noms de colonnes et conversions restent compatibles avec le schéma existant.
