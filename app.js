@@ -130,9 +130,8 @@ const STOCK_ISIN_CATALOG = [
   {isin:'US78462F1030',symbol:'SPY',name:'SPDR S&P 500 ETF Trust',priceId:'NYSE-SPY',market:'NYSE',currency:'USD',kind:'e'},
   {isin:'US46090E1038',symbol:'QQQ',name:'Invesco QQQ Trust',priceId:'NASDAQ-QQQ',market:'NASDAQ',currency:'USD',kind:'e'}
 ];
-const SURAVENIR_ANNUAL_RATE=0.021; // Rendement 2025 publié pour Suravenir Rendement 2, utilisé comme hypothèse de projection.
-function isManualValueHolding(holding){return Boolean(holding?.manualValue)||String(holding?.isin||'').toUpperCase()==='SUR000001737'||String(holding?.priceId||'').toUpperCase()==='SUR-SUR000001737';}
-function manualHoldingValue(holding){const base=Number(holding?.invested)||0;const start=Date.parse((holding?.manualValueDate||today())+'T00:00:00Z');const elapsedDays=Math.max(0,(Date.now()-start)/86400000);return base*Math.pow(1+SURAVENIR_ANNUAL_RATE,elapsedDays/365.25);}
+const isManualValueHolding=holding=>StockValuation.isManualValueHolding(holding);
+function manualHoldingValue(holding){return StockValuation.manualHoldingValue(holding,{now:Date.now(),today});}
 function isInvestmentAccount(account){return ['pea','cto','av'].includes(effectiveAccountType(account));}
 function stockCatalogResults(query){
   const q=String(query||'').trim().toUpperCase();
@@ -1272,7 +1271,7 @@ function stockFxRate(currency){
 function stockPriceDetails(holding){
   const nativePrice=stockNativePrice(holding);
   const rate=stockFxRate(holding.currency);
-  return {nativePrice,rate,price:nativePrice===null||rate===null?null:nativePrice*rate};
+  return {nativePrice,rate,price:StockValuation.euroPrice(nativePrice,rate)};
 }
 const stockProviderCooldowns={};
 async function stockFunction(action,payload={}){
@@ -1387,11 +1386,10 @@ function renderStocks(){
   const sort=$('stocks-sort')?.value||'manual';
   const metrics=new Map(allHoldings.map(h=>{
     const details=stockPriceDetails(h);
-    const invested=Number(h.invested)||0;
-    const quantity=Number(h.quantity)||0;
-    const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price===null?null:quantity*details.price);const gain=value===null?null:value-invested;
-    const performance=gain===null||invested<=0?null:gain/invested*100;
-    return [h.id,{...details,invested,quantity,value,gain,performance}];
+    const valuation=StockValuation.positionMetrics(h,{
+      nativePrice:details.nativePrice,fxRate:details.rate,now:Date.now(),today
+    });
+    return [h.id,{...details,...valuation}];
   }));
   const symbolOf=holding=>String(holding.symbol||'');
   let holdings=allHoldings.filter(h=>{const account=accountById(h.accountId);if(!isInvestmentAccount(account))return false;const m=metrics.get(h.id);
