@@ -506,3 +506,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 - Le cas d'usage des opérations prend aussi en charge l'initialisation déterministe de l'ordre manuel, avec test de tri par date puis date de création.
 - La résolution du type effectif d'un compte et la validation des types sont maintenant des règles de domaine dans `AccountTypeRules`.
 - La CI la plus récente vérifiée sur le commit `474b0cb` passe : contrôle syntaxique réussi, 175 tests passés, 0 échec.
+
+
+## Extraction du fournisseur crypto secondaire (31 octobre 2026)
+
+- Le fallback CoinCap est isolé derrière un port et un adaptateur testés avec un faux réseau.
+- La conversion USD vers EUR et le mapping des identifiants sont conservés. Le rafraîchissement principal, le cache et le rendu restent pilotés par l'application.
