@@ -5,6 +5,17 @@ const FxProvider = require('../../../src/adapters/market-data/http-exchange-rate
 const StockPricePort = require('../../../src/ports/portfolio/stock-price-provider.js');
 const FxPort = require('../../../src/ports/portfolio/exchange-rate-provider.js');
 
+test('market data provider invokes non-price Edge actions through the same adapter', async () => {
+  const calls = [];
+  const provider = StockPriceProvider.create({
+    getClient: () => ({ functions: { invoke: async (...args) => { calls.push(args); return { data: { points: [1, 2] }, error: null }; } } }),
+    functionName: 'stock-data'
+  });
+  assert.deepEqual(await provider.invoke('history', { id: 'NASDAQ-AAPL', period: '1y' }), { points: [1, 2] });
+  assert.deepEqual(calls, [['stock-data', { body: { action: 'history', id: 'NASDAQ-AAPL', period: '1y' } }]]);
+  assert.equal(StockPricePort.assert(provider), provider);
+});
+
 test('stock price provider invokes the authenticated Edge Function and returns a positive price', async () => {
   const calls = [];
   const provider = StockPriceProvider.create({
@@ -13,7 +24,6 @@ test('stock price provider invokes the authenticated Edge Function and returns a
   });
   assert.equal(await provider.getPrice('NASDAQ-AAPL'), 123.45);
   assert.deepEqual(calls, [['stock-data', { body: { action: 'price', id: 'NASDAQ-AAPL' } }]]);
-  assert.equal(StockPricePort.assert(provider), provider);
 });
 
 test('stock price provider rejects missing clients and invalid prices', async () => {
@@ -24,20 +34,27 @@ test('stock price provider rejects missing clients and invalid prices', async ()
     functionName: 'stock-data'
   });
   await assert.rejects(invalid.getPrice('AAPL'), /aucun cours reçu/);
-  assert.throws(() => StockPricePort.assert({}), /port is required/);
+  assert.throws(() => StockPricePort.assert({}), /provider port is required/);
 });
 
-test('stock price provider applies a one-minute cooldown after HTTP 429', async () => {
+test('market data provider isolates one-minute HTTP 429 cooldowns by action', async () => {
   let now = 1000;
+  const actions = [];
   const provider = StockPriceProvider.create({
-    getClient: () => ({ functions: { invoke: async () => ({ data: null, error: { message: 'Too many requests', status: 429 } }) } }),
+    getClient: () => ({ functions: { invoke: async (_name, options) => {
+      actions.push(options.body.action);
+      if (options.body.action === 'price') return { data: null, error: { message: 'Too many requests', status: 429 } };
+      return { data: { points: [] }, error: null };
+    } } }),
     functionName: 'stock-data',
     now: () => now
   });
   await assert.rejects(provider.getPrice('AAPL'), /HTTP 429/);
   await assert.rejects(provider.getPrice('AAPL'), /temporairement limité/);
+  assert.deepEqual(await provider.invoke('history', { id: 'AAPL' }), { points: [] });
   now += 60001;
   await assert.rejects(provider.getPrice('AAPL'), /HTTP 429/);
+  assert.deepEqual(actions, ['price', 'history', 'price']);
 });
 
 test('FX provider converts EUR-base rates into EUR per unit and handles GBX', async () => {
@@ -66,5 +83,5 @@ test('FX provider returns an empty result for EUR-only requests and rejects inva
     fetchImpl: async () => ({ ok: false, status: 503 })
   });
   await assert.rejects(invalid.fetchRates(['USD']), /HTTP 503/);
-  assert.throws(() => FxPort.assert({}), /port is required/);
+  assert.throws(() => FxPort.assert({}), /provider port is required/);
 });
