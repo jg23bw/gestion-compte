@@ -69,13 +69,9 @@ async function loadCryptoPrices(){
       }
       if(!Object.keys(values).length)throw new Error('aucun prix reçu de CoinGecko');
     }catch(error){sourceError=error.message||'CoinGecko indisponible';}
-    const missingIds=ids.filter(id=>!Number.isFinite(Number(values[id]))||Number(values[id])<=0);
-    if(missingIds.length){
-      try{
-        const fallbackValues=await coinCapFallbackProvider.fetchPrices(missingIds,stockFx.rates?.USD);
-        Object.assign(values,fallbackValues);
-      }catch(fallbackError){console.warn('Fournisseur crypto secondaire inaccessible',fallbackError);}
-    }
+    // Pas d'appel direct à CoinCap depuis le navigateur : les prix de secours
+    // sont déjà agrégés côté Edge (Coinbase). En cas d'indisponibilité, on conserve
+    // le cache local au lieu de multiplier les requêtes vers un second fournisseur.
     if(!Object.keys(values).length)throw new Error(/load failed|failed to fetch|networkerror/i.test(sourceError)?'connexion aux fournisseurs de prix impossible. Vérifiez le réseau puis réessayez.':sourceError||'aucun prix reçu');
     const unresolved=ids.filter(id=>!Number.isFinite(Number(values[id]))||Number(values[id])<=0);
     if(unresolved.length)console.warn('Prix crypto manquants pour certains actifs :',unresolved);
