@@ -38,5 +38,16 @@
     return rows;
   }
 
-  return Object.freeze({ filterAndSort });
+  function selectGroups(accounts = [], { effectiveType, investmentType = ['pea', 'cto', 'av'] } = {}) {
+    if (typeof effectiveType !== 'function') throw new TypeError('An effective account type selector is required');
+    const operational = accounts.filter(account => !investmentType.includes(effectiveType(account)));
+    return Object.freeze({
+      operational,
+      personal: operational.filter(account => effectiveType(account) !== 'pro'),
+      professional: operational.filter(account => effectiveType(account) === 'pro'),
+      investment: accounts.filter(account => investmentType.includes(effectiveType(account)))
+    });
+  }
+
+  return Object.freeze({ filterAndSort, selectGroups });
 });
