@@ -30,7 +30,7 @@
   }
 
   function buildTransactionsForMonth(templates, transactions, month, options = {}) {
-    if (!/^\\d{4}-\\d{2}$/.test(month)) return [];
+    if (!/^\d{4}-\d{2}$/.test(month)) return [];
     const existingKeys = new Set((transactions || []).map(item => item.recurringKey).filter(Boolean));
     const createId = options.createId || (() => {
       if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
