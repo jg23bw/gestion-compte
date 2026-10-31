@@ -11,18 +11,21 @@
   'use strict';
 
   function create(state) {
-    if (!state || !Array.isArray(state.transactions) || !Array.isArray(state.accounts)) {
+    const getState = typeof state === 'function' ? state : () => state;
+    const initialState = getState();
+    if (!initialState || !Array.isArray(initialState.transactions) || !Array.isArray(initialState.accounts)) {
       throw new TypeError('A valid application state is required');
     }
     return Object.freeze({
       findByAccount(accountId) {
-        return state.transactions.filter(transaction => transaction.accountId === accountId);
+        return getState().transactions.filter(transaction => transaction.accountId === accountId);
       },
       findAccount(accountId) {
-        return state.accounts.find(account => account.id === accountId) || null;
+        return getState().accounts.find(account => account.id === accountId) || null;
       },
       findRecurringTemplates() {
-        return Array.isArray(state.recurringTemplates) ? state.recurringTemplates : [];
+        const templates = getState().recurringTemplates;
+        return Array.isArray(templates) ? templates : [];
       }
     });
   }
