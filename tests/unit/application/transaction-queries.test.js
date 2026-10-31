@@ -47,3 +47,16 @@ test('professional adjusted balance uses repository templates', () => {
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
 });
+
+test('balance after transaction follows the account display order and stops at the requested row', () => {
+  const f = fixture();
+  const queries = create({ repository: f.repository, domain });
+  assert.equal(queries.balanceAfterTransaction(f.transactions[0]), 150);
+  assert.equal(queries.balanceAfterTransaction(f.transactions[1]), 140);
+});
+
+test('balance after transaction returns zero when the account no longer exists', () => {
+  const f = fixture();
+  const queries = create({ repository: f.repository, domain });
+  assert.equal(queries.balanceAfterTransaction({ id: 'gone', accountId: 'missing' }), 0);
+});
