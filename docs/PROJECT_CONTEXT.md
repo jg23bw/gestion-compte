@@ -512,3 +512,9 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le fallback CoinCap est isolé derrière un port et un adaptateur testés avec un faux réseau.
 - La conversion USD vers EUR et le mapping des identifiants sont conservés. Le rafraîchissement principal, le cache et le rendu restent pilotés par l'application.
+
+
+## Extraction de l'indice Fear & Greed (31 octobre 2026)
+
+- Le chargement de l'indice Alternative.me est maintenant délégué à un adaptateur testé avec des réponses réseau simulées.
+- L'interface conserve les libellés, le seuil de sentiment et le rendu de l'indicateur.
