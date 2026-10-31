@@ -719,9 +719,6 @@ function moveTransaction(id,direction){
   showToast('Ordre manuel des opérations mis à jour.',true);
 }
 function balanceAt(accountId,untilDate=null){const account=accountById(accountId);return account?TransactionRules.balanceAt(account.opening,state.transactions.filter(t=>t.accountId===accountId),untilDate):0;}
-  const a=accountById(accountId);if(!a)return 0;
-  return Number(a.opening||0)+accountTransactions(accountId).filter(t=>!untilDate||t.date<=untilDate).reduce((sum,t)=>sum+Number(t.amount),0);
-}
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}
 function stockValueForAccount(accountId){return (state.stockHoldings||[]).filter(h=>h.accountId===accountId).reduce((sum,h)=>{if(isManualValueHolding(h))return sum+manualHoldingValue(h);const details=stockPriceDetails(h);return sum+(details.price!==null?Number(h.quantity||0)*details.price:Number(h.invested||0));},0);}
@@ -738,33 +735,10 @@ function balanceAfterTransaction(transaction){
   return balance;
 }
 function tiimeCalc(account,amount){return TransactionRules.calculateProfessionalAmounts(account,amount);}
-  const rate=Math.min(100,Math.max(0,Number(account.vatRate)||0))/100;
-  const social=Math.min(100,Math.max(0,Number(account.socialRate)||0))/100;
-  if(amount>0){const ht=amount/(1+rate);return {vat:amount-ht,social:ht*social,net:ht*(1-social)};}
-  return {vat:0,social:0,net:amount};
-}
 function proRecurringKind(transaction){return TransactionRules.professionalRecurringKind(transaction,state.recurringTemplates||[]);}
-  if(!transaction.recurringTemplateId&&!transaction.recurringKey)return null;
-  const template=(state.recurringTemplates||[]).find(item=>item.id===transaction.recurringTemplateId);
-  const label=String(template?.label||transaction.label||'').trim().toLocaleLowerCase('fr');
-  if(/^tva(?:\s|$)/i.test(label))return 'vat';
-  if(/^charges sociales(?:\s|$)/i.test(label))return 'social';
-  if(/^marge(?:\s|$)/i.test(label))return 'margin';
-  return null;
-}
 function proAdjustedAmount(transaction){return TransactionRules.professionalAdjustedAmount(transaction,state.recurringTemplates||[]);}
-  const kind=proRecurringKind(transaction);
-  if(kind){const template=(state.recurringTemplates||[]).find(item=>item.id===transaction.recurringTemplateId);return Number(template?.amount??transaction.amount)||0;}
-  return Number(transaction.amount)||0;
-}
 function proAdjustedDelta(transaction){return TransactionRules.professionalAdjustedDelta(transaction,state.recurringTemplates||[]);}
-  const kind=proRecurringKind(transaction),amount=proAdjustedAmount(transaction);
-  return kind?-Math.abs(amount):amount;
-}
 function proAdjustedBalanceAt(account,untilDate=today()){return TransactionRules.professionalAdjustedBalanceAt(account,state.transactions,state.recurringTemplates||[],untilDate);}
-  const opening=Number(account.netOpening??account.opening)||0;
-  return opening+accountTransactions(account.id).filter(t=>t.date<=untilDate).reduce((sum,t)=>sum+proAdjustedDelta(t),0);
-}
 function tiimeNetBalance(account){return proAdjustedBalanceAt(account,today());}
 function tiimeNetBalanceAt(account,untilDate=today()){return proAdjustedBalanceAt(account,untilDate);}
 function effectiveAccountType(account){
