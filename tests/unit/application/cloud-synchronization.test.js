@@ -19,8 +19,9 @@ function fixture(options={}){
   mapAccount:x=>x,mapTemplate:x=>x,mapTransaction:x=>x,mapCryptoHolding:x=>x,
   sameCloudValues:(a,b,keys)=>keys.every(k=>String(a[k]??'')===String(b[k]??'')),
   isMissingCryptoTable:e=>e.code==='PGRST205',
-  saveAccountMetadata:async()=>{},saveStockHoldings:async()=>{},
-  getAccountTypeOverrides:()=>({}),getAccountPledgeOverrides:()=>({}),
+  saveAccountMetadata:options.saveAccountMetadata|| (async()=>{}),saveStockHoldings:async()=>{},
+  getAccountTypeOverrides:options.getAccountTypeOverrides||(()=>({})),
+  getAccountPledgeOverrides:options.getAccountPledgeOverrides||(()=>({})),
   normalizeStockHoldings:x=>x||[]
  });
  return {service,calls,dirty,pending,repos};
@@ -48,4 +49,45 @@ test('retains pending deletion when remote deletion fails',async()=>{
  f.pending.transactions.add('old-id');
  await assert.rejects(f.service.synchronize({client:{},userId:'u1',state,pending:f.pending,dirty:f.dirty,cryptoTableReady:false}),/offline/);
  assert.equal(f.pending.transactions.has('old-id'),true);
+});
+
+
+test('persists account type and pledge metadata together and clears their dirty flags',async()=>{
+ const saved=[];
+ const f=fixture({
+  getAccountTypeOverrides:()=>({'account-1':'pea'}),
+  getAccountPledgeOverrides:()=>({'account-1':{note:'Crédit lombard'}}),
+  saveAccountMetadata:async metadata=>saved.push(metadata)
+ });
+ f.dirty.accountTypes=true;
+ f.dirty.accountPledges=true;
+ await f.service.synchronize({client:{},userId:'u1',state,pending:f.pending,dirty:f.dirty,cryptoTableReady:false});
+ assert.deepEqual(saved,[{
+  overrides:{'account-1':'pea'},
+  pledges:{'account-1':{note:'Crédit lombard'}}
+ }]);
+ assert.equal(f.dirty.accountTypes,false);
+ assert.equal(f.dirty.accountPledges,false);
+});
+
+test('keeps account metadata dirty when it changes during the asynchronous save',async()=>{
+ let currentTypes={'account-1':'pea'};
+ let markSaveStarted;
+ let releaseSave;
+ const saveStarted=new Promise(resolve=>{markSaveStarted=resolve;});
+ const saveGate=new Promise(resolve=>{releaseSave=resolve;});
+ const f=fixture({
+  getAccountTypeOverrides:()=>currentTypes,
+  getAccountPledgeOverrides:()=>({}),
+  saveAccountMetadata:async()=>{markSaveStarted();await saveGate;}
+ });
+ f.dirty.accountTypes=true;
+ f.dirty.accountPledges=true;
+ const synchronization=f.service.synchronize({client:{},userId:'u1',state,pending:f.pending,dirty:f.dirty,cryptoTableReady:false});
+ await saveStarted;
+ currentTypes={'account-1':'av'};
+ releaseSave();
+ await synchronization;
+ assert.equal(f.dirty.accountTypes,true);
+ assert.equal(f.dirty.accountPledges,true);
 });
