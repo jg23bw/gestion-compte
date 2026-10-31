@@ -691,8 +691,8 @@ function pledgeNoteMarkup(id){
   const note=String(accountPledgeFor(id)?.note||'').trim();
   return note?'<div class="account-pledge-note" title="'+escapeHtml(note)+'">Nantissement : '+escapeHtml(note)+'</div>':'';
 }
-function transactionOrder(a,b){const ao=Number.isFinite(Number(a.sortOrder))&&a.sortOrder!==null?Number(a.sortOrder):null,bo=Number.isFinite(Number(b.sortOrder))&&b.sortOrder!==null?Number(b.sortOrder):null;if(ao!==null&&bo!==null&&ao!==bo)return ao-bo;if(ao!==null&&bo===null)return -1;if(ao===null&&bo!==null)return 1;return b.date.localeCompare(a.date)||b.createdAt-a.createdAt;}
-function accountTransactions(accountId){return state.transactions.filter(t=>t.accountId===accountId).sort(transactionOrder);}
+function transactionOrder(a,b){return TransactionRules.transactionOrder(a,b);}
+function accountTransactions(accountId){return TransactionRules.sortAccountTransactions(state.transactions,accountId);}
 function normalizeTransactionOrder(){for(const account of state.accounts){const rows=state.transactions.filter(t=>t.accountId===account.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt);rows.forEach((t,index)=>{if(!Number.isFinite(Number(t.sortOrder))||t.sortOrder===null)t.sortOrder=index+1;});}}
 function moveTransaction(id,direction){
   const current=state.transactions.find(t=>t.id===id);if(!current)return;
@@ -718,7 +718,7 @@ function moveTransaction(id,direction){
   renderAll();
   showToast('Ordre manuel des opérations mis à jour.',true);
 }
-function balanceAt(accountId,untilDate=null){
+function balanceAt(accountId,untilDate=null){const account=accountById(accountId);return account?TransactionRules.balanceAt(account.opening,state.transactions.filter(t=>t.accountId===accountId),untilDate):0;}
   const a=accountById(accountId);if(!a)return 0;
   return Number(a.opening||0)+accountTransactions(accountId).filter(t=>!untilDate||t.date<=untilDate).reduce((sum,t)=>sum+Number(t.amount),0);
 }
@@ -737,13 +737,13 @@ function balanceAfterTransaction(transaction){
   }
   return balance;
 }
-function tiimeCalc(account,amount){
+function tiimeCalc(account,amount){return TransactionRules.calculateProfessionalAmounts(account,amount);}
   const rate=Math.min(100,Math.max(0,Number(account.vatRate)||0))/100;
   const social=Math.min(100,Math.max(0,Number(account.socialRate)||0))/100;
   if(amount>0){const ht=amount/(1+rate);return {vat:amount-ht,social:ht*social,net:ht*(1-social)};}
   return {vat:0,social:0,net:amount};
 }
-function proRecurringKind(transaction){
+function proRecurringKind(transaction){return TransactionRules.professionalRecurringKind(transaction,state.recurringTemplates||[]);}
   if(!transaction.recurringTemplateId&&!transaction.recurringKey)return null;
   const template=(state.recurringTemplates||[]).find(item=>item.id===transaction.recurringTemplateId);
   const label=String(template?.label||transaction.label||'').trim().toLocaleLowerCase('fr');
@@ -752,16 +752,16 @@ function proRecurringKind(transaction){
   if(/^marge(?:\s|$)/i.test(label))return 'margin';
   return null;
 }
-function proAdjustedAmount(transaction){
+function proAdjustedAmount(transaction){return TransactionRules.professionalAdjustedAmount(transaction,state.recurringTemplates||[]);}
   const kind=proRecurringKind(transaction);
   if(kind){const template=(state.recurringTemplates||[]).find(item=>item.id===transaction.recurringTemplateId);return Number(template?.amount??transaction.amount)||0;}
   return Number(transaction.amount)||0;
 }
-function proAdjustedDelta(transaction){
+function proAdjustedDelta(transaction){return TransactionRules.professionalAdjustedDelta(transaction,state.recurringTemplates||[]);}
   const kind=proRecurringKind(transaction),amount=proAdjustedAmount(transaction);
   return kind?-Math.abs(amount):amount;
 }
-function proAdjustedBalanceAt(account,untilDate=today()){
+function proAdjustedBalanceAt(account,untilDate=today()){return TransactionRules.professionalAdjustedBalanceAt(account,state.transactions,state.recurringTemplates||[],untilDate);}
   const opening=Number(account.netOpening??account.opening)||0;
   return opening+accountTransactions(account.id).filter(t=>t.date<=untilDate).reduce((sum,t)=>sum+proAdjustedDelta(t),0);
 }
