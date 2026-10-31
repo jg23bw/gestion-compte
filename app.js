@@ -60,10 +60,17 @@ const transactionCommands = TransactionCommands.create({repository: transactionR
 const recurringTemplateCommands = RecurringTemplateCommands.create({repository: recurringTemplateRepository});
 const stockHoldingCommands = StockHoldingCommands.create({repository: stockHoldingRepository});
 const wealthSnapshotQueries = WealthSnapshotQueries.create({
-  totalAccountsBalance, totalStockValue, totalCryptoValue, lombardAmount,
-  stockHoldings: () => stockHoldingCommands.findAll(), isManualValueHolding,
-  manualHoldingValue, stockPriceDetails, accounts: () => state.accounts,
-  effectiveAccountType, accountOverviewBalance
+  // Inject the current application ports expected by the query service.
+  accounts: () => state.accounts,
+  balanceAt,
+  stockHoldings: () => stockHoldingCommands.findAll(),
+  cryptoHoldings: () => state.cryptoHoldings || [],
+  stockPriceDetails,
+  cryptoPrice,
+  isManualValueHolding,
+  manualHoldingValue,
+  lombardCredit: () => state.lombardCredit,
+  effectiveAccountType
 });
 const accountCommands = AccountCommands.create({
   repository: accountRepository, isBankKey, accountShort,
