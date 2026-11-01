@@ -38,6 +38,14 @@ test('creates an account with normalized fields and professional defaults', () =
   assert.equal(state.accounts.length, 1);
 });
 
+test('stores separate opening balances for professional accounts', () => {
+  const original = { id: 'pro', name: 'Compte pro', kind: 'pro', accountType: 'pro', opening: 100, netOpening: 80 };
+  const { commands } = setup([original]);
+  const updated = commands.save({ existing: original, name: 'Compte pro', accountType: 'pro', bank: 'other', opening: 150, netOpening: 120 });
+  assert.equal(updated.opening, 150);
+  assert.equal(updated.netOpening, 120);
+});
+
 test('maps investment account types to savings storage kind', () => {
   const { commands } = setup();
   const account = commands.save({ id: 'pea', name: 'PEA', accountType: 'pea', bank: 'fortuneo' });
