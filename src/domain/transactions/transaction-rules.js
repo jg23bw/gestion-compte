@@ -54,7 +54,9 @@
   }
 
   function professionalAdjustedBalanceAt(account, transactions, recurringTemplates = [], untilDate) {
-    const opening = Number(account.opening) || 0;
+    // The professional balance starts from the net opening amount when available.
+    // Fall back to the regular opening balance for legacy accounts.
+    const opening = Number(account.netOpening ?? account.opening) || 0;
     return opening + sortAccountTransactions(transactions, account.id)
       .filter(transaction => transaction.date <= untilDate)
       .reduce((sum, transaction) => sum + professionalAdjustedDelta(transaction, recurringTemplates), 0);
