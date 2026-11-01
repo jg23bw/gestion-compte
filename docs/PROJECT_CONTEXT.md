@@ -85,7 +85,12 @@ Les sections HTML inspectées incluent `accounts-view`, `transactions-view`, `hi
 ### Modèles de récurrence
 État : `state.recurringTemplates`. Les fréquences SQL prises en charge sont `monthly`, `quarterly`, `annual`, `once`. Les montants peuvent être absents ; les modèles sans montant renseigné ne doivent pas générer une opération arbitraire. Les modèles personnalisés sont des données privées et ne doivent jamais être codés en dur.
 
-### Sécurité
+#
+## Notes personnelles
+
+L'onglet « Notes » conserve une note texte privée par utilisateur dans `public.user_notes`. La sauvegarde est explicite et utilise l'identité Supabase de la session ; RLS limite lecture et écriture au propriétaire. Sur une base existante, exécuter `supabase/migrations/202611010001_user_notes.sql` dans le SQL Editor du projet avant d'utiliser l'onglet. Un commit GitHub n'applique pas la migration distante.
+
+## Sécurité
 Les tables principales sont liées à `auth.users` et les politiques RLS doivent limiter l’accès à `auth.uid()`. Les Edge Functions MCP utilisent un secret privilégié côté serveur : il ne doit jamais être placé dans le JavaScript du navigateur ou dans un raccourci utilisateur.
 
 ## 5. Comportement et décisions produit à préserver
