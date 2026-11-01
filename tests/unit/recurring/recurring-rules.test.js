@@ -39,17 +39,17 @@ test('unknown frequency and invalid month are rejected', () => {
 });
 
 
-test('professional provision recurrences keep the real transaction amount at zero', () => {
+test('recurring transactions use explicit classification and never infer it from labels', () => {
   const templates = [
-    { id: 'vat', accountId: 'pro', label: 'TVA 10', amount: 320, frequency: 'monthly', day: 10, enabled: true },
-    { id: 'social', accountId: 'pro', label: 'Charges Sociales 10', amount: 450, frequency: 'monthly', day: 10, enabled: true },
-    { id: 'margin', accountId: 'pro', label: 'Marge', amount: 180, frequency: 'monthly', day: 10, enabled: true },
-    { id: 'rent', accountId: 'pro', label: 'Loyer', amount: -900, frequency: 'monthly', day: 10, enabled: true }
+    { id: 'vat', accountId: 'pro', label: 'TVA 10', amount: -320, professionalCategory: 'vat', professionalTreatment: 'provision', frequency: 'monthly', day: 10, enabled: true },
+    { id: 'social', accountId: 'pro', label: 'Charges Sociales 10', amount: -450, professionalCategory: 'social', professionalTreatment: 'effective', frequency: 'monthly', day: 10, enabled: true },
+    { id: 'margin', accountId: 'pro', label: 'Marge', amount: -180, professionalCategory: 'provision', frequency: 'monthly', day: 10, enabled: true },
+    { id: 'rent', accountId: 'pro', label: 'TVA loyer', amount: -900, frequency: 'monthly', day: 10, enabled: true }
   ];
   const rows = require('../../../src/domain/recurring/recurring-rules.js')
     .buildTransactionsForMonth(templates, [], '2026-11', { createId: (() => { let i = 0; return () => String(++i); })() });
-  assert.deepEqual(rows.map(row => row.amount), [0, 0, 0, -900]);
-  assert.equal(require('../../../src/domain/recurring/recurring-rules.js').isProfessionalProvisionLabel('TVA 10'), true);
-  assert.equal(require('../../../src/domain/recurring/recurring-rules.js').isProfessionalProvisionLabel('Charges Sociales 10'), true);
-  assert.equal(require('../../../src/domain/recurring/recurring-rules.js').isProfessionalProvisionLabel('Marge'), true);
+  assert.deepEqual(rows.map(row => row.amount), [0, -450, 0, -900]);
+  assert.deepEqual(rows.map(row => row.professionalAmount), [-320, 0, -180, -900]);
+  assert.deepEqual(rows.map(row => row.professionalCategory), ['vat', 'social', 'provision', null]);
+  assert.deepEqual(rows.map(row => row.professionalTreatment), ['provision', 'effective', null, null]);
 });

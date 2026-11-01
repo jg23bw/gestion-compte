@@ -26,31 +26,20 @@
       .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   }
 
-  function professionalRecurringKind(transaction, recurringTemplates = []) {
-    if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
-    const template = recurringTemplates.find(item => item.id === transaction.recurringTemplateId);
-    const label = String(template?.label || transaction.label || '').trim().toLocaleLowerCase('fr');
-    if (/^tva(?:\s|$)/i.test(label)) return 'vat';
-    if (/^charges sociales(?:\s|$)/i.test(label)) return 'social';
-    if (/^marge(?:\s|$)/i.test(label)) return 'margin';
+  // Classification explicite : aucun calcul ne dépend du libellé ou du modèle récurrent.
+  function professionalRecurringKind(transaction) {
+    if (transaction.professionalCategory === 'provision') return 'margin';
+    if (transaction.professionalCategory === 'vat') return 'vat';
+    if (transaction.professionalCategory === 'social') return 'social';
     return null;
   }
 
-  function professionalAdjustedAmount(transaction, recurringTemplates = []) {
-    const kind = professionalRecurringKind(transaction, recurringTemplates);
-    if (kind) {
-      const template = recurringTemplates.find(item => item.id === transaction.recurringTemplateId);
-      return Number(template?.amount ?? transaction.amount) || 0;
-    }
-    return Number(transaction.amount) || 0;
+  function professionalAdjustedAmount(transaction) {
+    return Number(transaction.professionalAmount ?? transaction.amount) || 0;
   }
 
-  function professionalAdjustedDelta(transaction, recurringTemplates = []) {
-    const kind = professionalRecurringKind(transaction, recurringTemplates);
-    const amount = professionalAdjustedAmount(transaction, recurringTemplates);
-    // Le montant bancaire de ces lignes reste à zéro ; leur provision prévue
-    // dans le modèle récurrent est néanmoins déduite du solde prévisionnel.
-    return kind ? -Math.abs(amount) : amount;
+  function professionalAdjustedDelta(transaction) {
+    return professionalAdjustedAmount(transaction);
   }
 
   function professionalAdjustedBalanceAt(account, transactions, recurringTemplates = [], untilDate) {
@@ -72,7 +61,7 @@
     return balance;
   }
 
-  function createTransactionRecord({ transactions, previous = null, id, accountId, date, amount, label, createdAt }) {
+  function createTransactionRecord({ transactions, previous = null, id, accountId, date, amount, label, createdAt, professionalCategory = null, professionalTreatment = null, professionalAmount = amount }) {
     const oldOrder = previous?.sortOrder;
     const keepsManualOrder = previous
       && previous.accountId === accountId
@@ -90,6 +79,9 @@
       date,
       amount,
       label,
+      professionalCategory,
+      professionalTreatment,
+      professionalAmount: Number(professionalAmount ?? amount),
       isPaid: previous?.isPaid === true,
       sortOrder: nextOrder,
       createdAt: previous?.createdAt || createdAt

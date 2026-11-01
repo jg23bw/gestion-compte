@@ -41,10 +41,9 @@ test('unknown account returns zero without throwing', () => {
   assert.equal(queries.balanceAt('missing'), 0);
 });
 
-test('professional adjusted balance uses repository templates', () => {
+test('professional adjusted balance uses the explicit adjusted amount, not recurring template labels', () => {
   const f = fixture();
-  f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, recurringKey: '2026-01', recurringTemplateId: 'vat-template', label: 'TVA' });
-  f.repository.findRecurringTemplates = () => [{ id: 'vat-template', label: 'TVA', amount: 20 }];
+  f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, professionalCategory: 'vat', professionalTreatment: 'provision', professionalAmount: -20, label: 'N’importe quel libellé' });
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
 });

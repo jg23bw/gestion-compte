@@ -47,35 +47,28 @@ test('balance at date excludes future transactions and includes the boundary dat
   ], '2026-01-10'), 105);
 });
 
-test('professional recurring classification requires a recurring origin', () => {
+test('professional classification is explicit and never inferred from transaction or template labels', () => {
   assert.equal(rules.professionalRecurringKind(tx('manual', { label: 'TVA mensuelle' })), null);
-  assert.equal(rules.professionalRecurringKind(tx('generated', { label: 'TVA mensuelle', recurringKey: '2026-01' })), 'vat');
+  assert.equal(rules.professionalRecurringKind(tx('generated', { label: 'TVA mensuelle', recurringKey: '2026-01' })), null);
+  assert.equal(rules.professionalRecurringKind(tx('template', { label: 'Autre libellé', professionalCategory: 'social' })), 'social');
+  assert.equal(rules.professionalRecurringKind(tx('margin', { label: 'Marge de sécurité', professionalCategory: 'provision' })), 'margin');
 });
 
-test('professional recurring classification prefers the template label', () => {
-  const transaction = tx('generated', { label: 'Autre libellé', recurringTemplateId: 'template-1' });
-  assert.equal(rules.professionalRecurringKind(transaction, [{ id: 'template-1', label: 'Charges sociales URSSAF' }]), 'social');
-});
-
-test('professional recurring classification is case and accent locale insensitive for known labels', () => {
-  assert.equal(rules.professionalRecurringKind(tx('vat', { recurringKey: 'k', label: 'TVA' })), 'vat');
-  assert.equal(rules.professionalRecurringKind(tx('margin', { recurringKey: 'k', label: 'Marge de sécurité' })), 'margin');
-});
-
-test('adjusted provision amount uses recurring template amount, including zero real amount', () => {
-  const transaction = tx('provision', { amount: 0, recurringTemplateId: 'vat-template' });
-  const templates = [{ id: 'vat-template', label: 'TVA', amount: 425.5 }];
-  assert.equal(rules.professionalAdjustedAmount(transaction, templates), 425.5);
+test('adjusted amount comes from the explicit transaction amount', () => {
+  const transaction = tx('provision', { amount: 0, professionalCategory: 'vat', professionalTreatment: 'provision', professionalAmount: -425.5, recurringTemplateId: 'vat-template' });
+  const templates = [{ id: 'vat-template', label: 'TVA', amount: -999 }];
+  assert.equal(rules.professionalAdjustedAmount(transaction, templates), -425.5);
   assert.equal(rules.professionalAdjustedDelta(transaction, templates), -425.5);
 });
 
-test('adjusted margin is deducted only from adjusted balance', () => {
+test('adjusted balance uses explicit provisions and does not infer them from template labels', () => {
   const account = { id: 'bank-1', opening: 1000, netOpening: 1000 };
   const transactions = [
-    tx('real', { amount: 200, date: '2026-01-01' }),
-    tx('margin', { amount: 0, date: '2026-01-02', recurringTemplateId: 'margin-template' })
+    tx('real', { amount: 200, date: '2026-01-01', professionalAmount: 200 }),
+    tx('provision', { amount: 0, date: '2026-01-02', professionalCategory: 'provision', professionalAmount: -150, recurringTemplateId: 'margin-template' }),
+    tx('unclassified', { amount: 0, date: '2026-01-03', recurringTemplateId: 'vat-template' })
   ];
-  const templates = [{ id: 'margin-template', label: 'Marge sécurité', amount: 150 }];
+  const templates = [{ id: 'margin-template', label: 'Marge sécurité', amount: -150 }, { id: 'vat-template', label: 'TVA', amount: -90 }];
   assert.equal(rules.balanceAt(account.opening, transactions), 1200);
   assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, templates, '2026-01-31'), 1050);
 });
