@@ -6,7 +6,7 @@ const {create}=require('../../../src/application/synchronization/cloud-synchroni
 function fixture(options={}){
  const calls=[];
  const repository=name=>({
-  async listAll(){calls.push(name+'.list');if(name==='crypto'&&options.cryptoError)throw options.cryptoError;return [];},
+  async listAll(){calls.push(name+'.list');if(name==='crypto'&&options.cryptoError)throw options.cryptoError;return name==='transactions'?(options.remoteTransactions||[]):[];},
   async upsertMany(rows){calls.push([name+'.upsert',rows]);return {compatibilityFallback:!!options.transactionFallback};},
   async deleteById(id){calls.push([name+'.delete',id]);if(options.deleteError)throw options.deleteError;}
  });
@@ -90,4 +90,44 @@ test('keeps account metadata dirty when it changes during the asynchronous save'
  await synchronization;
  assert.equal(f.dirty.accountTypes,true);
  assert.equal(f.dirty.accountPledges,true);
+});
+
+test('persists a new professional margin provision with its adjusted amount on the first synchronization',async()=>{
+ const f=fixture();
+ const marginProvision={
+  id:'margin-1',account_id:'pro-1',transaction_date:'2026-11-01',
+  label:'Provision marge',amount:0,professional_category:'provision',
+  professional_treatment:null,professional_amount:-400,
+  is_paid:false,sort_order:1,source:'manual',
+  recurring_template_id:null,generated_month:null,recurring_key:null
+ };
+ const result=await f.service.synchronize({
+  client:{},userId:'u1',
+  state:{...state,transactions:[marginProvision]},
+  pending:f.pending,dirty:f.dirty,cryptoTableReady:false
+ });
+ const upsert=f.calls.find(item=>Array.isArray(item)&&item[0]==='transactions.upsert');
+ assert.ok(upsert,'new transaction must be upserted');
+ assert.deepEqual(upsert[1],[marginProvision]);
+ assert.equal(result.cryptoTableReady,false);
+});
+
+test('detects classification and adjusted-amount changes on an existing professional transaction',async()=>{
+ const previous={
+  id:'margin-1',account_id:'pro-1',transaction_date:'2026-11-01',
+  label:'Provision marge',amount:0,professional_category:null,
+  professional_treatment:null,professional_amount:0,
+  is_paid:false,sort_order:1,source:'manual',
+  recurring_template_id:null,generated_month:null,recurring_key:null
+ };
+ const updated={...previous,professional_category:'provision',professional_amount:-400};
+ const f=fixture({remoteTransactions:[previous]});
+ await f.service.synchronize({
+  client:{},userId:'u1',
+  state:{...state,transactions:[updated]},
+  pending:f.pending,dirty:f.dirty,cryptoTableReady:false
+ });
+ const upsert=f.calls.find(item=>Array.isArray(item)&&item[0]==='transactions.upsert');
+ assert.ok(upsert,'classification-only update must be synchronized');
+ assert.deepEqual(upsert[1],[updated]);
 });
