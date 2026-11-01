@@ -62,6 +62,16 @@
       .reduce((sum, transaction) => sum + professionalAdjustedDelta(transaction, recurringTemplates), 0);
   }
 
+  function professionalAdjustedBalanceAfterTransaction(account, transactions, recurringTemplates = [], transactionId) {
+    const opening = Number(account.netOpening ?? account.opening) || 0;
+    let balance = opening;
+    for (const transaction of sortAccountTransactions(transactions, account.id)) {
+      balance += professionalAdjustedDelta(transaction, recurringTemplates);
+      if (transaction.id === transactionId) return balance;
+    }
+    return balance;
+  }
+
   function createTransactionRecord({ transactions, previous = null, id, accountId, date, amount, label, createdAt }) {
     const oldOrder = previous?.sortOrder;
     const keepsManualOrder = previous
@@ -108,6 +118,7 @@
     professionalAdjustedAmount,
     professionalAdjustedDelta,
     professionalAdjustedBalanceAt,
+    professionalAdjustedBalanceAfterTransaction,
     calculateProfessionalAmounts,
     createTransactionRecord
   });
