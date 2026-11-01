@@ -49,6 +49,8 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Modèles de récurrences mensuelles, trimestrielles, annuelles ou ponctuelles.
 - Génération des opérations pour un mois, détection des doublons et exclusion des montants non renseignés.
 - Synchronisation avec Supabase, connexion utilisateur, création de compte utilisateur et interface de gestion de jetons MCP.
+- Onglet Notes avec sauvegarde privée dans Supabase et accès depuis les appareils connectés.
+
 
 ## Démarrer et modifier
 
