@@ -153,6 +153,13 @@ function openRecurringEditor(id=null){
   $('recurring-edit-label').value=template?.label||'';
   $('recurring-edit-amount').value=template?.amount===null||template?.amount===undefined?'':String(template.amount);
   $('recurring-edit-account').value=template?.accountId||state.accounts[0]?.id||'';
+  $('recurring-provision').checked=template?.professionalCategory==='provision';
+  $('recurring-vat').checked=template?.professionalCategory==='vat';
+  $('recurring-social').checked=template?.professionalCategory==='social';
+  document.querySelectorAll('input[name="recurring-vat-treatment"],input[name="recurring-social-treatment"]').forEach(input=>{input.checked=input.value===(template?.professionalTreatment||'');});
+  $('recurring-classification').hidden=effectiveAccountType(accountById($('recurring-edit-account').value)||{kind:'bank'})!=='pro';
+  $('recurring-vat-treatment-fields').hidden=!$('recurring-vat').checked;
+  $('recurring-social-treatment-fields').hidden=!$('recurring-social').checked;
   $('recurring-edit-frequency').value=template?.frequency||'monthly';
   $('recurring-edit-day').value=String(template?.day||1);
   $('recurring-edit-start-month').value=template?.startMonth||'';
