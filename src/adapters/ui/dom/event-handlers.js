@@ -361,7 +361,7 @@ function initializeDomEventHandlers() {
     if(existing)prepareUndo();
     const accountId=existing?.id||crypto.randomUUID();
     try{
-      accountCommands.save({id:accountId,name,accountType,bank,opening,existing});
+      accountCommands.save({id:accountId,name,accountType,bank,opening,netOpening,existing});
     }catch(error){
       showToast('Compte non enregistré : '+(error.message||'vérifiez les informations.'));
       return;
@@ -383,6 +383,7 @@ function initializeDomEventHandlers() {
   $('account-delete').addEventListener('click',deleteAccount);
   $('edit-account-name').addEventListener('input',updateAccountBankPreview);
   $('edit-account-bank').addEventListener('change',updateAccountBankPreview);
+  $('edit-account-kind').addEventListener('change',()=>{$('account-net-opening-field').hidden=$('edit-account-kind').value!=='pro';});
   $('edit-account-pledged').addEventListener('change',updateAccountPledgeFields);
   document.addEventListener('change',event=>{
     const marketColumn=event.target.closest('[data-market-column]');
