@@ -96,6 +96,11 @@ La fenêtre de configuration permet de supprimer un compte après confirmation. 
 
 Le dernier compte ne peut pas être supprimé : l’application affiche un message demandant d’en créer un autre d’abord. Cette garde évite de retomber sur le réensemencement des comptes par défaut au prochain chargement. Un jeton MCP existant dont le compte par défaut est supprimé n’est pas mis à jour automatiquement ; il faut le recréer ou le modifier côté serveur si nécessaire.
 
+
+## Notes personnelles
+
+L'onglet « Notes » conserve une note texte privée par utilisateur dans `public.user_notes`. La sauvegarde est explicite et utilise l'identité Supabase de la session ; RLS limite lecture et écriture au propriétaire. Sur une base existante, exécuter `supabase/migrations/202611010001_user_notes.sql` dans le SQL Editor du projet avant d'utiliser l'onglet. Un commit GitHub n'applique pas la migration distante.
+
 ## Sécurité
 
 - Les tables de données doivent avoir RLS activée et des politiques qui vérifient `user_id = auth.uid()`.
