@@ -16,7 +16,7 @@ function fixture() {
       findAll: () => transactions,
       findByAccount: id => transactions.filter(t => t.accountId === id),
       findAccount: id => accounts.find(a => a.id === id) || null,
-      findRecurringTemplates: () => this.recurringTemplates || []
+      findRecurringTemplates: () => recurringTemplates
     }
   };
 }
@@ -60,11 +60,11 @@ test('actual and provision-adjusted balances treat provisions and payments separ
     { id: 'vat-payment', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -100, label: 'Paiement TVA' },
     { id: 'social-payment', accountId: 'a', date: '2026-01-05', createdAt: 5, amount: -200, label: 'Paiement charges sociales' }
   );
-  f.recurringTemplates = [
+  f.recurringTemplates.push(
     { id: 'vat', label: 'Provision TVA', amount: 100 },
     { id: 'social', label: 'Provision charges sociales', amount: 200 },
     { id: 'margin', label: 'Provision marge', amount: 50 }
-  ];
+  );
   const queries = create({ repository: f.repository, domain });
 
   assert.equal(queries.balanceAt('a'), 700);
