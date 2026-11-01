@@ -42,6 +42,8 @@ function openAccountEditor(id=null){
   $('edit-account-kind').value=a?effectiveAccountType(a):'bank';
   fillBankOptions(a?bankKeyForAccount(a):'other');
   $('edit-account-opening').value=a?Number(a.opening||0):0;
+  $('edit-account-net-opening').value=a?Number(a.netOpening??a.opening??0):0;
+  $('account-net-opening-field').hidden=effectiveAccountType(a||{kind:'bank'})!=='pro';
   const pledge=a?accountPledgeFor(a.id):null;
   $('edit-account-pledged').checked=!!pledge;
   $('edit-account-pledge-note').value=pledge?.note||'';
