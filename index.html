@@ -291,6 +291,21 @@
       <input type="hidden" id="recurring-edit-id">
       <label>Libellé<input id="recurring-edit-label" maxlength="120" required placeholder="Ex. Loyer, salaire, abonnement…"></label>
       <label>Compte<select id="recurring-edit-account" required></select></label>
+      <fieldset id="recurring-classification" class="pledge-field" hidden>
+        <legend>Type de dépense professionnelle</legend>
+        <label class="pledge-check"><input id="recurring-provision" type="checkbox"> Provision (ex. Marge / AEN)</label>
+        <label class="pledge-check"><input id="recurring-vat" type="checkbox"> TVA</label>
+        <div id="recurring-vat-treatment-fields" class="transaction-treatment-fields" hidden>
+          <label><input type="radio" name="recurring-vat-treatment" value="provision"> Provision</label>
+          <label><input type="radio" name="recurring-vat-treatment" value="effective"> Paiement effectif</label>
+        </div>
+        <label class="pledge-check"><input id="recurring-social" type="checkbox"> URSSAF / Cotisations sociales</label>
+        <div id="recurring-social-treatment-fields" class="transaction-treatment-fields" hidden>
+          <label><input type="radio" name="recurring-social-treatment" value="provision"> Provision</label>
+          <label><input type="radio" name="recurring-social-treatment" value="effective"> Paiement effectif</label>
+        </div>
+        <p class="form-help">Sans sélection, la récurrence est une dépense classique.</p>
+      </fieldset>
       <div class="form-row"><label>Montant (€)<input id="recurring-edit-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" placeholder="À renseigner si inconnu"></label><label>Fréquence<select id="recurring-edit-frequency" required><option value="monthly">Tous les mois</option><option value="quarterly">Trimestrielle</option><option value="annual">Annuelle</option><option value="once">Une seule fois</option></select></label></div>
       <div id="recurring-day-field"><label>Jour du mois<input id="recurring-edit-day" type="number" min="1" max="31" step="1" value="1"></label></div>
       <fieldset id="recurring-months-field" class="recurring-months-field"><legend>Mois concernés</legend><div class="recurring-months-grid">
