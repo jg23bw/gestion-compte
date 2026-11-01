@@ -317,8 +317,16 @@ function initializeDomEventHandlers() {
       const selected=Number($('transaction-provision').checked)+Number($('transaction-vat').checked)+Number($('transaction-social').checked);
       if(selected>1){showToast('Choisissez une seule classification : Provision, TVA ou URSSAF.');return;}
       if($('transaction-provision').checked)professionalCategory='provision';
-      if($('transaction-vat').checked){professionalCategory='vat';professionalTreatment=document.querySelector('input[name="transaction-vat-treatment"]:checked')?.value||'provision';}
-      if($('transaction-social').checked){professionalCategory='social';professionalTreatment=document.querySelector('input[name="transaction-social-treatment"]:checked')?.value||'provision';}
+      if($('transaction-vat').checked){
+        professionalCategory='vat';
+        professionalTreatment=document.querySelector('input[name="transaction-vat-treatment"]:checked')?.value||null;
+        if(!professionalTreatment){showToast('Précisez si la TVA est une provision ou un paiement effectif.');return;}
+      }
+      if($('transaction-social').checked){
+        professionalCategory='social';
+        professionalTreatment=document.querySelector('input[name="transaction-social-treatment"]:checked')?.value||null;
+        if(!professionalTreatment){showToast('Précisez si les cotisations URSSAF sont une provision ou un paiement effectif.');return;}
+      }
     }
     const isProvision=professionalCategory==='provision'||((professionalCategory==='vat'||professionalCategory==='social')&&professionalTreatment==='provision');
     const bankAmount=isProvision?0:amount;
