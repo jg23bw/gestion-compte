@@ -293,26 +293,38 @@ function initializeDomEventHandlers() {
   });
   
   document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>$(button.dataset.close).close()));
+  function updateTransactionClassificationFields(){
+    const provision=$('transaction-provision').checked,vat=$('transaction-vat').checked,social=$('transaction-social').checked;
+    if(provision){$('transaction-vat').checked=false;$('transaction-social').checked=false;}
+    if(vat){$('transaction-provision').checked=false;$('transaction-social').checked=false;}
+    if(social){$('transaction-provision').checked=false;$('transaction-vat').checked=false;}
+    $('transaction-vat-treatment-fields').hidden=!$('transaction-vat').checked;
+    $('transaction-social-treatment-fields').hidden=!$('transaction-social').checked;
+  }
+  ['transaction-provision','transaction-vat','transaction-social'].forEach(id=>$(id).addEventListener('change',updateTransactionClassificationFields));
+  $('transaction-account').addEventListener('change',()=>{
+    const account=accountById($('transaction-account').value);
+    $('transaction-classification').hidden=effectiveAccountType(account||{kind:'bank'})!=='pro';
+  });
   $('transaction-form').addEventListener('submit',event=>{
     event.preventDefault();
     const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
     if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
     const previous=id?transactionCommands.findById(id):null;
-    // TVA, Charges sociales et Marge sont des provisions : leur valeur est portée
-    // par le modèle de récurrence, jamais par le montant bancaire réel.
-    const previousAccount=previous?accountById(previous.accountId):null;
-    const provisionKind=previous&&previousAccount&&effectiveAccountType(previousAccount)==='pro'
-      ?proRecurringKind(previous):null;
-    const provisionTemplate=provisionKind&&previous.recurringTemplateId
-      ?recurringTemplateCommands.findById(previous.recurringTemplateId):null;
-    if(provisionKind&&!provisionTemplate){
-      showToast('Modèle de récurrence introuvable : le montant n’a pas été modifié.',false);
-      return;
+    const account=accountById(accountId),isProfessional=effectiveAccountType(account||{kind:'bank'})==='pro';
+    let professionalCategory=null,professionalTreatment=null;
+    if(isProfessional){
+      const selected=Number($('transaction-provision').checked)+Number($('transaction-vat').checked)+Number($('transaction-social').checked);
+      if(selected>1){showToast('Choisissez une seule classification : Provision, TVA ou URSSAF.');return;}
+      if($('transaction-provision').checked)professionalCategory='provision';
+      if($('transaction-vat').checked){professionalCategory='vat';professionalTreatment=document.querySelector('input[name="transaction-vat-treatment"]:checked')?.value||'provision';}
+      if($('transaction-social').checked){professionalCategory='social';professionalTreatment=document.querySelector('input[name="transaction-social-treatment"]:checked')?.value||'provision';}
     }
-    // Capture l'état avant toute création ou modification pour rendre « Annuler » opérationnel.
+    const isProvision=professionalCategory==='provision'||((professionalCategory==='vat'||professionalCategory==='social')&&professionalTreatment==='provision');
+    const bankAmount=isProvision?0:amount;
+    const adjustedAmount=isProfessional&&professionalCategory&&professionalTreatment==='effective'?0:amount;
     prepareUndo();
-    if(provisionTemplate)recurringTemplateCommands.update(provisionTemplate.id,{amount});
-    transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount:provisionKind?0:amount,label,createdAt:Date.now()});
+    transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount:bankAmount,professionalCategory,professionalTreatment,professionalAmount:adjustedAmount,label,createdAt:Date.now()});
     $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.',true);
   });
   $('lombard-form').addEventListener('submit',async event=>{
