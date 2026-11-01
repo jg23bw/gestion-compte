@@ -11,6 +11,8 @@
         months: template.months || [], start_month: template.startMonth || null,
         end_month: template.endMonth || null, once_date: template.date || null,
         label: template.label, amount: template.amount === '' || template.amount === undefined ? null : template.amount,
+        professional_category: template.professionalCategory || null,
+        professional_treatment: template.professionalTreatment || null,
         enabled: template.enabled !== false
       };
     },
@@ -20,7 +22,10 @@
         frequency: template.frequency, months: template.months || [],
         startMonth: template.start_month || undefined, endMonth: template.end_month || undefined,
         date: template.once_date || undefined, label: template.label,
-        amount: template.amount === null ? null : Number(template.amount), enabled: template.enabled
+        amount: template.amount === null ? null : Number(template.amount),
+        professionalCategory: template.professional_category || null,
+        professionalTreatment: template.professional_treatment || null,
+        enabled: template.enabled
       };
     }
   });
