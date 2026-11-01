@@ -32,12 +32,20 @@
   }
 
   function professionalRecurringKind(transaction, recurringTemplates = []) {
-    if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
     const template = recurringTemplates.find(item => item.id === transaction.recurringTemplateId);
     const label = String(template?.label || transaction.label || '').trim().toLocaleLowerCase('fr');
-    if (/^tva(?:\s|$)/i.test(label)) return 'vat';
-    if (/^charges sociales(?:\s|$)/i.test(label)) return 'social';
-    if (/^marge(?:\s|$)/i.test(label)) return 'margin';
+
+    // Actual tax/social payments already reduce the bank balance. They must not
+    // be deducted a second time in the provision-adjusted professional balance.
+    if (/^paiement(?:\\s+de)?\\s+tva(?:\\s|$)/i.test(label)) return 'vat-payment';
+    if (/^paiement(?:\\s+des?)?\\s+charges sociales(?:\\s|$)/i.test(label)) return 'social-payment';
+
+    // Provisions are virtual deductions and therefore only apply to the
+    // professional balance when they originate from a recurring provision.
+    if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
+    if (/^tva(?:\\s|$)/i.test(label)) return 'vat';
+    if (/^charges sociales(?:\\s|$)/i.test(label)) return 'social';
+    if (/^marge(?:\\s|$)/i.test(label)) return 'margin';
     return null;
   }
 
@@ -52,6 +60,7 @@
 
   function professionalAdjustedDelta(transaction, recurringTemplates = []) {
     const kind = professionalRecurringKind(transaction, recurringTemplates);
+    if (kind === 'vat-payment' || kind === 'social-payment') return 0;
     const amount = professionalAdjustedAmount(transaction, recurringTemplates);
     return kind ? -Math.abs(amount) : amount;
   }
