@@ -8,7 +8,13 @@ function openTransaction(accountId=null,transaction=null){
   const transactionAccount=transaction?accountById(transaction.accountId):null;
   $('transaction-date').value=dateInputFormat(transaction?.date||today());
   // Keep the sign: a negative amount is an expense and must remain negative when edited.
-  $('transaction-amount').value=transaction?(transaction.professionalTreatment==='effective'?Number(transaction.amount):Number(transaction.professionalAmount ?? transaction.amount)):'';
+  const legacyTemplate=transaction?.professionalAmount===undefined&&Number(transaction?.amount)===0&&transaction?.recurringTemplateId
+    ?recurringTemplateCommands.findById(transaction.recurringTemplateId):null;
+  const editableAmount=transaction?.professionalTreatment==='effective'
+    ?Number(transaction.amount)
+    :transaction?.professionalAmount!==undefined?Number(transaction.professionalAmount)
+    :legacyTemplate?Number(legacyTemplate.amount)||0:Number(transaction?.amount);
+  $('transaction-amount').value=transaction?editableAmount:'';
   $('transaction-provision').checked=transaction?.professionalCategory==='provision';
   $('transaction-vat').checked=transaction?.professionalCategory==='vat';
   $('transaction-social').checked=transaction?.professionalCategory==='social';
