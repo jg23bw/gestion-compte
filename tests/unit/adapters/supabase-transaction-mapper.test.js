@@ -45,7 +45,7 @@ test('maps Supabase rows back to the canonical transaction model', () => {
   });
   assert.deepEqual(transaction, {
     id: 'tx-3', accountId: 'account-2', date: '2026-10-02',
-    amount: -25.75, professionalCategory: null, professionalTreatment: null, professionalAmount: -25.75, label: 'Courses', isPaid: true, sortOrder: 4,
+    amount: -25.75, professionalCategory: null, professionalTreatment: null, professionalAmount: undefined, label: 'Courses', isPaid: true, sortOrder: 4,
     createdAt: Date.parse('2026-10-02T08:30:00.000Z'),
     recurringKey: undefined, recurringTemplateId: undefined
   });
