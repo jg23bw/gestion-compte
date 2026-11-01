@@ -315,15 +315,29 @@ function setNotesStatus(message,updatedAt=''){
   $('notes-updated').textContent=updatedAt?'Dernière sauvegarde : '+new Date(updatedAt).toLocaleString('fr-FR'):'';
 }
 async function loadNotesFromSupabase(){
-  const editor=$('notes-editor');editor.disabled=true;setNotesStatus('Chargement…');
+  const editor=$('notes-editor');
+  if(!editor||!cloud.user)return;
+  editor.disabled=true;setNotesStatus('Chargement…');
+  let timeoutId;
   try{
-    const {data,error}=await cloudClient().from('user_notes').select('content,updated_at').eq('user_id',cloud.user.id).maybeSingle();
-    if(error)throw error;
-    editor.value=data?.content||'';editor.disabled=false;setNotesStatus('Notes chargées.',data?.updated_at||'');
+    const request=cloudClient().from('user_notes').select('content,updated_at').eq('user_id',cloud.user.id).maybeSingle();
+    const result=await Promise.race([
+      request,
+      new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error('Délai dépassé : Supabase ne répond pas. Vérifiez la connexion et la configuration de la table user_notes.')),12000);})
+    ]);
+    if(!cloud.user)return;
+    if(result.error)throw result.error;
+    editor.value=result.data?.content||'';
+    editor.disabled=false;
+    setNotesStatus('Notes chargées.',result.data?.updated_at||'');
   }catch(error){
+    if(!cloud.user)return;
     editor.value='';editor.disabled=true;
-    setNotesStatus(/user_notes|schema cache|does not exist/i.test(error.message||'')?'Migration Supabase à appliquer.':'Erreur de chargement : '+(error.message||'inconnue'));
+    const message=String(error?.message||'erreur inconnue');
+    setNotesStatus(/user_notes|schema cache|does not exist|42P01|PGRST205/i.test(message)?'Migration Supabase à appliquer.':'Erreur de chargement : '+message);
     console.error('Notes load failed',error);
+  }finally{
+    clearTimeout(timeoutId);
   }
 }
 async function saveNotesToSupabase(){
