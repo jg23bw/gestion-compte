@@ -13,8 +13,5 @@ alter table public.recurring_templates
   add column if not exists professional_treatment text
     check (professional_treatment is null or professional_treatment in ('provision','effective'));
 
--- Preserve the historical amount for ordinary transactions. Legacy provisions
--- need explicit reclassification in the UI; no label-based guessing is performed.
-update public.transactions
-set professional_amount = amount
-where professional_amount is null;
+-- Existing rows remain unclassified. Reclassify legacy provisions explicitly in the UI.
+-- No backfill is inferred from transaction labels.
