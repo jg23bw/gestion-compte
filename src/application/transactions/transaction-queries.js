@@ -75,7 +75,7 @@
         let balance = Number(account?.opening || 0);
         ordered.forEach((transaction, position) => {
           positions.set(transaction.id, position);
-          balance += Number(transaction.amount);
+          balance += domain.actualBalanceDelta(transaction, repository.findRecurringTemplates());
           balances.set(transaction.id, balance);
         });
         return this.filterAccountTransactions({ accountId, typeFilter, query, sort }).map(transaction => ({
@@ -91,7 +91,7 @@
       balanceAt(accountId, untilDate = null) {
         const account = repository.findAccount(accountId);
         if (!account) return 0;
-        return domain.balanceAt(account.opening, repository.findByAccount(accountId), untilDate);
+        return domain.balanceAt(account.opening, repository.findByAccount(accountId), untilDate, repository.findRecurringTemplates());
       },
       balanceAfterTransaction(transaction) {
         if (!transaction) return 0;
@@ -102,7 +102,7 @@
           repository.findByAccount(transaction.accountId),
           transaction.accountId
         )) {
-          balance += Number(item.amount);
+          balance += domain.actualBalanceDelta(item, repository.findRecurringTemplates());
           if (item.id === transaction.id) break;
         }
         return balance;
