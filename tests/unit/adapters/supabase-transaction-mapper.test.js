@@ -12,6 +12,7 @@ test('maps an ordinary transaction to the existing Supabase schema', () => {
   assert.deepEqual(row, {
     id: 'tx-1', user_id: 'user-1', account_id: 'account-1',
     transaction_date: '2026-10-30', label: 'Loyer', amount: 850.5,
+    professional_category: null, professional_treatment: null, professional_amount: 850.5,
     is_paid: true, sort_order: 2, source: 'manual',
     recurring_template_id: null, generated_month: null, recurring_key: null,
     created_at: '1970-01-01T00:00:01.000Z',
@@ -44,7 +45,7 @@ test('maps Supabase rows back to the canonical transaction model', () => {
   });
   assert.deepEqual(transaction, {
     id: 'tx-3', accountId: 'account-2', date: '2026-10-02',
-    amount: -25.75, label: 'Courses', isPaid: true, sortOrder: 4,
+    amount: -25.75, professionalCategory: null, professionalTreatment: null, professionalAmount: -25.75, label: 'Courses', isPaid: true, sortOrder: 4,
     createdAt: Date.parse('2026-10-02T08:30:00.000Z'),
     recurringKey: undefined, recurringTemplateId: undefined
   });
