@@ -59,6 +59,19 @@ function initializeDomEventHandlers() {
     const label=event.target.closest('[data-recurring-label]');
     if(label){const t=recurringTemplateCommands.findById(label.dataset.recurringLabel);if(t){prepareUndo();recurringTemplateCommands.update(t.id,{label:label.value.trim()||t.label});saveState();renderRecurring();showToast('Libellé de la récurrence mis à jour.',true);}}
   });
+  function updateRecurringClassificationFields(){
+    const provision=$('recurring-provision').checked,vat=$('recurring-vat').checked,social=$('recurring-social').checked;
+    if(provision){$('recurring-vat').checked=false;$('recurring-social').checked=false;}
+    if(vat){$('recurring-provision').checked=false;$('recurring-social').checked=false;}
+    if(social){$('recurring-provision').checked=false;$('recurring-vat').checked=false;}
+    $('recurring-vat-treatment-fields').hidden=!$('recurring-vat').checked;
+    $('recurring-social-treatment-fields').hidden=!$('recurring-social').checked;
+  }
+  ['recurring-provision','recurring-vat','recurring-social'].forEach(id=>$(id).addEventListener('change',updateRecurringClassificationFields));
+  $('recurring-edit-account').addEventListener('change',()=>{
+    const account=accountById($('recurring-edit-account').value);
+    $('recurring-classification').hidden=effectiveAccountType(account||{kind:'bank'})!=='pro';
+  });
   $('recurring-form').addEventListener('submit',event=>{
     event.preventDefault();
     const id=$('recurring-edit-id').value;
@@ -78,7 +91,16 @@ function initializeDomEventHandlers() {
     const startMonth=frequency==='monthly'?($('recurring-edit-start-month').value||null):null;
     const endMonth=frequency==='monthly'?($('recurring-edit-end-month').value||null):null;
     if(startMonth&&endMonth&&endMonth<startMonth){showToast('Le mois de fin doit être postérieur ou égal au mois de début.');return;}
-    const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,label,amount,frequency,day:frequency==='once'?Number(date.slice(8,10)):day,months:frequency==='quarterly'||frequency==='annual'?months:[],startMonth,endMonth,date:frequency==='once'?date:undefined,enabled:$('recurring-edit-enabled').checked};
+    const isProfessional=effectiveAccountType(accountById(accountId)||{kind:'bank'})==='pro';
+    let professionalCategory=null,professionalTreatment=null;
+    if(isProfessional){
+      const selected=Number($('recurring-provision').checked)+Number($('recurring-vat').checked)+Number($('recurring-social').checked);
+      if(selected>1){showToast('Choisissez une seule classification : Provision, TVA ou URSSAF.');return;}
+      if($('recurring-provision').checked)professionalCategory='provision';
+      if($('recurring-vat').checked){professionalCategory='vat';professionalTreatment=document.querySelector('input[name="recurring-vat-treatment"]:checked')?.value||null;if(!professionalTreatment){showToast('Précisez si la TVA est une provision ou un paiement effectif.');return;}}
+      if($('recurring-social').checked){professionalCategory='social';professionalTreatment=document.querySelector('input[name="recurring-social-treatment"]:checked')?.value||null;if(!professionalTreatment){showToast('Précisez si les cotisations URSSAF sont une provision ou un paiement effectif.');return;}}
+    }
+    const record={...(existing||{}),id:id||crypto.randomUUID(),accountId,label,amount,professionalCategory,professionalTreatment,frequency,day:frequency==='once'?Number(date.slice(8,10)):day,months:frequency==='quarterly'||frequency==='annual'?months:[],startMonth,endMonth,date:frequency==='once'?date:undefined,enabled:$('recurring-edit-enabled').checked};
     prepareUndo();
     recurringTemplateCommands.save(record);
     $('recurring-dialog').close();renderAll();showToast(existing?'Récurrence modifiée.':'Récurrence ajoutée.',true);
