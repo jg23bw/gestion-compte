@@ -83,9 +83,9 @@ test('adjusted margin is deducted only from adjusted balance', () => {
 test('VAT and social payments reduce only the actual balance, not the provision-adjusted balance', () => {
   const account = { id: 'bank-1', opening: 1000, netOpening: 1000 };
   const transactions = [
-    tx('vat-provision', { amount: 0, date: '2026-01-01', recurringKey: '2026-01', recurringTemplateId: 'vat' }),
-    tx('social-provision', { amount: 0, date: '2026-01-02', recurringKey: '2026-01', recurringTemplateId: 'social' }),
-    tx('margin-provision', { amount: 0, date: '2026-01-03', recurringKey: '2026-01', recurringTemplateId: 'margin' }),
+    tx('vat-provision', { amount: 100, date: '2026-01-01', recurringKey: '2026-01', recurringTemplateId: 'vat', label: 'Provision TVA' }),
+    tx('social-provision', { amount: 200, date: '2026-01-02', recurringKey: '2026-01', recurringTemplateId: 'social', label: 'Provision charges sociales' }),
+    tx('margin-provision', { amount: 50, date: '2026-01-03', recurringKey: '2026-01', recurringTemplateId: 'margin', label: 'Provision marge' }),
     tx('vat-payment', { amount: -100, date: '2026-01-04', label: 'Paiement TVA' }),
     tx('social-payment', { amount: -200, date: '2026-01-05', label: 'Paiement charges sociales' })
   ];
@@ -95,7 +95,7 @@ test('VAT and social payments reduce only the actual balance, not the provision-
     { id: 'margin', label: 'Provision marge', amount: 50 }
   ];
 
-  assert.equal(rules.balanceAt(account.opening, transactions), 700);
+  assert.equal(rules.balanceAt(account.opening, transactions, null, templates), 700);
   assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, templates, '2026-01-31'), 650);
   assert.equal(rules.professionalRecurringKind(transactions[3]), 'vat-payment');
   assert.equal(rules.professionalRecurringKind(transactions[4]), 'social-payment');
