@@ -17,7 +17,7 @@
       if (!stockHoldingCommands || typeof stockHoldingCommands.findAll !== 'function'
         || typeof stockHoldingCommands.deleteByAccount !== 'function') throw new TypeError('stock holding commands are required');
       return Object.freeze({
-        save({ id, name, accountType, bank, opening = 0, existing = null }) {
+        save({ id, name, accountType, bank, opening = 0, netOpening, existing = null }) {
           const normalizedName = String(name || '').trim();
           const types = ['bank', 'savings', 'pro', 'pea', 'av', 'cto'];
           if (!normalizedName) throw new TypeError('account name is required');
@@ -37,7 +37,8 @@
             kind,
             accountType,
             opening: Number(opening) || 0,
-            ...(current ? {} : { vatRate: 20, socialRate: 45, netOpening: 0 })
+            ...(accountType === 'pro' ? { netOpening: Number(netOpening ?? current?.netOpening ?? 0) || 0 } : {}),
+            ...(current ? {} : { vatRate: 20, socialRate: 45, netOpening: accountType === 'pro' ? (Number(netOpening) || 0) : 0 })
           };
           return repo.save(account);
         },
