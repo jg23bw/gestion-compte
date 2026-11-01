@@ -259,8 +259,11 @@
         </div>
       </section>
       <section class="view" id="notes-view">
-        <div class="page-heading"><div><p class="eyebrow">ESPACE PERSONNEL</p><h1>Notes</h1><p class="subtitle">Un espace privé pour conserver vos idées et rappels.</p></div><button type="button" class="primary-button" id="notes-save">Enregistrer</button></div>
-        <section class="panel notes-panel"><div class="notes-toolbar"><span id="notes-status" role="status">Chargement de vos notes…</span><span id="notes-updated"></span></div><textarea id="notes-editor" class="notes-editor" placeholder="Écrivez vos notes ici…" aria-label="Vos notes" disabled></textarea></section>
+        <div class="page-heading"><div><p class="eyebrow">ESPACE PERSONNEL</p><h1>Notes</h1><p class="subtitle">Un espace privé pour conserver vos idées et rappels.</p></div><div class="notes-actions"><button type="button" class="secondary-button" id="notes-new">Nouvelle note</button><button type="button" class="primary-button" id="notes-save">Enregistrer</button></div></div>
+        <section class="panel notes-workspace">
+          <aside class="notes-sidebar"><h2>Mes notes</h2><div id="notes-list" class="notes-list"><p class="notes-empty">Chargement…</p></div></aside>
+          <div class="notes-editor-pane"><div class="notes-toolbar"><span id="notes-status" role="status">Chargement de vos notes…</span><span id="notes-updated"></span></div><input id="notes-title" class="notes-title" type="text" placeholder="Titre de la note" aria-label="Titre de la note" disabled><textarea id="notes-editor" class="notes-editor" placeholder="Écrivez vos notes ici…" aria-label="Contenu de la note" disabled></textarea><div class="notes-footer"><span>Enregistrement manuel</span><button type="button" class="danger-button" id="notes-delete" disabled>Supprimer cette note</button></div></div>
+        </section>
       </section>
       <section class="view" id="lombard-view">
         <div class="page-heading"><div><p class="eyebrow">DETTE ET EXPOSITION BTC</p><h1>Lombard</h1><p class="subtitle">Séparez les BTC achetés avec le crédit de ceux achetés en fonds personnels.</p></div></div>
