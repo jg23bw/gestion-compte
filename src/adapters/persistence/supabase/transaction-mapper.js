@@ -47,7 +47,7 @@
           amount: Number(row.amount),
           professionalCategory: row.professional_category || null,
           professionalTreatment: row.professional_treatment || null,
-          professionalAmount: Number(row.professional_amount ?? row.amount),
+          professionalAmount: row.professional_amount === null || row.professional_amount === undefined ? undefined : Number(row.professional_amount),
           label: row.label,
           isPaid: row.is_paid === true,
           sortOrder: Number.isFinite(Number(row.sort_order)) && row.sort_order !== null ? Number(row.sort_order) : undefined,
