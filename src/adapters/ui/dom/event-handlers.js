@@ -353,6 +353,7 @@ function initializeDomEventHandlers() {
     const accountType=$('edit-account-kind').value;
     const bank=$('edit-account-bank').value;
     const opening=parseFrenchNumber($('edit-account-opening').value)||0;
+    const netOpening=parseFrenchNumber($('edit-account-net-opening').value)||0;
     const name=$('edit-account-name').value.trim();
     if(!name){showToast('Renseignez le nom du compte.');return;}
     if(!['bank','savings','pro','pea','av','cto'].includes(accountType)){showToast('Choisissez un type de compte valide.');return;}
