@@ -310,6 +310,21 @@
       <label>Compte<select id="transaction-account" required></select></label>
       <div class="form-row"><label>Date<input id="transaction-date" type="date" required></label><label>Montant (€)<input id="transaction-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" required placeholder="0,00"></label></div>
       <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
+      <fieldset id="transaction-classification" class="pledge-field" hidden>
+        <legend>Type de dépense professionnelle</legend>
+        <label class="pledge-check"><input id="transaction-provision" type="checkbox"> Provision (ex. Marge / AEN)</label>
+        <label class="pledge-check"><input id="transaction-vat" type="checkbox"> TVA</label>
+        <div id="transaction-vat-treatment-fields" class="transaction-treatment-fields" hidden>
+          <label><input type="radio" name="transaction-vat-treatment" value="provision" checked> Provision</label>
+          <label><input type="radio" name="transaction-vat-treatment" value="effective"> Paiement effectif</label>
+        </div>
+        <label class="pledge-check"><input id="transaction-social" type="checkbox"> URSSAF / Cotisations sociales</label>
+        <div id="transaction-social-treatment-fields" class="transaction-treatment-fields" hidden>
+          <label><input type="radio" name="transaction-social-treatment" value="provision" checked> Provision</label>
+          <label><input type="radio" name="transaction-social-treatment" value="effective"> Paiement effectif</label>
+        </div>
+        <p class="form-help">Sans sélection, l’opération est une dépense classique et impacte les deux soldes.</p>
+      </fieldset>
       <p class="form-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="transaction-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
