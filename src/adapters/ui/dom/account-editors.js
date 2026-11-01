@@ -6,19 +6,21 @@ function openTransaction(accountId=null,transaction=null){
   $('transaction-form').reset();$('transaction-id').value=transaction?.id||'';
   $('transaction-modal-title').textContent=transaction?'Modifier l’opération':'Nouvelle opération';
   const transactionAccount=transaction?accountById(transaction.accountId):null;
-  const selectedAccount=accountById(accountId||transaction?.accountId)||transactionAccount||{kind:'bank'};
-  const isProfessional=effectiveAccountType(selectedAccount)==='pro';
-  $('transaction-date').value=dateInputFormat(transaction?.date||today());$('transaction-amount').value=transaction?Math.abs(Number(transaction.professionalAmount ?? transaction.amount)):''; 
+  $('transaction-date').value=dateInputFormat(transaction?.date||today());
+  // Keep the sign: a negative amount is an expense and must remain negative when edited.
+  $('transaction-amount').value=transaction?Number(transaction.professionalAmount ?? transaction.amount):'';
   $('transaction-provision').checked=transaction?.professionalCategory==='provision';
   $('transaction-vat').checked=transaction?.professionalCategory==='vat';
   $('transaction-social').checked=transaction?.professionalCategory==='social';
-  document.querySelector('input[name="transaction-vat-treatment"][value="'+(transaction?.professionalTreatment||'provision')+'"]').checked=true;
-  document.querySelector('input[name="transaction-social-treatment"][value="'+(transaction?.professionalTreatment||'provision')+'"]').checked=true;
+  const treatment=transaction?.professionalTreatment||'';
+  document.querySelectorAll('input[name="transaction-vat-treatment"],input[name="transaction-social-treatment"]').forEach(input=>{input.checked=input.value===treatment;});
+  $('transaction-label').value=transaction?.label||'';
+  fillAccountSelects();
+  $('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
+  const isProfessional=effectiveAccountType(accountById($('transaction-account').value)||{kind:'bank'})==='pro';
   $('transaction-classification').hidden=!isProfessional;
   $('transaction-vat-treatment-fields').hidden=!$('transaction-vat').checked;
   $('transaction-social-treatment-fields').hidden=!$('transaction-social').checked;
-  $('transaction-label').value=transaction?.label||'';
-  fillAccountSelects();$('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
   $('transaction-dialog').showModal();
 }
 function fillBankOptions(selected='other'){
