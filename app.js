@@ -310,45 +310,81 @@ async function initCloud(){
   }
 }
 
+let userNotes=[];
+let activeNoteId=null;
 function setNotesStatus(message,updatedAt=''){
   $('notes-status').textContent=message;
   $('notes-updated').textContent=updatedAt?'Dernière sauvegarde : '+new Date(updatedAt).toLocaleString('fr-FR'):'';
 }
+function renderNotesList(){
+  const list=$('notes-list');if(!list)return;
+  list.replaceChildren();
+  if(!userNotes.length){const empty=document.createElement('p');empty.className='notes-empty';empty.textContent='Aucune note pour le moment.';list.append(empty);return;}
+  userNotes.forEach(note=>{
+    const button=document.createElement('button');button.type='button';button.className='notes-list-item'+(note.id===activeNoteId?' active':'');
+    const title=document.createElement('strong');title.textContent=note.title||'Sans titre';
+    const preview=document.createElement('span');preview.textContent=(note.content||'').replace(/\\s+/g,' ').trim().slice(0,90)||'Note vide';
+    button.append(title,preview);button.addEventListener('click',()=>selectNote(note.id));list.append(button);
+  });
+}
+function selectNote(id){
+  const note=userNotes.find(item=>item.id===id);if(!note)return;
+  activeNoteId=id;$('notes-title').value=note.title||'';$('notes-editor').value=note.content||'';
+  $('notes-editor').disabled=false;$('notes-title').disabled=false;$('notes-delete').disabled=false;
+  $('notes-save').disabled=false;setNotesStatus('Note chargée.',note.updated_at);renderNotesList();
+}
+function createNote(){
+  activeNoteId=null;$('notes-title').value='';$('notes-editor').value='';
+  $('notes-title').disabled=false;$('notes-editor').disabled=false;$('notes-delete').disabled=true;
+  $('notes-title').focus();setNotesStatus('Nouvelle note — non enregistrée.');renderNotesList();
+}
 async function loadNotesFromSupabase(){
-  const editor=$('notes-editor');
-  if(!editor||!cloud.user)return;
-  editor.disabled=true;setNotesStatus('Chargement…');
+  if(!$('notes-editor')||!cloud.user)return;
+  $('notes-editor').disabled=true;$('notes-title').disabled=true;setNotesStatus('Chargement…');
   let timeoutId;
   try{
-    const request=cloudClient().from('user_notes').select('content,updated_at').eq('user_id',cloud.user.id).maybeSingle();
-    const result=await Promise.race([
-      request,
-      new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error('Délai dépassé : Supabase ne répond pas. Vérifiez la connexion et la configuration de la table user_notes.')),12000);})
-    ]);
-    if(!cloud.user)return;
-    if(result.error)throw result.error;
-    editor.value=result.data?.content||'';
-    editor.disabled=false;
-    setNotesStatus('Notes chargées.',result.data?.updated_at||'');
+    const request=cloudClient().from('user_notes').select('id,title,content,created_at,updated_at').eq('user_id',cloud.user.id).order('updated_at',{ascending:false});
+    const result=await Promise.race([request,new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error('Délai dépassé : Supabase ne répond pas.')),12000);})]);
+    if(!cloud.user)return;if(result.error)throw result.error;
+    userNotes=result.data||[];renderNotesList();
+    if(userNotes.length)selectNote(userNotes[0].id);else createNote();
+    setNotesStatus(userNotes.length?'Notes chargées.':'Créez votre première note.');
   }catch(error){
-    if(!cloud.user)return;
-    editor.value='';editor.disabled=true;
+    if(!cloud.user)return;userNotes=[];renderNotesList();$('notes-editor').disabled=true;$('notes-title').disabled=true;
     const message=String(error?.message||'erreur inconnue');
-    setNotesStatus(/user_notes|schema cache|does not exist|42P01|PGRST205/i.test(message)?'Migration Supabase à appliquer.':'Erreur de chargement : '+message);
+    setNotesStatus(/user_notes|schema cache|does not exist|42P01|PGRST205/i.test(message)?'Migration Supabase requise pour les notes multiples.':'Erreur de chargement : '+message);
     console.error('Notes load failed',error);
-  }finally{
-    clearTimeout(timeoutId);
-  }
+  }finally{clearTimeout(timeoutId);}
 }
 async function saveNotesToSupabase(){
   if(!cloud.user||!cloud.authReady)return;
   const button=$('notes-save');button.disabled=true;setNotesStatus('Enregistrement…');
   try{
     const updatedAt=new Date().toISOString();
-    const {error}=await cloudClient().from('user_notes').upsert({user_id:cloud.user.id,content:$('notes-editor').value,updated_at:updatedAt},{onConflict:'user_id'});
-    if(error)throw error;
-    setNotesStatus('Notes sauvegardées dans Supabase.',updatedAt);showToast('Notes enregistrées.');
+    const payload={user_id:cloud.user.id,title:$('notes-title').value.trim()||'Sans titre',content:$('notes-editor').value,updated_at:updatedAt};
+    let query;
+    if(activeNoteId)query=cloudClient().from('user_notes').update(payload).eq('id',activeNoteId).eq('user_id',cloud.user.id).select('id,title,content,created_at,updated_at').single();
+    else query=cloudClient().from('user_notes').insert(payload).select('id,title,content,created_at,updated_at').single();
+    const {data,error}=await query;if(error)throw error;
+    const index=userNotes.findIndex(note=>note.id===data.id);
+    if(index>=0)userNotes[index]=data;else userNotes.unshift(data);
+    activeNoteId=data.id;renderNotesList();$('notes-delete').disabled=false;
+    setNotesStatus('Note enregistrée dans Supabase.',updatedAt);showToast('Note enregistrée.');
   }catch(error){setNotesStatus('Échec de la sauvegarde : '+(error.message||'erreur inconnue'));console.error(error);}
+  finally{button.disabled=false;}
+}
+async function deleteCurrentNote(){
+  if(!activeNoteId||!cloud.user)return;
+  const note=userNotes.find(item=>item.id===activeNoteId);
+  if(!window.confirm('Supprimer la note « '+(note?.title||'Sans titre')+' » ?'))return;
+  const button=$('notes-delete');button.disabled=true;
+  try{
+    const {error}=await cloudClient().from('user_notes').delete().eq('id',activeNoteId).eq('user_id',cloud.user.id);
+    if(error)throw error;
+    userNotes=userNotes.filter(item=>item.id!==activeNoteId);activeNoteId=null;renderNotesList();
+    if(userNotes.length)selectNote(userNotes[0].id);else createNote();
+    setNotesStatus('Note supprimée.');showToast('Note supprimée.');
+  }catch(error){setNotesStatus('Échec de la suppression : '+(error.message||'erreur inconnue'));console.error(error);}
   finally{button.disabled=false;}
 }
 function loadState(){return legacyStateLoader.load();}
