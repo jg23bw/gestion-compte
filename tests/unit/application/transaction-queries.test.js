@@ -10,8 +10,9 @@ function fixture() {
     { id: 'other', accountId: 'b', date: '2026-01-01', createdAt: 1, amount: 900 }
   ];
   const accounts = [{ id: 'a', opening: 100, netOpening: 100 }];
+  const recurringTemplates = [];
   return {
-    transactions, accounts, recurringTemplates: [],
+    transactions, accounts, recurringTemplates,
     repository: {
       findAll: () => transactions,
       findByAccount: id => transactions.filter(t => t.accountId === id),
