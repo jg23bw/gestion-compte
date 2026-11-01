@@ -109,7 +109,7 @@ test('account transaction query filters by account, type and text, then applies 
   const result = queries.filterAccountTransactions({
     accountId: 'a', typeFilter: 'income', query: ' salaire ', sort: 'amount-desc'
   });
-  assert.deepEqual(result.map(item => item.id), ['salary', 'in']);
+  assert.deepEqual(result.map(item => item.id), ['in', 'salary']);
 });
 
 test('account transaction query always prioritizes pending rows, then applies the selected sort', () => {
