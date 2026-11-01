@@ -1635,7 +1635,7 @@ input,select,textarea{accent-color:#536dff}
 #transaction-dialog.modal{width:min(480px,calc(100% - 28px))}
 #transaction-dialog form{padding:20px}
 #transaction-dialog .modal-heading{margin-bottom:17px}
-#transaction-dialog-heading h2{font-size:19px}
+#transaction-dialog .modal-heading h2{font-size:19px}
 #transaction-dialog label{gap:5px;margin-bottom:12px;font-size:10px}
 #transaction-dialog input:not([type="checkbox"]):not([type="radio"]),
 #transaction-dialog select{height:36px;border-radius:8px;padding:0 10px;font-size:12px}
