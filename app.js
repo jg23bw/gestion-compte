@@ -310,6 +310,33 @@ async function initCloud(){
   }
 }
 
+function setNotesStatus(message,updatedAt=''){
+  $('notes-status').textContent=message;
+  $('notes-updated').textContent=updatedAt?'Dernière sauvegarde : '+new Date(updatedAt).toLocaleString('fr-FR'):'';
+}
+async function loadNotesFromSupabase(){
+  const editor=$('notes-editor');editor.disabled=true;setNotesStatus('Chargement…');
+  try{
+    const {data,error}=await cloudClient().from('user_notes').select('content,updated_at').eq('user_id',cloud.user.id).maybeSingle();
+    if(error)throw error;
+    editor.value=data?.content||'';editor.disabled=false;setNotesStatus('Notes chargées.',data?.updated_at||'');
+  }catch(error){
+    editor.value='';editor.disabled=true;
+    setNotesStatus(/user_notes|schema cache|does not exist/i.test(error.message||'')?'Migration Supabase à appliquer.':'Erreur de chargement : '+(error.message||'inconnue'));
+    console.error('Notes load failed',error);
+  }
+}
+async function saveNotesToSupabase(){
+  if(!cloud.user||!cloud.authReady)return;
+  const button=$('notes-save');button.disabled=true;setNotesStatus('Enregistrement…');
+  try{
+    const updatedAt=new Date().toISOString();
+    const {error}=await cloudClient().from('user_notes').upsert({user_id:cloud.user.id,content:$('notes-editor').value,updated_at:updatedAt},{onConflict:'user_id'});
+    if(error)throw error;
+    setNotesStatus('Notes sauvegardées dans Supabase.',updatedAt);showToast('Notes enregistrées.');
+  }catch(error){setNotesStatus('Échec de la sauvegarde : '+(error.message||'erreur inconnue'));console.error(error);}
+  finally{button.disabled=false;}
+}
 function loadState(){return legacyStateLoader.load();}
 function accountById(id){return state.accounts.find(a=>a.id===id);}
 function accountShort(name){
@@ -360,9 +387,10 @@ function wealthSnapshot(){return wealthSnapshotQueries.snapshot();}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',pro:'Compte professionnel',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',opportunities:'Opportunités',recurring:'Récurrences',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',pro:'Compte professionnel',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',opportunities:'Opportunités',recurring:'Récurrences',notes:'Notes',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
   if(['dashboard','fire','comparisons','lombard'].includes(view))renderWealthViews();
   if(view==='recurring')renderRecurring();
+  if(view==='notes')$('notes-editor').focus();
   if(view==='accounts')renderAccounts();if(view==='transactions'||view==='pro')renderTransactions();if(view==='history')renderMonthlyHistory();
   if(view==='crypto'){renderCrypto();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();}
   if(view==='stocks'){renderStocks();if(Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();}
