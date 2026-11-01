@@ -8,7 +8,7 @@ const tx = (id, overrides = {}) => ({
   amount: 0, label: 'Opération', ...overrides
 });
 
-test('manual ordering takes precedence over date ordering', () => {
+test('transaction balance ordering is chronological and ignores legacy manual order', () => {
   const rows = [
     tx('later', { sortOrder: 2, date: '2026-02-01' }),
     tx('first', { sortOrder: 1, date: '2026-01-01' })
@@ -21,13 +21,13 @@ test('transactions with manual order precede rows without one', () => {
   assert.deepEqual(rows.sort(rules.transactionOrder).map(row => row.id), ['manual', 'unset']);
 });
 
-test('transactions without manual order sort newest date and creation first', () => {
+test('transactions sort chronologically by date and creation time', () => {
   const rows = [
     tx('older', { date: '2026-01-01', createdAt: 9 }),
     tx('newer', { date: '2026-01-02', createdAt: 1 }),
     tx('same-date-old', { date: '2026-01-02', createdAt: 2 })
   ];
-  assert.deepEqual(rows.sort(rules.transactionOrder).map(row => row.id), ['same-date-old', 'newer', 'older']);
+  assert.deepEqual(rows.sort(rules.transactionOrder).map(row => row.id), ['older', 'newer', 'same-date-old']);
 });
 
 test('account transaction sorting filters out other accounts', () => {
