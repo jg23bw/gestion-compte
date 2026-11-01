@@ -46,9 +46,11 @@
   }
 
   function professionalAdjustedDelta(transaction, recurringTemplates = []) {
-    const kind = professionalRecurringKind(transaction, recurringTemplates);
-    const amount = professionalAdjustedAmount(transaction, recurringTemplates);
-    return kind ? -Math.abs(amount) : amount;
+    // TVA, charges sociales et marge sont des lignes de suivi : leur montant
+    // bancaire reste à zéro et elles ne doivent pas être déduites du solde.
+    return professionalRecurringKind(transaction, recurringTemplates)
+      ? 0
+      : Number(transaction.amount) || 0;
   }
 
   function professionalAdjustedBalanceAt(account, transactions, recurringTemplates = [], untilDate) {
