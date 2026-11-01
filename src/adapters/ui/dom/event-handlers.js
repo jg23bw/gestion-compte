@@ -14,6 +14,8 @@ function initializeDomEventHandlers() {
   themeButton?.addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
   document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>navigate(button.dataset.view)));
   $('mobile-account-open')?.addEventListener('click',()=>openCloudDialog());
+  $('notes-editor')?.addEventListener('input',()=>setNotesStatus('Modifications non enregistrées.'));
+  $('notes-save')?.addEventListener('click',saveNotesToSupabase);
   
   const fireSliderFormats={
    'fire-age':v=>Math.round(v)+' ans','fire-end-age':v=>Math.round(v)+' ans',
