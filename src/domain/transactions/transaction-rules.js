@@ -43,9 +43,9 @@
     // Provisions are virtual deductions and therefore only apply to the
     // professional balance when they originate from a recurring provision.
     if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
-    if (/^tva(?:\s|$)/i.test(label)) return 'vat';
-    if (/^charges sociales(?:\s|$)/i.test(label)) return 'social';
-    if (/^marge(?:\s|$)/i.test(label)) return 'margin';
+    if (/^(?:provision\s+)?tva(?:\s|$)/i.test(label)) return 'vat';
+    if (/^(?:provision\s+)?charges sociales(?:\s|$)/i.test(label)) return 'social';
+    if (/^(?:provision\s+)?marge(?:\s|$)/i.test(label)) return 'margin';
     return null;
   }
 
