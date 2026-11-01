@@ -81,6 +81,8 @@ create table if not exists public.crypto_holdings (
   primary key (user_id, id)
 );
 
+create table if not exists public.user_notes (user_id uuid primary key references auth.users(id) on delete cascade,content text not null default '',updated_at timestamptz not null default now(),constraint user_notes_content_size check (octet_length(content)<=1048576));
+
 create table if not exists public.audit_history (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -104,6 +106,7 @@ alter table public.transactions enable row level security;
 alter table public.recurring_templates enable row level security;
 alter table public.crypto_holdings enable row level security;
 alter table public.audit_history enable row level security;
+alter table public.user_notes enable row level security;
 
 drop policy if exists "accounts own rows" on public.accounts;
 create policy "accounts own rows" on public.accounts for all to authenticated
@@ -117,6 +120,8 @@ create policy "recurring templates own rows" on public.recurring_templates for a
 drop policy if exists "crypto holdings own rows" on public.crypto_holdings;
 create policy "crypto holdings own rows" on public.crypto_holdings for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+drop policy if exists "user notes own rows" on public.user_notes;
+create policy "user notes own rows" on public.user_notes for all to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
 drop policy if exists "audit own rows read" on public.audit_history;
 create policy "audit own rows read" on public.audit_history for select to authenticated
   using (user_id = (select auth.uid()));
@@ -162,7 +167,7 @@ for each row execute function public.record_gestion_history('recurring_template'
 
 
 -- Defense in depth: no table privileges for unauthenticated browser clients.
-revoke all on table public.accounts, public.transactions, public.recurring_templates, public.crypto_holdings, public.audit_history from anon, authenticated;
+revoke all on table public.accounts, public.transactions, public.recurring_templates, public.crypto_holdings, public.audit_history, public.user_notes from anon, authenticated;
 
 -- Required for authenticated browser clients using the Supabase Data API.
 grant usage on schema public to authenticated;
@@ -171,4 +176,5 @@ grant select, insert, update, delete on public.transactions to authenticated;
 grant select, insert, update, delete on public.recurring_templates to authenticated;
 grant select, insert, update, delete on public.crypto_holdings to authenticated;
 grant select on public.audit_history to authenticated;
+grant select, insert, update, delete on public.user_notes to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
