@@ -113,6 +113,17 @@
           repository.findRecurringTemplates(),
           untilDate
         );
+      },
+      professionalAdjustedBalanceAfterTransaction(transaction) {
+        if (!transaction) return 0;
+        const account = repository.findAccount(transaction.accountId);
+        if (!account) return 0;
+        return domain.professionalAdjustedBalanceAfterTransaction(
+          account,
+          repository.findByAccount(transaction.accountId),
+          repository.findRecurringTemplates(),
+          transaction.id
+        );
       }
     });
   }
