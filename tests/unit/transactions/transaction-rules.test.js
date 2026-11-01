@@ -85,13 +85,13 @@ test('ordinary recurring transaction keeps its signed amount', () => {
   assert.equal(rules.professionalAdjustedDelta(transaction), -75);
 });
 
-test('professional balance uses the account opening balance and respects date cutoff', () => {
+test('professional balance uses net opening balance and respects date cutoff', () => {
   const account = { id: 'bank-1', opening: 100, netOpening: 80 };
   const transactions = [
     tx('current', { amount: 20, date: '2026-01-01' }),
     tx('future', { amount: 500, date: '2026-02-01' })
   ];
-  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 120);
+  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 100);
 });
 
 test('professional amounts calculate VAT, social charges and net for positive income', () => {
