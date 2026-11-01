@@ -13,7 +13,7 @@ function openTransaction(accountId=null,transaction=null){
   const editableAmount=transaction?.professionalTreatment==='effective'
     ?Number(transaction.amount)
     :transaction?.professionalAmount!==undefined?Number(transaction.professionalAmount)
-    :legacyTemplate?Number(legacyTemplate.amount)||0:Number(transaction?.amount);
+    :legacyTemplate?-Math.abs(Number(legacyTemplate.amount)||0):Number(transaction?.amount);
   $('transaction-amount').value=transaction?editableAmount:'';
   $('transaction-provision').checked=transaction?.professionalCategory==='provision';
   $('transaction-vat').checked=transaction?.professionalCategory==='vat';
