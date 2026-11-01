@@ -40,13 +40,15 @@
     if (/^paiement(?:\s+de)?\s+tva(?:\s|$)/i.test(label)) return 'vat-payment';
     if (/^paiement(?:\s+des?)?\s+charges sociales(?:\s|$)/i.test(label)) return 'social-payment';
 
-    // Provisions are virtual deductions and therefore only apply to the
-    // professional balance when they originate from a recurring provision.
+    // Explicitly named provisions are virtual deductions even when entered
+    // manually. Legacy recurring templates may still use the shorter labels.
+    if (/^provision\s+tva(?:\s|$)/i.test(label)) return 'vat';
+    if (/^provision\s+charges sociales(?:\s|$)/i.test(label)) return 'social';
+    if (/^provision\s+marge(?:\s|$)/i.test(label)) return 'margin';
     if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
-    if (/^(?:provision\s+)?tva(?:\s|$)/i.test(label)) return 'vat';
-    if (/^(?:provision\s+)?charges sociales(?:\s|$)/i.test(label)) return 'social';
-    if (/^(?:provision\s+)?marge(?:\s|$)/i.test(label)) return 'margin';
-    return null;
+    if (/^tva(?:\s|$)/i.test(label)) return 'vat';
+    if (/^charges sociales(?:\s|$)/i.test(label)) return 'social';
+    if (/^marge(?:\s|$)/i.test(label)) return 'margin';
   }
 
   function actualBalanceDelta(transaction, recurringTemplates = []) {
