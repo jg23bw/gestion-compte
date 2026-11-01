@@ -415,8 +415,6 @@ function initializeDomEventHandlers() {
     });
   });
   document.addEventListener('click',event=>{
-    const move=event.target.closest('[data-move-transaction]');
-    if(move){moveTransaction(move.dataset.moveTransaction,Number(move.dataset.direction));return;}
     const edit=event.target.closest('[data-edit-transaction]');
     if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
     const del=event.target.closest('[data-delete-transaction]');
