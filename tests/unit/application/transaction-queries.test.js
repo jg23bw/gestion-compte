@@ -16,7 +16,7 @@ function fixture() {
       findAll: () => transactions,
       findByAccount: id => transactions.filter(t => t.accountId === id),
       findAccount: id => accounts.find(a => a.id === id) || null,
-      findRecurringTemplates: () => []
+      findRecurringTemplates: () => this.recurringTemplates || []
     }
   };
 }
@@ -47,6 +47,29 @@ test('professional adjusted balance uses repository templates', () => {
   f.repository.findRecurringTemplates = () => [{ id: 'vat-template', label: 'TVA', amount: 20 }];
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
+});
+
+test('actual and provision-adjusted balances treat provisions and payments separately', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1000;
+  f.accounts[0].netOpening = 1000;
+  f.transactions.splice(0, 2,
+    { id: 'vat-provision', accountId: 'a', date: '2026-01-01', createdAt: 1, amount: 100, label: 'Provision TVA', recurringKey: 'vat@2026-01-01', recurringTemplateId: 'vat' },
+    { id: 'social-provision', accountId: 'a', date: '2026-01-02', createdAt: 2, amount: 200, label: 'Provision charges sociales', recurringKey: 'social@2026-01-02', recurringTemplateId: 'social' },
+    { id: 'margin-provision', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 50, label: 'Provision marge', recurringKey: 'margin@2026-01-03', recurringTemplateId: 'margin' },
+    { id: 'vat-payment', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -100, label: 'Paiement TVA' },
+    { id: 'social-payment', accountId: 'a', date: '2026-01-05', createdAt: 5, amount: -200, label: 'Paiement charges sociales' }
+  );
+  f.recurringTemplates = [
+    { id: 'vat', label: 'Provision TVA', amount: 100 },
+    { id: 'social', label: 'Provision charges sociales', amount: 200 },
+    { id: 'margin', label: 'Provision marge', amount: 50 }
+  ];
+  const queries = create({ repository: f.repository, domain });
+
+  assert.equal(queries.balanceAt('a'), 700);
+  assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 650);
+  assert.equal(queries.accountTransactionDisplayRows({ accountId: 'a' })[0].balance, 1000);
 });
 
 test('balance after transaction follows the account display order and stops at the requested row', () => {
