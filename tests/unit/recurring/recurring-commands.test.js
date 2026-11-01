@@ -14,7 +14,7 @@ test('generation creates enabled transactions with due date and recurring key', 
     createId: () => 'generated-id', now: () => 1000
   }), [{
     id: 'generated-id', accountId: 'bank', date: '2026-04-30', amount: 850,
-    label: 'Loyer', createdAt: 1000, recurringKey: 'rent@2026-04-30', recurringTemplateId: 'rent'
+    professionalCategory: null, professionalTreatment: null, professionalAmount: 850, label: 'Loyer', createdAt: 1000, recurringKey: 'rent@2026-04-30', recurringTemplateId: 'rent'
   }]);
 });
 
