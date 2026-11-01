@@ -81,7 +81,7 @@ create table if not exists public.crypto_holdings (
   primary key (user_id, id)
 );
 
-create table if not exists public.user_notes (user_id uuid primary key references auth.users(id) on delete cascade,content text not null default '',updated_at timestamptz not null default now(),constraint user_notes_content_size check (octet_length(content)<=1048576));
+create table if not exists public.user_notes (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,title text not null default 'Sans titre',content text not null default '',created_at timestamptz not null default now(),updated_at timestamptz not null default now(),constraint user_notes_content_size check (octet_length(content)<=1048576));
 
 create table if not exists public.audit_history (
   id bigint generated always as identity primary key,
