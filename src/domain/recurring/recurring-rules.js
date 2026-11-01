@@ -51,13 +51,19 @@
       if (existingKeys.has(recurringKey)) return;
       additions.push({
         id: createId(), accountId: template.accountId, date,
-        amount: isProfessionalProvisionLabel(template.label) ? 0 : Number(template.amount), label: template.label,
-        createdAt: now() + additions.length, recurringKey, recurringTemplateId: template.id
+        amount: template.professionalCategory === 'provision'
+          || ((template.professionalCategory === 'vat' || template.professionalCategory === 'social') && template.professionalTreatment === 'provision')
+          ? 0 : Number(template.amount),
+        professionalCategory: template.professionalCategory || null,
+        professionalTreatment: template.professionalTreatment || null,
+        professionalAmount: (template.professionalCategory === 'vat' || template.professionalCategory === 'social')
+          && template.professionalTreatment === 'effective' ? 0 : Number(template.amount),
+        label: template.label, createdAt: now() + additions.length, recurringKey, recurringTemplateId: template.id
       });
       existingKeys.add(recurringKey);
     });
     return additions;
   }
 
-  return Object.freeze({ dueDateForTemplate, buildTransactionsForMonth, isProfessionalProvisionLabel });
+  return Object.freeze({ dueDateForTemplate, buildTransactionsForMonth });
 });
