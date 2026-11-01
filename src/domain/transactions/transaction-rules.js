@@ -25,10 +25,10 @@
     return transactions.filter(transaction => transaction.accountId === accountId).sort(transactionOrder);
   }
 
-  function balanceAt(openingBalance, transactions, untilDate = null) {
+  function balanceAt(openingBalance, transactions, untilDate = null, recurringTemplates = []) {
     return Number(openingBalance || 0) + transactions
       .filter(transaction => !untilDate || transaction.date <= untilDate)
-      .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+      .reduce((sum, transaction) => sum + actualBalanceDelta(transaction, recurringTemplates), 0);
   }
 
   function professionalRecurringKind(transaction, recurringTemplates = []) {
@@ -47,6 +47,14 @@
     if (/^(?:provision\s+)?charges sociales(?:\s|$)/i.test(label)) return 'social';
     if (/^(?:provision\s+)?marge(?:\s|$)/i.test(label)) return 'margin';
     return null;
+  }
+
+  function actualBalanceDelta(transaction, recurringTemplates = []) {
+    const kind = professionalRecurringKind(transaction, recurringTemplates);
+    // Provisions are estimates, not bank movements: exclude them from the
+    // actual balance. Their amount is deducted only by the adjusted balance.
+    if (kind === 'vat' || kind === 'social' || kind === 'margin') return 0;
+    return Number(transaction.amount) || 0;
   }
 
   function professionalAdjustedAmount(transaction, recurringTemplates = []) {
@@ -114,6 +122,7 @@
     transactionOrder,
     sortAccountTransactions,
     balanceAt,
+    actualBalanceDelta,
     professionalRecurringKind,
     professionalAdjustedAmount,
     professionalAdjustedDelta,
