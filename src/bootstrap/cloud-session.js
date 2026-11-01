@@ -118,6 +118,7 @@ async function loadCloudState(user){
     cloud.accountPledgesDirty=false;
     cloud.stockHoldingsDirty=false;
     normalizeTransactionOrder();
+    await loadNotesFromSupabase();
     cloud.isApplyingCloud=true;
     renderAll();
     cloud.isApplyingCloud=false;
