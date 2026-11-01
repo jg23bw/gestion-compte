@@ -25,7 +25,7 @@
   function create({ repository, domain }) {
     if (!repository || !domain) throw new TypeError('repository and domain are required');
     return Object.freeze({
-      monthlyHistory({ month, accountFilter = 'all', typeFilter = 'all', query = '', sort = 'date-desc' } = {}) {
+      monthlyHistory({ month, accountFilter = 'all', typeFilter = 'all', query = '', sort = 'date-asc' } = {}) {
         const normalizedQuery = String(query).trim().toLocaleLowerCase('fr');
         const rows = repository.findAll().filter(transaction => {
           const account = repository.findAccount(transaction.accountId);
@@ -55,7 +55,7 @@
       listAccountTransactions(accountId) {
         return domain.sortAccountTransactions(repository.findByAccount(accountId), accountId);
       },
-      filterAccountTransactions({ accountId, typeFilter = 'all', query = '', sort = 'date-asc' } = {}) {
+      filterAccountTransactions({ accountId, typeFilter = 'all', query = '', sort = 'date-desc' } = {}) {
         const normalizedQuery = String(query).trim().toLocaleLowerCase('fr');
         const rows = repository.findAll().filter(transaction => {
           if (transaction.accountId !== accountId) return false;
@@ -67,7 +67,7 @@
         });
         return sortDisplayRows(rows, sort, domain);
       },
-      accountTransactionDisplayRows({ accountId, typeFilter = 'all', query = '', sort = 'date-asc' } = {}) {
+      accountTransactionDisplayRows({ accountId, typeFilter = 'all', query = '', sort = 'date-desc' } = {}) {
         const account = repository.findAccount(accountId);
         const ordered = domain.sortAccountTransactions(repository.findByAccount(accountId), accountId);
         const positions = new Map();
