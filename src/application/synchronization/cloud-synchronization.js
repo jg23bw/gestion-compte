@@ -40,7 +40,7 @@
         const remoteTemplates=new Map(remoteTemplateRows.map(row=>[row.id,row]));
         const changedAccounts=accounts.filter(row=>!remoteAccounts.has(row.id)||!sameCloudValues(row,remoteAccounts.get(row.id),['name','short','kind','opening','vat_rate','social_rate','net_opening']));
         const changedTemplates=templates.filter(row=>!remoteTemplates.has(row.id)||!sameCloudValues(row,remoteTemplates.get(row.id),['account_id','day_of_month','frequency','months','start_month','end_month','once_date','label','amount','enabled']));
-        const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','is_paid','sort_order','source','recurring_template_id','generated_month','recurring_key']));
+        const changedTransactions=transactions.filter(row=>!remoteTransactions.has(row.id)||!sameCloudValues(row,remoteTransactions.get(row.id),['account_id','transaction_date','label','amount','professional_category','professional_treatment','professional_amount','is_paid','sort_order','source','recurring_template_id','generated_month','recurring_key']));
         if(changedAccounts.length)await accountsRepo.upsertMany(changedAccounts);
         for(const id of [...pending.accounts]){await accountsRepo.deleteById(id);pending.accounts.delete(id);}
         if(changedTemplates.length)await templatesRepo.upsertMany(changedTemplates);
