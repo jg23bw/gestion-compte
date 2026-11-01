@@ -332,21 +332,6 @@ function pledgeNoteMarkup(id){
 function transactionOrder(a,b){return TransactionRules.transactionOrder(a,b);}
 function accountTransactions(accountId){return transactionQueries.listAccountTransactions(accountId);}
 function normalizeTransactionOrder(){return transactionCommands.normalizeOrder(state.accounts);}
-function moveTransaction(id,direction){
-  const current=state.transactions.find(t=>t.id===id);if(!current)return;
-  const accountId=current.accountId;
-  const sortSelect=$('transaction-sort');
-  const currentSort=sortSelect?.value||'date-asc';
-  const visibleOrder=transactionQueries.accountTransactionsInDisplayOrder(accountId,currentSort);
-  const index=visibleOrder.findIndex(t=>t.id===id),targetIndex=index+Number(direction);
-  if(index<0||targetIndex<0||targetIndex>=visibleOrder.length)return;
-  prepareUndo();
-  const [moved]=visibleOrder.splice(index,1);visibleOrder.splice(targetIndex,0,moved);
-  transactionCommands.reorder(accountId,visibleOrder.map(transaction=>transaction.id));
-  if(sortSelect)sortSelect.value='manual';
-  renderAll();
-  showToast('Ordre manuel des opérations mis à jour.',true);
-}
 function balanceAt(accountId,untilDate=null){return transactionQueries.balanceAt(accountId,untilDate);}
 function lombardAmount(){return Math.max(0,Number(state.lombardCredit?.amount)||0);}
 function totalAccountsBalance(){return state.accounts.reduce((sum,a)=>sum+balanceAt(a.id),0);}

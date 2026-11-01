@@ -25,7 +25,7 @@ const domain = require('../../../src/domain/transactions/transaction-rules.js');
 test('list account transactions delegates sorting to domain and filters by account', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
-  assert.deepEqual(queries.listAccountTransactions('a').map(t => t.id), ['out', 'in']);
+  assert.deepEqual(queries.listAccountTransactions('a').map(t => t.id), ['in', 'out']);
 });
 
 test('balance use case obtains account and transactions through repository port', () => {
@@ -52,8 +52,8 @@ test('professional adjusted balance uses repository templates', () => {
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
-  assert.equal(queries.balanceAfterTransaction(f.transactions[0]), 140);
-  assert.equal(queries.balanceAfterTransaction(f.transactions[1]), 90);
+  assert.equal(queries.balanceAfterTransaction(f.transactions[0]), 150);
+  assert.equal(queries.balanceAfterTransaction(f.transactions[1]), 140);
 });
 
 test('balance after transaction returns zero when the account no longer exists', () => {
@@ -109,30 +109,28 @@ test('account transaction query filters by account, type and text, then applies 
   const result = queries.filterAccountTransactions({
     accountId: 'a', typeFilter: 'income', query: ' salaire ', sort: 'amount-desc'
   });
-  assert.deepEqual(result.map(item => item.id), ['salary', 'in']);
+  assert.deepEqual(result.map(item => item.id), ['in', 'salary']);
 });
 
-test('account transaction query preserves manual order and supports pointed-first sorting', () => {
+test('account transaction query always prioritizes pending rows, then applies the selected sort', () => {
   const f = fixture();
   f.transactions[0].sortOrder = 2;
   f.transactions[1].sortOrder = 1;
   f.transactions[0].isPaid = true;
   const queries = create({ repository: f.repository, domain });
-  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'manual' }).map(item => item.id), ['out', 'in']);
-  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'pointed' }).map(item => item.id), ['in', 'out']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-desc' }).map(item => item.id), ['out', 'in']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-asc' }).map(item => item.id), ['out', 'in']);
 });
 
-test('account transaction display ordering is shared by reorder actions and does not mutate repository rows', () => {
+test('account transaction display sorting prioritizes pending rows and does not mutate repository rows', () => {
   const f = fixture();
   f.transactions[0].sortOrder = 2;
   f.transactions[1].sortOrder = 1;
   f.transactions[0].isPaid = true;
   const original = f.transactions.map(item => ({ ...item }));
   const queries = create({ repository: f.repository, domain });
-  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'manual').map(item => item.id), ['out', 'in']);
-  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'date-asc').map(item => item.id), ['in', 'out']);
-  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'date-desc').map(item => item.id), ['out', 'in']);
-  assert.deepEqual(queries.accountTransactionsInDisplayOrder('a', 'pointed').map(item => item.id), ['in', 'out']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-desc' }).map(item => item.id), ['out', 'in']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-asc' }).map(item => item.id), ['out', 'in']);
   assert.deepEqual(f.transactions, original);
 });
 
@@ -147,8 +145,8 @@ test('account transaction display rows calculate balances and manual positions i
     accountId: 'a', typeFilter: 'all', query: '', sort: 'date-desc'
   });
   assert.deepEqual(rows.map(row => row.transaction.id), ['later', 'out', 'in']);
-  assert.deepEqual(rows.map(row => row.balance), [125, 115, 165]);
-  assert.deepEqual(rows.map(row => row.position), [0, 1, 2]);
+  assert.deepEqual(rows.map(row => row.balance), [165, 140, 150]);
+  assert.deepEqual(rows.map(row => row.position), [2, 1, 0]);
   assert.ok(rows.every(row => row.accountTransactionCount === 3));
 });
 
