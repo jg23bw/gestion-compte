@@ -66,10 +66,10 @@ test('adjusted provision amount uses recurring template amount, including zero r
   const transaction = tx('provision', { amount: 0, recurringTemplateId: 'vat-template' });
   const templates = [{ id: 'vat-template', label: 'TVA', amount: 425.5 }];
   assert.equal(rules.professionalAdjustedAmount(transaction, templates), 425.5);
-  assert.equal(rules.professionalAdjustedDelta(transaction, templates), -425.5);
+  assert.equal(rules.professionalAdjustedDelta(transaction, templates), 0);
 });
 
-test('adjusted margin is deducted only from adjusted balance', () => {
+test('VAT, social charges and margin tracking rows do not change the professional balance', () => {
   const account = { id: 'bank-1', opening: 1000, netOpening: 1000 };
   const transactions = [
     tx('real', { amount: 200, date: '2026-01-01' }),
@@ -77,7 +77,7 @@ test('adjusted margin is deducted only from adjusted balance', () => {
   ];
   const templates = [{ id: 'margin-template', label: 'Marge sécurité', amount: 150 }];
   assert.equal(rules.balanceAt(account.opening, transactions), 1200);
-  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, templates, '2026-01-31'), 1050);
+  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, templates, '2026-01-31'), 1200);
 });
 
 test('ordinary recurring transaction keeps its signed amount', () => {
