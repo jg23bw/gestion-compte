@@ -69,7 +69,7 @@ test('actual and provision-adjusted balances treat provisions and payments separ
 
   assert.equal(queries.balanceAt('a'), 700);
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 650);
-  assert.equal(queries.accountTransactionDisplayRows({ accountId: 'a' })[0].balance, 1000);
+  assert.equal(queries.accountTransactionDisplayRows({ accountId: 'a' }).find(row => row.transaction.id === 'margin-provision').balance, 700);
 });
 
 test('balance after transaction follows the account display order and stops at the requested row', () => {
