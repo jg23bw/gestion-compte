@@ -11,13 +11,13 @@
 
   function sortDisplayRows(rows, sort, domain) {
     return rows.slice().sort((a, b) => {
+      const pendingFirst = Number(a.isPaid === true) - Number(b.isPaid === true);
+      if (pendingFirst) return pendingFirst;
       if (sort === 'date-asc') return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
       if (sort === 'date-desc') return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
       if (sort === 'label') return a.label.localeCompare(b.label, 'fr');
       if (sort === 'amount-asc') return Number(a.amount) - Number(b.amount);
       if (sort === 'amount-desc') return Number(b.amount) - Number(a.amount);
-      if (sort === 'pointed') return Number(b.isPaid === true) - Number(a.isPaid === true)
-        || domain.transactionOrder(a, b);
       return domain.transactionOrder(a, b);
     });
   }
@@ -25,7 +25,7 @@
   function create({ repository, domain }) {
     if (!repository || !domain) throw new TypeError('repository and domain are required');
     return Object.freeze({
-      monthlyHistory({ month, accountFilter = 'all', typeFilter = 'all', query = '', sort = 'date-asc' } = {}) {
+      monthlyHistory({ month, accountFilter = 'all', typeFilter = 'all', query = '', sort = 'date-desc' } = {}) {
         const normalizedQuery = String(query).trim().toLocaleLowerCase('fr');
         const rows = repository.findAll().filter(transaction => {
           const account = repository.findAccount(transaction.accountId);
@@ -84,9 +84,6 @@
           position: positions.get(transaction.id) ?? -1,
           accountTransactionCount: ordered.length
         }));
-      },
-      accountTransactionsInDisplayOrder(accountId, sort = 'manual') {
-        return sortDisplayRows(repository.findByAccount(accountId), sort, domain);
       },
       balanceAt(accountId, untilDate = null) {
         const account = repository.findAccount(accountId);
