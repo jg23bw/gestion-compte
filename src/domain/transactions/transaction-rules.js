@@ -37,15 +37,15 @@
 
     // Actual tax/social payments already reduce the bank balance. They must not
     // be deducted a second time in the provision-adjusted professional balance.
-    if (/^paiement(?:\\s+de)?\\s+tva(?:\\s|$)/i.test(label)) return 'vat-payment';
-    if (/^paiement(?:\\s+des?)?\\s+charges sociales(?:\\s|$)/i.test(label)) return 'social-payment';
+    if (/^paiement(?:\s+de)?\s+tva(?:\s|$)/i.test(label)) return 'vat-payment';
+    if (/^paiement(?:\s+des?)?\s+charges sociales(?:\s|$)/i.test(label)) return 'social-payment';
 
     // Provisions are virtual deductions and therefore only apply to the
     // professional balance when they originate from a recurring provision.
     if (!transaction.recurringTemplateId && !transaction.recurringKey) return null;
-    if (/^tva(?:\\s|$)/i.test(label)) return 'vat';
-    if (/^charges sociales(?:\\s|$)/i.test(label)) return 'social';
-    if (/^marge(?:\\s|$)/i.test(label)) return 'margin';
+    if (/^tva(?:\s|$)/i.test(label)) return 'vat';
+    if (/^charges sociales(?:\s|$)/i.test(label)) return 'social';
+    if (/^marge(?:\s|$)/i.test(label)) return 'margin';
     return null;
   }
 
