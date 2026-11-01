@@ -1634,7 +1634,7 @@ input,select,textarea{accent-color:#536dff}
 /* Formulaire d'opération : densité réduite et contrôles de classification compacts. */
 #transaction-dialog.modal{width:min(480px,calc(100% - 28px))}
 #transaction-dialog form{padding:20px}
-#transaction-dialog-heading{margin-bottom:17px}
+#transaction-dialog .modal-heading{margin-bottom:17px}
 #transaction-dialog-heading h2{font-size:19px}
 #transaction-dialog label{gap:5px;margin-bottom:12px;font-size:10px}
 #transaction-dialog input:not([type="checkbox"]):not([type="radio"]),
@@ -1645,10 +1645,11 @@ input,select,textarea{accent-color:#536dff}
 #transaction-dialog .pledge-check{gap:7px;margin:0 0 7px;font-size:10px}
 #transaction-dialog .pledge-check input[type="checkbox"]{width:15px;height:15px;flex:0 0 15px}
 #transaction-dialog .transaction-treatment-fields{display:flex;flex-wrap:wrap;gap:6px 16px;margin:0 0 9px 22px}
+#transaction-dialog .transaction-treatment-fields[hidden]{display:none!important}
 #transaction-dialog .transaction-treatment-fields label{display:inline-flex;flex-direction:row;align-items:center;gap:6px;margin:0;font-size:10px;font-weight:500;white-space:nowrap}
 #transaction-dialog .transaction-treatment-fields input[type="radio"]{appearance:auto;-webkit-appearance:radio;width:14px;height:14px;min-width:14px;margin:0;padding:0;border:0;box-shadow:none;accent-color:#536dff;flex:0 0 14px}
 #transaction-dialog .form-help{font-size:9px;line-height:1.45;padding:8px 10px;margin:0 0 12px}
-#transaction-dialog-actions{padding-top:12px;margin-top:14px}
+#transaction-dialog .modal-actions{padding-top:12px;margin-top:14px}
 @media(max-width:580px){
  #transaction-dialog.modal{width:calc(100% - 20px)}
  #transaction-dialog form{padding:16px}
