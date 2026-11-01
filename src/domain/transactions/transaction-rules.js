@@ -46,15 +46,15 @@
   }
 
   function professionalAdjustedDelta(transaction, recurringTemplates = []) {
-    // TVA, charges sociales et marge sont des lignes de suivi : leur montant
-    // bancaire reste à zéro et elles ne doivent pas être déduites du solde.
-    return professionalRecurringKind(transaction, recurringTemplates)
-      ? 0
-      : Number(transaction.amount) || 0;
+    const kind = professionalRecurringKind(transaction, recurringTemplates);
+    const amount = professionalAdjustedAmount(transaction, recurringTemplates);
+    // Le montant bancaire de ces lignes reste à zéro ; leur provision prévue
+    // dans le modèle récurrent est néanmoins déduite du solde prévisionnel.
+    return kind ? -Math.abs(amount) : amount;
   }
 
   function professionalAdjustedBalanceAt(account, transactions, recurringTemplates = [], untilDate) {
-    const opening = Number(account.netOpening ?? account.opening) || 0;
+    const opening = Number(account.opening) || 0;
     return opening + sortAccountTransactions(transactions, account.id)
       .filter(transaction => transaction.date <= untilDate)
       .reduce((sum, transaction) => sum + professionalAdjustedDelta(transaction, recurringTemplates), 0);
