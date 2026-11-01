@@ -61,7 +61,7 @@
     return balance;
   }
 
-  function createTransactionRecord({ transactions, previous = null, id, accountId, date, amount, label, createdAt }) {
+  function createTransactionRecord({ transactions, previous = null, id, accountId, date, amount, label, createdAt, professionalCategory = null, professionalTreatment = null, professionalAmount = amount }) {
     const oldOrder = previous?.sortOrder;
     const keepsManualOrder = previous
       && previous.accountId === accountId
@@ -79,6 +79,9 @@
       date,
       amount,
       label,
+      professionalCategory,
+      professionalTreatment,
+      professionalAmount: Number(professionalAmount ?? amount),
       isPaid: previous?.isPaid === true,
       sortOrder: nextOrder,
       createdAt: previous?.createdAt || createdAt
