@@ -13,12 +13,7 @@
   'use strict';
 
   function transactionOrder(a, b) {
-    const ao = Number.isFinite(Number(a.sortOrder)) && a.sortOrder !== null ? Number(a.sortOrder) : null;
-    const bo = Number.isFinite(Number(b.sortOrder)) && b.sortOrder !== null ? Number(b.sortOrder) : null;
-    if (ao !== null && bo !== null && ao !== bo) return ao - bo;
-    if (ao !== null && bo === null) return -1;
-    if (ao === null && bo !== null) return 1;
-    return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
+    return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
   }
 
   function sortAccountTransactions(transactions, accountId) {
