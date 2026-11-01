@@ -8,7 +8,7 @@ function openTransaction(accountId=null,transaction=null){
   const transactionAccount=transaction?accountById(transaction.accountId):null;
   $('transaction-date').value=dateInputFormat(transaction?.date||today());
   // Keep the sign: a negative amount is an expense and must remain negative when edited.
-  $('transaction-amount').value=transaction?Number(transaction.professionalAmount ?? transaction.amount):'';
+  $('transaction-amount').value=transaction?(transaction.professionalTreatment==='effective'?Number(transaction.amount):Number(transaction.professionalAmount ?? transaction.amount)):'';
   $('transaction-provision').checked=transaction?.professionalCategory==='provision';
   $('transaction-vat').checked=transaction?.professionalCategory==='vat';
   $('transaction-social').checked=transaction?.professionalCategory==='social';
