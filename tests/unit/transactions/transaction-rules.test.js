@@ -80,6 +80,17 @@ test('adjusted margin is deducted only from adjusted balance', () => {
   assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, templates, '2026-01-31'), 1050);
 });
 
+test('explicitly named manual provisions affect only the provision-adjusted balance', () => {
+  const account = { id: 'bank-1', opening: 1000, netOpening: 1000 };
+  const transactions = [
+    tx('vat', { amount: -100, label: 'Provision TVA' }),
+    tx('social', { amount: -150, label: 'Provision charges sociales' }),
+    tx('margin', { amount: -50, label: 'Provision marge' })
+  ];
+  assert.equal(rules.balanceAt(account.opening, transactions), 1000);
+  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 700);
+});
+
 test('VAT and social payments reduce only the actual balance, not the provision-adjusted balance', () => {
   const account = { id: 'bank-1', opening: 1000, netOpening: 1000 };
   const transactions = [
