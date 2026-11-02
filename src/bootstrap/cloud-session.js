@@ -136,6 +136,8 @@ async function loadCloudState(user){
     cloud.authReady=true;
     $('auth-gate').hidden=true;
     $('app-shell').hidden=false;
+    // Les notes sont indépendantes du chargement principal : ne pas bloquer l'ouverture de l'application.
+    void loadNotesFromSupabase();
     if($('cloud-dialog').open)$('cloud-dialog').close();
     cloudStatus('Synchronisé en ligne',true);
     showToast(remoteHasData?'Données chargées depuis votre compte.':(hasLegacy&&importLocal?'Données importées dans votre compte.':'Votre espace en ligne est prêt.'));
