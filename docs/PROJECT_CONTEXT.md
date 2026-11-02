@@ -602,3 +602,7 @@ Ce document est un contexte vivant, pas un substitut au code actuel. À chaque t
 
 - Le chargement du cache local utilisé pour la migration volontaire est déplacé dans `src/adapters/persistence/local-storage/legacy-state-loader.js`.
 - Tests ajoutés pour la fusion des comptes par défaut, la correction du libellé CIC historique et les données locales absentes ou mal formées.
+
+## Projection des soldes dans Opérations et Compte pro
+
+Les écrans « Opérations » et « Compte pro » affichent en haut une projection calculée pour le compte sélectionné. Le solde à terme intègre toutes les opérations enregistrées, y compris les dates futures. Le point bas prévisionnel démarre du solde calculé à aujourd’hui puis applique chronologiquement les seules opérations futures : les creux historiques ne sont donc pas confondus avec un risque à venir. Dans Compte pro, les deux indicateurs sont présentés pour le solde bancaire et pour le solde après provisions. Les paiements effectifs de TVA/cotisations conservent leur montant ajusté nul et ne sont donc pas déduits une seconde fois du solde après provisions. Aucun changement de schéma Supabase n’est requis.
