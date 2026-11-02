@@ -176,12 +176,12 @@ test('professional projection uses adjusted amounts for future movements and ign
   f.transactions.push(
     { id: 'old-loss', accountId: 'a', date: '2025-12-01', createdAt: 0, amount: -900, professionalAmount: -900 },
     { id: 'future-provision', accountId: 'a', date: '2026-02-01', createdAt: 4, amount: 0, professionalAmount: -35 },
-    { id: 'future-payment', accountId: 'a', date: '2026-03-01', createdAt: 5, amount: -20, professionalAmount: -20 }
+    { id: 'future-payment', accountId: 'a', date: '2026-03-01', createdAt: 5, amount: -20, professionalCategory: 'vat', professionalTreatment: 'effective', professionalAmount: 0 }
   );
   const queries = create({ repository: f.repository, domain });
   const result = queries.projectProfessionalAdjustedBalance('a', '2026-01-31');
-  assert.equal(result.endingBalance, -815);
-  assert.equal(result.lowestBalance, -815);
+  assert.equal(result.endingBalance, -795);
+  assert.equal(result.lowestBalance, -795);
   assert.equal(result.lowestDate, '2026-02-01');
   assert.equal(result.futureCount, 2);
 });
