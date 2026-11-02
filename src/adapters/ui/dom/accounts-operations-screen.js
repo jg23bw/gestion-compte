@@ -78,6 +78,24 @@ function renderTransactions(){
   const account=accountById(accountFilter),isPro=account&&effectiveAccountType(account)==='pro',asOf=today(),currentBalance=balanceAt(accountFilter,asOf);
   const displayRows=transactionQueries.accountTransactionDisplayRows({accountId:accountFilter,typeFilter,query,sort});
   const head=$(prefix+'head'),rows=$(prefix+'rows'),footer=$(prefix+'footer');
+  const projectionTarget=$(proView?'pro-transaction-projection':'transaction-projection');
+  if(projectionTarget){
+    if(!account) projectionTarget.innerHTML='<div class="projection-empty">Sélectionnez un compte pour afficher sa projection.</div>';
+    else {
+      const actual=transactionQueries.projectAccountBalance(account.id,asOf);
+      const projectionCard=(label,value,detail)=>'<article class="projection-card"><span>'+label+'</span><strong class="'+(value<0?'negative':'')+'">'+euro(value)+'</strong><small>'+detail+'</small></article>';
+      const lowDetail=actual.lowestDate?'Point bas le '+dateFormat(actual.lowestDate):'Aucun passage sous le solde actuel';
+      let markup=projectionCard('Solde à terme',actual.endingBalance,actual.futureCount+' opération(s) future(s) incluse(s)')
+        +projectionCard('Point bas prévisionnel',actual.lowestBalance,lowDetail);
+      if(isPro){
+        const adjusted=transactionQueries.projectProfessionalAdjustedBalance(account.id,asOf);
+        const adjustedLowDetail=adjusted.lowestDate?'Point bas le '+dateFormat(adjusted.lowestDate):'Aucun passage sous le solde disponible actuel';
+        markup+=projectionCard('Solde à terme après provisions',adjusted.endingBalance,adjusted.futureCount+' opération(s) future(s) incluse(s)')
+          +projectionCard('Point bas après provisions',adjusted.lowestBalance,adjustedLowDetail);
+      }
+      projectionTarget.innerHTML=markup;
+    }
+  }
   head.innerHTML='<tr><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th>'+(isPro?'':'<th>COMPTE</th>')+'<th>MONTANT</th><th>SOLDE À DATE</th>'+(isPro?'<th>MONTANT (AVEC TVA ET CHARGES SOCIALES)</th><th>SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES)</th>':'')+'<th>ACTIONS</th></tr>';
   const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="'+(isPro?3:4)+'"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(proAdjustedBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
   rows.innerHTML=balanceRow+(displayRows.length?displayRows.map(({transaction:t,balance})=>{
