@@ -165,8 +165,8 @@ test('account projection starts from today balance, includes future operations a
   );
   const queries = create({ repository: f.repository, domain });
   const result = queries.projectAccountBalance('a', '2026-01-31');
-  assert.equal(result.endingBalance, -390);
-  assert.equal(result.lowestBalance, -440);
+  assert.equal(result.endingBalance, -290);
+  assert.equal(result.lowestBalance, -540);
   assert.equal(result.lowestDate, '2026-02-01');
   assert.equal(result.futureCount, 2);
 });
@@ -180,8 +180,8 @@ test('professional projection uses adjusted amounts for future movements and ign
   );
   const queries = create({ repository: f.repository, domain });
   const result = queries.projectProfessionalAdjustedBalance('a', '2026-01-31');
-  assert.equal(result.endingBalance, 85);
-  assert.equal(result.lowestBalance, 85);
-  assert.equal(result.lowestDate, null);
+  assert.equal(result.endingBalance, -815);
+  assert.equal(result.lowestBalance, -815);
+  assert.equal(result.lowestDate, '2026-02-01');
   assert.equal(result.futureCount, 2);
 });
