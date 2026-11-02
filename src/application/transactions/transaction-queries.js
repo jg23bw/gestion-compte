@@ -22,6 +22,28 @@
     });
   }
 
+  function projection(startingBalance, futureTransactions, amountOf) {
+    let balance = Number(startingBalance) || 0;
+    let lowestBalance = balance;
+    let lowestDate = null;
+    const ordered = futureTransactions.slice().sort((a, b) =>
+      a.date.localeCompare(b.date) || Number(a.createdAt || 0) - Number(b.createdAt || 0)
+    );
+    for (const transaction of ordered) {
+      balance += Number(amountOf(transaction)) || 0;
+      if (balance < lowestBalance) {
+        lowestBalance = balance;
+        lowestDate = transaction.date;
+      }
+    }
+    return Object.freeze({
+      endingBalance: balance,
+      lowestBalance,
+      lowestDate,
+      futureCount: ordered.length
+    });
+  }
+
   function create({ repository, domain }) {
     if (!repository || !domain) throw new TypeError('repository and domain are required');
     return Object.freeze({
@@ -104,6 +126,13 @@
         }
         return balance;
       },
+      projectAccountBalance(accountId, asOfDate) {
+        const account = repository.findAccount(accountId);
+        if (!account) return projection(0, [], () => 0);
+        const transactions = repository.findByAccount(accountId);
+        const startingBalance = domain.balanceAt(account.opening, transactions, asOfDate);
+        return projection(startingBalance, transactions.filter(item => item.date > asOfDate), item => item.amount);
+      },
       professionalAdjustedBalanceAt(accountId, untilDate) {
         const account = repository.findAccount(accountId);
         if (!account) return 0;
@@ -112,6 +141,18 @@
           repository.findByAccount(accountId),
           repository.findRecurringTemplates(),
           untilDate
+        );
+      },
+      projectProfessionalAdjustedBalance(accountId, asOfDate) {
+        const account = repository.findAccount(accountId);
+        if (!account) return projection(0, [], () => 0);
+        const transactions = repository.findByAccount(accountId);
+        const templates = repository.findRecurringTemplates();
+        const startingBalance = domain.professionalAdjustedBalanceAt(account, transactions, templates, asOfDate);
+        return projection(
+          startingBalance,
+          transactions.filter(item => item.date > asOfDate),
+          item => domain.professionalAdjustedDelta(item, templates)
         );
       },
       professionalAdjustedBalanceAfterTransaction(transaction) {
