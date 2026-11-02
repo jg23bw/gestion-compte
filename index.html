@@ -8,7 +8,7 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=notes-v1">
+  <link rel="stylesheet" href="styles.css?v=projected-balance-v1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
@@ -83,7 +83,7 @@
     <script src="src/bootstrap/cloud-session.js"></script>
     <script src="src/adapters/ui/dom/event-handlers.js"></script>
     <script src="src/adapters/ui/dom/opportunities-screen.js"></script>
-  <script src="app.js?v=notes-v1" defer></script>
+  <script src="app.js?v=projected-balance-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -162,12 +162,14 @@
 
       <section class="view" id="transactions-view">
         <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Opérations</h1><p class="subtitle">Consultez et gérez les opérations de tous vos comptes.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
+        <section class="transaction-projection" id="transaction-projection" aria-live="polite"></section>
         <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="transaction-head"></thead><tbody id="transaction-rows"></tbody></table></div><div class="table-footer" id="transaction-footer"></div></section>
       </section>
 
       <section class="view" id="pro-view">
         <div class="page-heading"><div><p class="eyebrow">GESTION PROFESSIONNELLE</p><h1>Compte professionnel</h1><p class="subtitle">Suivez le solde bancaire réel et le solde disponible après provisions de TVA, cotisations et marge de sécurité.</p></div><button class="primary-button" id="pro-transactions-add"><span>＋</span> Ajouter une opération</button></div>
+        <section class="transaction-projection" id="pro-transaction-projection" aria-live="polite"></section>
         <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="pro-transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération professionnelle"></div><select id="pro-transaction-account-filter" aria-label="Choisir le compte professionnel"></select><select id="pro-transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="pro-transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="pro-transaction-head"></thead><tbody id="pro-transaction-rows"></tbody></table></div><div class="table-footer" id="pro-transaction-footer"></div></section>
       </section>
