@@ -55,9 +55,6 @@ function fillAccountSelects(){
   const current=$('transaction-account-filter').value;
   $('transaction-account-filter').innerHTML=personalOpts;
   $('transaction-account-filter').value=personalAccounts.some(a=>a.id===current)?current:(personalAccounts[0]?.id||'');
-  const proAccounts=accountGroups.professional,proOpts=proAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
-  const proFilter=$('pro-transaction-account-filter');
-  if(proFilter){const selected=proFilter.value;proFilter.innerHTML=proOpts;proFilter.value=proAccounts.some(a=>a.id===selected)?selected:(proAccounts[0]?.id||'');}
   for(const id of ['history-account-filter','recurring-account-filter']){
     const filter=$(id); if(!filter) continue;
     const selected=filter.value;
@@ -74,7 +71,7 @@ function fillAccountSelects(){
 }
 function renderTransactions(){
   const proView=$('pro-view')?.classList.contains('active')===true,prefix=proView?'pro-transaction-':'transaction-';
-  const accountFilter=$(prefix+'account-filter').value,typeFilter=$(prefix+'type-filter').value,query=$(prefix+'search').value.trim().toLocaleLowerCase('fr'),sort=$(prefix+'sort')?.value||'date-desc';
+  const accountFilter=(proView?AccountListRules.selectGroups(state.accounts,{effectiveType:effectiveAccountType}).professional[0]?.id:$(prefix+'account-filter').value)||'',typeFilter=$(prefix+'type-filter').value,query=$(prefix+'search').value.trim().toLocaleLowerCase('fr'),sort=$(prefix+'sort')?.value||'date-desc';
   const account=accountById(accountFilter),isPro=account&&effectiveAccountType(account)==='pro',asOf=today(),currentBalance=balanceAt(accountFilter,asOf);
   const displayRows=transactionQueries.accountTransactionDisplayRows({accountId:accountFilter,typeFilter,query,sort});
   const head=$(prefix+'head'),rows=$(prefix+'rows'),footer=$(prefix+'footer');
@@ -96,13 +93,12 @@ function renderTransactions(){
       projectionTarget.innerHTML=markup;
     }
   }
-  head.innerHTML='<tr><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th>'+(isPro?'':'<th>COMPTE</th>')+'<th>MONTANT</th><th>SOLDE À DATE</th>'+(isPro?'<th>MONTANT (AVEC TVA ET CHARGES SOCIALES)</th><th>SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES)</th>':'')+'<th>ACTIONS</th></tr>';
-  const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="'+(isPro?3:4)+'"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(proAdjustedBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
+  head.innerHTML='<tr><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(isPro?'<th>MONTANT (AVEC TVA ET CHARGES SOCIALES)</th><th>SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES)</th>':'')+'<th>ACTIONS</th></tr>';
+  const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="'+3+'"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(proAdjustedBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
   rows.innerHTML=balanceRow+(displayRows.length?displayRows.map(({transaction:t,balance})=>{
-    const a=accountById(t.accountId)||{name:'Compte supprimé',short:'?',kind:'bank'};
-    const recurringKind=isPro?proRecurringKind(t):null,actualAmount=Number(t.amount),adjusted=isPro?proAdjustedAmount(t):0;
-    return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td>'+(isPro?'':'<td><div class="table-account">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td>')+'<td class="table-amount '+(actualAmount>=0?'positive':'negative')+'">'+(actualAmount>0?'+':'')+euro(actualAmount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(isPro?'<td class="table-amount '+(adjusted>=0?'positive':'negative')+'">'+(adjusted>0?'+':'')+euro(adjusted)+'</td><td class="table-balance">'+euro(transactionQueries.professionalAdjustedBalanceAfterTransaction(t))+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="'+(isPro?8:7)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>');
+      const recurringKind=isPro?proRecurringKind(t):null,actualAmount=Number(t.amount),adjusted=isPro?proAdjustedAmount(t):0;
+    return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td class="table-amount '+(actualAmount>=0?'positive':'negative')+'">'+(actualAmount>0?'+':'')+euro(actualAmount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(isPro?'<td class="table-amount '+(adjusted>=0?'positive':'negative')+'">'+(adjusted>0?'+':'')+euro(adjusted)+'</td><td class="table-balance">'+euro(transactionQueries.professionalAdjustedBalanceAfterTransaction(t))+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
+  }).join(''):'<tr><td colspan="'+(isPro?7:6)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>');
   footer.textContent=displayRows.length+' opération(s) affichée(s) · Le solde à date exclut les opérations futures ; la projection en haut les inclut.';
 }
 function renderMonthlyHistory(){
