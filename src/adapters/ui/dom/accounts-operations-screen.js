@@ -103,7 +103,7 @@ function renderTransactions(){
     const recurringKind=isPro?proRecurringKind(t):null,actualAmount=Number(t.amount),adjusted=isPro?proAdjustedAmount(t):0;
     return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td>'+(isPro?'':'<td><div class="table-account">'+bankLogo(a)+'<span>'+escapeHtml(a.name)+'</span></div></td>')+'<td class="table-amount '+(actualAmount>=0?'positive':'negative')+'">'+(actualAmount>0?'+':'')+euro(actualAmount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(isPro?'<td class="table-amount '+(adjusted>=0?'positive':'negative')+'">'+(adjusted>0?'+':'')+euro(adjusted)+'</td><td class="table-balance">'+euro(transactionQueries.professionalAdjustedBalanceAfterTransaction(t))+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
   }).join(''):'<tr><td colspan="'+(isPro?8:7)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>');
-  footer.textContent=displayRows.length+' opération(s) affichée(s) · Le solde à date exclut les opérations datées après aujourd’hui.';
+  footer.textContent=displayRows.length+' opération(s) affichée(s) · Le solde à date exclut les opérations futures ; la projection en haut les inclut.';
 }
 function renderMonthlyHistory(){
   if(!$('history-rows'))return;
