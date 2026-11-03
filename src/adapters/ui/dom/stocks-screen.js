@@ -268,6 +268,8 @@ function renderStocks(){
   if(stockPrices.updatedAt)footer+=' · dernière actualisation à '+cryptoTimeLabel(stockPrices.updatedAt);
   if(missing)footer+=' · '+missing+' position(s) sans cours : la valeur actuelle de ces lignes est exclue des totaux Actions ; la vue d’ensemble utilise le montant investi comme estimation.';
   $('stocks-footer').textContent=footer;
+  // Les variations historiques sont indépendantes du dernier cours spot.
+  loadStockVariationHistory();
 }
 function currenciesNeedFx(holdings){return holdings.some(h=>normalizeStockCurrency(h.currency)!=='EUR');}
 function closeStockResults(){
