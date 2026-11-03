@@ -4,7 +4,7 @@
  */
 function opportunityAssets(){
   const crypto=(state.cryptoHoldings||[]).map(h=>{const price=Number(cryptoPrices.values[h.coingeckoId]);const value=Number.isFinite(price)&&price>0?price*Number(h.quantity||0):null;return {id:'c-'+h.id,type:'crypto',symbol:String(h.symbol||h.coingeckoId||'').toUpperCase(),name:h.name||h.symbol||h.coingeckoId,price,value,invested:Number(h.invested)||0,changes:cryptoPrices.market[h.coingeckoId]||{},updatedAt:cryptoPrices.updatedAt,raw:h};});
-  const stocks=stockHoldingCommands.findAll().map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:{},updatedAt:stockPrices.updatedAt,raw:h};});
+  const stocks=stockHoldingCommands.findAll().map(h=>{const details=stockPriceDetails(h);const manual=isManualValueHolding(h);const value=manual?manualHoldingValue(h):(details.price!==null?Number(h.quantity||0)*details.price:null);return {id:'s-'+h.id,type:'stock',symbol:h.symbol,name:h.name||h.symbol,price:details.price,value,invested:Number(h.invested)||0,changes:stockVariationCache[h.id]?.changes||{},updatedAt:stockPrices.updatedAt,raw:h};});
   return [...crypto,...stocks];
 }
 function opportunityPercent(value){if(value===null||value===undefined||value===''||!Number.isFinite(Number(value)))return '—';const n=Math.abs(Number(value))<0.005?0:Number(value);return (n>0?'+':'')+n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %';}
@@ -210,6 +210,70 @@ const opportunityHistoryLoading={};
 // quand un fournisseur est momentanément limité. Un clic sur l’actif force une nouvelle tentative.
 const opportunityHistoryAttempts={};
 const opportunityHistoryErrors={};
+const STOCK_VARIATION_CACHE_KEY='gestion-comptes-stock-variations-v1';
+const STOCK_VARIATION_CACHE_TTL=30*60*1000;
+const stockVariationCache={};
+let stockVariationPromise=null;
+const stockVariationRetryAt={};
+try{
+  const saved=JSON.parse(localStorage.getItem(STOCK_VARIATION_CACHE_KEY)||'null');
+  if(saved&&typeof saved==='object')Object.assign(stockVariationCache,saved);
+}catch(error){console.warn('Cache des variations actions illisible',error);}
+function stockChangesFromHistory(points){
+  if(!Array.isArray(points)||points.length<2)return {};
+  const valid=points.filter(p=>Number.isFinite(p?.t)&&Number.isFinite(p?.c)&&p.c>0).sort((a,b)=>a.t-b.t);
+  if(valid.length<2)return {};
+  const last=valid[valid.length-1],previous=valid[valid.length-2];
+  const variation=(prior)=>prior&&prior.c>0?(last.c/prior.c-1)*100:null;
+  const atOrBefore=days=>{const cutoff=last.t-days*86400000;let prior=null;for(const point of valid){if(point.t<=cutoff)prior=point;else break;}return prior;};
+  return {
+    day:previous.t<last.t?variation(previous):null,
+    week:variation(atOrBefore(7)),
+    month:variation(atOrBefore(30))
+  };
+}
+async function loadStockVariationHistory(){
+  if(stockVariationPromise)return stockVariationPromise;
+  const holdings=stockHoldingCommands.findAll().filter(h=>h.priceId&&!isManualValueHolding(h));
+  if(!holdings.length)return;
+  const now=Date.now();
+  const pending=holdings.filter(h=>{
+    const cached=stockVariationCache[h.id];
+    return (!cached||!cached.changes||now-Number(cached.updatedAt||0)>STOCK_VARIATION_CACHE_TTL)
+      &&(!stockVariationRetryAt[h.id]||now-stockVariationRetryAt[h.id]>15*60*1000);
+  });
+  if(!pending.length)return;
+  stockVariationPromise=(async()=>{
+    let rateLimited=false;
+    for(let index=0;index<pending.length;index++){
+      const holding=pending[index];
+      try{
+        const existing=opportunityHistory['s-'+holding.id+'|1y'];
+        let points=existing;
+        if(!points||points.length<2){
+          const payload=await stockFunction('history',{id:holding.priceId,period:'3m'});
+          points=normalizeOpportunityDailyPoints(payload?.points,'stock');
+        }
+        const changes=stockChangesFromHistory(points);
+        if(Object.values(changes).some(value=>value!==null&&Number.isFinite(value))){
+          stockVariationCache[holding.id]={changes,updatedAt:Date.now()};
+          delete stockVariationRetryAt[holding.id];
+        }else{
+          stockVariationRetryAt[holding.id]=Date.now();
+        }
+      }catch(error){
+        stockVariationRetryAt[holding.id]=Date.now();
+        console.warn('Variations actions indisponibles pour '+holding.symbol,error);
+        if(/429|limite.*requêtes|limite.*atteinte/i.test(String(error?.message||''))){rateLimited=true;break;}
+      }
+      if(index<pending.length-1&&!rateLimited)await new Promise(resolve=>setTimeout(resolve,650));
+    }
+    try{localStorage.setItem(STOCK_VARIATION_CACHE_KEY,JSON.stringify(stockVariationCache));}catch(error){}
+    renderStocks();
+    renderOpportunities();
+  })().finally(()=>{stockVariationPromise=null;});
+  return stockVariationPromise;
+}
 let opportunityHistoryRetryTimer=null;
 function renderOpportunityChart(assetId,period){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
@@ -420,7 +484,7 @@ function renderOpportunities(){
   const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
   const activeFilter=document.querySelector('[data-op-filter].is-active')?.dataset.opFilter||'all';
   renderOpportunityHeatmap(activePeriod);renderOpportunityAssets(activeFilter);setupOpportunityChart();loadOpportunityFearGreed();
-  // L'historique détaillé est chargé à la demande pour le seul actif sélectionné
-  // dans le graphique (setupOpportunityChart ci-dessus). Charger toutes les positions
-  // au démarrage provoquait une rafale de requêtes vers stock-data et les quotas amont.
+  // Les variations actions sont chargées séparément, en série et mises en cache ;
+  // l'historique long du graphique reste chargé à la demande pour l'actif sélectionné.
+  loadStockVariationHistory();
 }
