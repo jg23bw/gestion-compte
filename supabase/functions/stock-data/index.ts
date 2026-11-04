@@ -130,6 +130,57 @@ async function fetchCryptoPriceFromCoinbase(symbol: string): Promise<number | nu
   return Number.isFinite(price) && price > 0 && currency === "EUR" ? price : null;
 }
 
+/**
+ * Yahoo Finance fournit les cours crypto en EUR et des clôtures journalières.
+ * On utilise le même référentiel de marché que l'app Bourse d'Apple (flux Yahoo
+ * Finance) : variation calculée depuis la dernière clôture, et non sur 24 h glissantes.
+ */
+async function fetchCryptoMarketFromYahoo(symbol: string): Promise<{
+  price: number;
+  day?: number;
+  week?: number;
+  month?: number;
+} | null> {
+  const url = YAHOO_CHART_URL + encodeURIComponent(symbol + "-EUR") + "?range=3mo&interval=1d";
+  const response = await fetch(url, { headers: UPSTREAM_HEADERS, cache: "no-store" });
+  if (!response.ok) return null;
+  const payload = await response.json().catch(() => null);
+  const result = payload?.chart?.result?.[0];
+  if (!result || String(result?.meta?.currency ?? "").toUpperCase() !== "EUR") return null;
+  const price = Number(result?.meta?.regularMarketPrice);
+  if (!Number.isFinite(price) || price <= 0) return null;
+
+  const timestamps = Array.isArray(result.timestamp) ? result.timestamp : [];
+  const closes = Array.isArray(result?.indicators?.quote?.[0]?.close) ? result.indicators.quote[0].close : [];
+  const points = timestamps
+    .map((timestamp: unknown, index: number) => ({ t: Number(timestamp) * 1000, c: Number(closes[index]) }))
+    .filter((point: HistoryPoint) => Number.isFinite(point.t) && Number.isFinite(point.c) && point.c > 0)
+    .sort((a: HistoryPoint, b: HistoryPoint) => a.t - b.t);
+  if (!points.length) return { price };
+
+  const now = Date.now();
+  const utcToday = new Date(now).toISOString().slice(0, 10);
+  // Exclut la bougie du jour, encore incomplète, pour retrouver la clôture précédente.
+  const completed = points.filter((point: HistoryPoint) => new Date(point.t).toISOString().slice(0, 10) < utcToday);
+  const reference = (cutoff: number) => {
+    for (let index = completed.length - 1; index >= 0; index--) {
+      if (completed[index].t <= cutoff) return completed[index].c;
+    }
+    return undefined;
+  };
+  const lastClose = completed.length ? completed[completed.length - 1].c : undefined;
+  const dayReference = lastClose;
+  const weekReference = reference(now - 7 * 24 * 60 * 60 * 1000);
+  const monthReference = reference(now - 30 * 24 * 60 * 60 * 1000);
+  const change = (base?: number) => base && base > 0 ? (price / base - 1) * 100 : undefined;
+  return {
+    price,
+    day: change(dayReference),
+    week: change(weekReference),
+    month: change(monthReference),
+  };
+}
+
 async function fetchCryptoHistoryFromCoinGecko(id: string, days: number): Promise<{ points?: HistoryPoint[]; error?: string; status?: number }> {
   if (Date.now() < coinGeckoNotBefore) {
     return { error: "Limite CoinGecko atteinte ; réessaie dans une minute.", status: 429 };
@@ -216,6 +267,26 @@ Deno.serve(async (req) => {
           rows = Array.isArray(data) ? data : [];
         }
       }
+      // Les variations CoinGecko sont glissantes (24 h / 7 j / 30 j).
+      // Yahoo Finance calcule la variation journalière depuis la clôture précédente,
+      // comme l'affichage de l'app Bourse d'Apple. On privilégie ces données dès qu'elles existent.
+      const yahooQuotes = await Promise.all(ids.filter((id) => symbols[id]).map(async (id) => ({
+        id,
+        quote: await fetchCryptoMarketFromYahoo(symbols[id]).catch(() => null),
+      })));
+      const yahooById = new Map(yahooQuotes.filter((item) => item.quote).map((item) => [item.id, item.quote!]));
+      rows = rows.map((row) => {
+        const quote = yahooById.get(String(row?.id ?? ""));
+        if (!quote) return row;
+        return {
+          ...row,
+          current_price: quote.price,
+          price_change_percentage_24h: quote.day ?? null,
+          price_change_percentage_7d_in_currency: quote.week ?? null,
+          price_change_percentage_30d_in_currency: quote.month ?? null,
+          source: "yahoo-finance",
+        };
+      });
       const found = new Set(rows.map((row) => String(row?.id ?? "")));
       const missing = ids.filter((id) => !found.has(id) && symbols[id]).slice(0, 20);
       if (missing.length) {
