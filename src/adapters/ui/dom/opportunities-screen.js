@@ -210,8 +210,8 @@ const opportunityHistoryLoading={};
 // quand un fournisseur est momentanément limité. Un clic sur l’actif force une nouvelle tentative.
 const opportunityHistoryAttempts={};
 const opportunityHistoryErrors={};
-const STOCK_VARIATION_CACHE_KEY='gestion-comptes-stock-variations-v1';
-const STOCK_VARIATION_CACHE_TTL=30*60*1000;
+const STOCK_VARIATION_CACHE_KEY='gestion-comptes-stock-variations-v2';
+const STOCK_VARIATION_CACHE_TTL=5*60*1000;
 const stockVariationCache={};
 let stockVariationPromise=null;
 const stockVariationRetryAt={};
@@ -219,15 +219,25 @@ try{
   const saved=JSON.parse(localStorage.getItem(STOCK_VARIATION_CACHE_KEY)||'null');
   if(saved&&typeof saved==='object')Object.assign(stockVariationCache,saved);
 }catch(error){console.warn('Cache des variations actions illisible',error);}
-function stockChangesFromHistory(points){
+function stockChangesFromHistory(points,currentPrice,now=Date.now()){
   if(!Array.isArray(points)||points.length<2)return {};
   const valid=points.filter(p=>Number.isFinite(p?.t)&&Number.isFinite(p?.c)&&p.c>0).sort((a,b)=>a.t-b.t);
-  if(valid.length<2)return {};
-  const last=valid[valid.length-1],previous=valid[valid.length-2];
-  const variation=(prior)=>prior&&prior.c>0?(last.c/prior.c-1)*100:null;
-  const atOrBefore=days=>{const cutoff=last.t-days*86400000;let prior=null;for(const point of valid){if(point.t<=cutoff)prior=point;else break;}return prior;};
+  const spot=Number(currentPrice);
+  if(valid.length<2||!Number.isFinite(spot)||spot<=0)return {};
+  const last=valid[valid.length-1];
+  const sameUtcDay=new Date(last.t).toISOString().slice(0,10)===new Date(now).toISOString().slice(0,10);
+  // Si une bougie du jour est déjà présente, elle peut être partielle :
+  // la clôture de référence 24 h est alors celle de la séance précédente.
+  const dayReference=sameUtcDay?valid[valid.length-2]:last;
+  const variation=(prior)=>prior&&prior.c>0?(spot/prior.c-1)*100:null;
+  const atOrBefore=days=>{
+    const cutoff=now-days*86400000;
+    let prior=null;
+    for(const point of valid){if(point.t<=cutoff)prior=point;else break;}
+    return prior;
+  };
   return {
-    day:previous.t<last.t?variation(previous):null,
+    day:variation(dayReference),
     week:variation(atOrBefore(7)),
     month:variation(atOrBefore(30))
   };
@@ -254,7 +264,8 @@ async function loadStockVariationHistory(){
           const payload=await stockFunction('history',{id:holding.priceId,period:'3m'});
           points=normalizeOpportunityDailyPoints(payload?.points,'stock');
         }
-        const changes=stockChangesFromHistory(points);
+        const spotPrice=stockPrices.values[holding.priceId];
+        const changes=stockChangesFromHistory(points,spotPrice);
         if(Object.values(changes).some(value=>value!==null&&Number.isFinite(value))){
           stockVariationCache[holding.id]={changes,updatedAt:Date.now()};
           delete stockVariationRetryAt[holding.id];
