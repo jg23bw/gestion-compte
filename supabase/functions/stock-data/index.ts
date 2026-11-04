@@ -281,7 +281,9 @@ Deno.serve(async (req) => {
         }
       };
       await Promise.all(Array.from({ length: Math.min(4, yahooQueue.length) }, () => yahooWorker()));
-      const yahooById = new Map(yahooQuotes.filter((item) => item.quote).map((item) => [item.id, item.quote!]));
+      const yahooById = new Map<string, NonNullable<Awaited<ReturnType<typeof fetchCryptoMarketFromYahoo>>>>(
+        yahooQuotes.filter((item) => item.quote).map((item) => [item.id, item.quote!] as const),
+      );
       rows = rows.map((row) => {
         const quote = yahooById.get(String(row?.id ?? ""));
         if (!quote) return row;
