@@ -270,10 +270,17 @@ Deno.serve(async (req) => {
       // Les variations CoinGecko sont glissantes (24 h / 7 j / 30 j).
       // Yahoo Finance calcule la variation journalière depuis la clôture précédente,
       // comme l'affichage de l'app Bourse d'Apple. On privilégie ces données dès qu'elles existent.
-      const yahooQuotes = await Promise.all(ids.filter((id) => symbols[id]).map(async (id) => ({
-        id,
-        quote: await fetchCryptoMarketFromYahoo(symbols[id]).catch(() => null),
-      })));
+      const yahooIds = ids.filter((id) => symbols[id]);
+      const yahooQuotes: Array<{ id: string; quote: Awaited<ReturnType<typeof fetchCryptoMarketFromYahoo>> }> = [];
+      // Limite la concurrence pour ne pas déclencher de blocage côté fournisseur.
+      const yahooQueue = [...yahooIds];
+      const yahooWorker = async () => {
+        while (yahooQueue.length) {
+          const id = yahooQueue.shift()!;
+          yahooQuotes.push({ id, quote: await fetchCryptoMarketFromYahoo(symbols[id]).catch(() => null) });
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(4, yahooQueue.length) }, () => yahooWorker()));
       const yahooById = new Map(yahooQuotes.filter((item) => item.quote).map((item) => [item.id, item.quote!]));
       rows = rows.map((row) => {
         const quote = yahooById.get(String(row?.id ?? ""));
@@ -287,6 +294,19 @@ Deno.serve(async (req) => {
           source: "yahoo-finance",
         };
       });
+      for (const [id, quote] of yahooById) {
+        if (!rows.some((row) => String(row?.id ?? "") === id)) {
+          rows.push({
+            id,
+            current_price: quote.price,
+            image: null,
+            price_change_percentage_24h: quote.day ?? null,
+            price_change_percentage_7d_in_currency: quote.week ?? null,
+            price_change_percentage_30d_in_currency: quote.month ?? null,
+            source: "yahoo-finance",
+          });
+        }
+      }
       const found = new Set(rows.map((row) => String(row?.id ?? "")));
       const missing = ids.filter((id) => !found.has(id) && symbols[id]).slice(0, 20);
       if (missing.length) {

@@ -150,7 +150,7 @@ function renderCrypto(){
   if(priceStatus){
     if(cryptoPrices.loading){priceStatus.textContent='Actualisation des prix…';priceStatus.classList.remove('is-error');}
     else if(cryptoPrices.error){priceStatus.textContent='Prix indisponible : '+cryptoPrices.error;priceStatus.classList.add('is-error');}
-    else if(cryptoPrices.updatedAt){priceStatus.textContent='Prix actualisés à '+cryptoTimeLabel(cryptoPrices.updatedAt)+' · source CoinGecko';priceStatus.classList.remove('is-error');}
+    else if(cryptoPrices.updatedAt){priceStatus.textContent='Prix actualisés à '+cryptoTimeLabel(cryptoPrices.updatedAt)+' · sources Yahoo Finance / CoinGecko / Coinbase';priceStatus.classList.remove('is-error');}
     else{priceStatus.textContent='Prix pas encore chargés.';priceStatus.classList.remove('is-error');}
   }
   const migration=$('crypto-migration');
@@ -164,7 +164,7 @@ function renderCrypto(){
   }).join(''):'<tr><td colspan="'+(8+marketVisibleColumns('crypto').length)+'"><div class="empty-state">'+(filtered?'Aucune position ne correspond aux filtres.':'Aucune position crypto. Cliquez sur « Ajouter une position » pour commencer.')+'</div></td></tr>';
 
   const missing=holdings.filter(h=>metrics.get(h.id).price===null).length;
-  let footer=holdings.length+' position(s) affichée(s)'+(filtered?' sur '+allHoldings.length:'')+' · prix convertis en euros via CoinGecko';
+  let footer=holdings.length+' position(s) affichée(s)'+(filtered?' sur '+allHoldings.length:'')+' · prix en euros · sources Yahoo Finance / CoinGecko / Coinbase';
   if(filtered)footer+=' · totaux calculés sur les positions affichées';
   if(cryptoPrices.updatedAt)footer+=' · dernière actualisation à '+cryptoTimeLabel(cryptoPrices.updatedAt);
   if(missing)footer+=' · '+missing+' position(s) sans prix : les totaux ne les incluent pas.';
