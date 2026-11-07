@@ -1,6 +1,6 @@
 # Contexte projet — Gestion de comptes
 
-**Dernière mise à jour documentaire : 2026-10-24.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
+**Dernière mise à jour documentaire : 2026-11-07.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
 
 > La vue d’ensemble affiche explicitement une carte « Cryptomonnaies » avec la valorisation totale en euros. Cette valeur est distincte des comptes personnels/professionnels, mais elle est incluse dans les avoirs bruts et le patrimoine net.
@@ -52,6 +52,7 @@ La position `SUR000001737` est valorisée à partir du montant saisi et progress
 | `supabase/schema.sql` | Schéma SQL de référence et politiques RLS ; inclut déjà certaines colonnes ajoutées historiquement par migration. |
 | `supabase/migrations/202610180001_mcp_tokens.sql` | Table des jetons MCP par utilisateur et politiques associées. |
 | `supabase/migrations/202610180002_transaction_pointage_order.sql` | Ajoute de façon idempotente les colonnes nécessaires au pointage/tri manuel et la clé de récurrence, initialise l’ordre, ajoute un index unique. |
+| `supabase/migrations/202611070001_account_transfers.sql` | Ajoute les références des deux écritures d’un virement et les contraintes/index associés. |
 | `supabase/functions/mcp-tokens/index.ts` | Création/liste/révocation des jetons MCP à partir d’une session authentifiée. Le jeton brut n’est retourné qu’à la création. |
 | `supabase/functions/mcp-transactions/index.ts` | Endpoint MCP JSON-RPC, outils de lecture des comptes, ajout et lecture d’opérations. Authentifie par jeton personnel `gdc_`. |
 | `supabase/functions/quick-add/index.ts` | Ajout rapide via aperçu puis confirmation explicite, protégé par jeton personnel. |
@@ -74,7 +75,8 @@ Les sections HTML inspectées incluent `accounts-view`, `transactions-view`, `hi
 État JavaScript : `state.lombardCredit`, soit `null`, soit `{label, amount, rate, notes}`. Il est enregistré dans les métadonnées privées du compte Supabase Auth (`user_metadata.lombardCredit`) via `auth.updateUser`, sans table ni migration SQL. Le montant est une dette positive déduite des avoirs bruts ; il ne crée pas d’opération et ne modifie pas le solde d’un compte. Le taux et les notes sont informatifs.
 
 ### Opérations
-État : `state.transactions`. Champs côté client importants : `id`, `accountId`, `date`, `label`, `amount`, `isPaid`, `sortOrder`, `createdAt`, `recurringKey`, `recurringTemplateId`. Le stockage Supabase les mappe notamment sur `account_id`, `transaction_date`, `is_paid`, `sort_order`, `recurring_key`, `recurring_template_id`.
+État : `state.transactions`. Champs côté client importants : `id`, `accountId`, `date`, `label`, `amount`, `isPaid`, `sortOrder`, `createdAt`, `recurringKey`, `recurringTemplateId`. Les virements utilisent en plus `transferId`, `transferRole` (`outgoing` / `incoming`) et `transferAccountId`. Le stockage Supabase les mappe notamment sur `account_id`, `transaction_date`, `is_paid`, `sort_order`, `recurring_key`, `recurring_template_id`, `transfer_id`, `transfer_role` et `transfer_account_id`.
+- Un virement est stocké sous forme de deux écritures de même date et de même montant absolu, liées par `transferId` : un débit sur le compte source et un crédit sur le compte destinataire. Le tableau du compte affiche la ligne correspondant au compte sélectionné ; l'historique mensuel regroupe les deux jambes en une ligne logique. Les virements modifient les soldes mais sont exclus des agrégats entrées/sorties/net. Le pointage, la modification, la suppression et l'annulation s'appliquent aux deux écritures.
 
 - Montant positif : entrée ; montant négatif : sortie.
 - Les dates des opérations sont des dates calendaires `YYYY-MM-DD`.

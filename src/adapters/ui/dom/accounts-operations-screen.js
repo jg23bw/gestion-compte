@@ -28,8 +28,14 @@ function renderDashboard(){
   $('lombard-manage').textContent=state.lombardCredit?'Gérer':'Ajouter';
   $('accounts-count-pill').textContent=state.accounts.length+' compte'+(state.accounts.length>1?'s':'')+(pledgedAccountCount()?' · '+pledgedAccountCount()+' nanti'+(pledgedAccountCount()>1?'s':''):'');
   $('dashboard-accounts').innerHTML=state.accounts.map(a=>accountMarkup(a,true)).join('');
-  const recent=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).slice(0,6);
-  $('recent-transactions').innerHTML=recent.length?recent.map(t=>{const a=accountById(t.accountId)||{name:'Compte supprimé'};return '<div class="recent-row"><span class="movement-icon '+(t.amount>=0?'income':'expense')+'">'+(t.amount>=0?'↙':'↗')+'</span><div class="movement-main"><strong>'+escapeHtml(t.label)+'</strong><small>'+escapeHtml(a.name)+' · '+dateFormat(t.date)+'</small></div><span class="movement-amount '+(t.amount>=0?'positive':'negative')+'">'+(t.amount>0?'+':'')+euro(t.amount)+'</span></div>';}).join(''):'<div class="empty-state">Aucune opération pour le moment.<br>Ajoutez une opération pour commencer.</div>';
+  const recent=[...state.transactions].filter(t=>!t.transferId||t.transferRole==='outgoing').sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt-a.createdAt).slice(0,6);
+  $('recent-transactions').innerHTML=recent.length?recent.map(t=>{
+    const a=accountById(t.accountId)||{name:'Compte supprimé'};
+    const peer=t.transferId?accountById(t.transferAccountId):null;
+    const label=t.transferId?t.label+' · vers '+(peer?.name||'autre compte'):t.label;
+    const amount=Number(t.amount);
+    return '<div class="recent-row"><span class="movement-icon '+(amount>=0?'income':'expense')+'">'+(amount>=0?'↙':'↗')+'</span><div class="movement-main"><strong>'+escapeHtml(label)+'</strong><small>'+escapeHtml(a.name)+' · '+dateFormat(t.date)+'</small></div><span class="movement-amount '+(amount>=0?'positive':'negative')+'">'+(amount>0?'+':'')+euro(amount)+'</span></div>';
+  }).join(''):'<div class="empty-state">Aucune opération pour le moment.<br>Ajoutez une opération pour commencer.</div>';
   $('account-count').textContent=state.accounts.length;
 }
 function renderAccounts(){
@@ -51,6 +57,12 @@ function fillAccountSelects(){
   const opts=operationalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   const allOpts=state.accounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   $('transaction-account').innerHTML=opts;
+  const transferSelect=$('transaction-transfer-account');
+  if(transferSelect){
+    const selectedTransfer=transferSelect.value;
+    transferSelect.innerHTML=opts;
+    transferSelect.value=operationalAccounts.some(a=>a.id===selectedTransfer)?selectedTransfer:'';
+  }
   const personalAccounts=accountGroups.personal,personalOpts=personalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   const current=$('transaction-account-filter').value;
   $('transaction-account-filter').innerHTML=personalOpts;
@@ -97,7 +109,9 @@ function renderTransactions(){
   const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="3"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(proAdjustedBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
   rows.innerHTML=balanceRow+(displayRows.length?displayRows.map(({transaction:t,balance})=>{
       const recurringKind=isPro?proRecurringKind(t):null,actualAmount=Number(t.amount),adjusted=isPro?proAdjustedAmount(t):0;
-    return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(t.label)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td class="table-amount '+(actualAmount>=0?'positive':'negative')+'">'+(actualAmount>0?'+':'')+euro(actualAmount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(isPro?'<td class="table-amount '+(adjusted>=0?'positive':'negative')+'">'+(adjusted>0?'+':'')+euro(adjusted)+'</td><td class="table-balance">'+euro(transactionQueries.professionalAdjustedBalanceAfterTransaction(t))+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
+      const transferPeer=t.transferId?accountById(t.transferAccountId):null;
+      const displayLabel=t.transferId?t.label+' · '+(t.transferRole==='outgoing'?'vers ':'depuis ')+(transferPeer?.name||'autre compte'):t.label;
+    return '<tr class="'+(t.isPaid?'transaction-paid':'')+'"><td><label class="paid-check"><input type="checkbox" data-toggle-paid="'+t.id+'" '+(t.isPaid?'checked':'')+' aria-label="Marquer '+escapeHtml(displayLabel)+' comme débitée ou pointée"><span>'+(t.isPaid?'Pointée':'À pointer')+'</span></label></td><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(displayLabel)+'</td><td class="table-amount '+(actualAmount>=0?'positive':'negative')+'">'+(actualAmount>0?'+':'')+euro(actualAmount)+'</td><td class="table-balance">'+euro(balance)+'</td>'+(isPro?'<td class="table-amount '+(adjusted>=0?'positive':'negative')+'">'+(adjusted>0?'+':'')+euro(adjusted)+'</td><td class="table-balance">'+euro(transactionQueries.professionalAdjustedBalanceAfterTransaction(t))+'</td>':'')+'<td><div class="row-actions"><button data-edit-transaction="'+t.id+'">Modifier</button><button data-delete-transaction="'+t.id+'">Supprimer</button></div></td></tr>';
   }).join(''):'<tr><td colspan="'+(isPro?8:6)+'"><div class="empty-state">Aucune opération trouvée. Ajoutez une opération pour la voir ici.</div></td></tr>');
   footer.textContent=displayRows.length+' opération(s) affichée(s) · Le solde à date exclut les opérations futures ; la projection en haut les inclut.';
 }
@@ -114,7 +128,7 @@ function renderMonthlyHistory(){
   const history=transactionQueries.monthlyHistory({month,accountFilter,typeFilter,query,sort});
   const {rows,incoming,outgoing}=history;
   $('history-incoming').textContent=euro(incoming);$('history-outgoing').textContent=euro(Math.abs(outgoing));$('history-net').textContent=euro(incoming+outgoing);
-  $('history-rows').innerHTML=rows.length?rows.map(t=>{const ac=accountById(t.accountId)||{name:'Compte supprimé'};return '<tr><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.label)+'</td><td>'+escapeHtml(ac.name)+'</td><td class="table-amount '+(Number(t.amount)>=0?'positive':'negative')+'">'+(Number(t.amount)>0?'+':'')+euro(t.amount)+'</td><td><span class="history-paid '+(t.isPaid?'is-paid':'')+'">'+(t.isPaid?'Pointée':'À pointer')+'</span></td></tr>';}).join(''):'<tr><td colspan="5"><div class="empty-state">Aucune opération pour ce mois avec les filtres choisis.</div></td></tr>';
+  $('history-rows').innerHTML=rows.length?rows.map(t=>{const ac=accountById(t.accountId)||{name:'Compte supprimé'};const accountLabel=t.displayAccountName||ac.name;const label=t.displayLabel||t.label;return '<tr><td>'+dateFormat(t.date)+'</td><td class="transaction-label">'+escapeHtml(t.isTransfer?'Virement · '+label:label)+'</td><td>'+escapeHtml(accountLabel)+'</td><td class="table-amount '+(t.isTransfer?'':(Number(t.amount)>=0?'positive':'negative'))+'">'+(t.isTransfer?'':(Number(t.amount)>0?'+':''))+euro(t.amount)+'</td><td><span class="history-paid '+(t.isPaid?'is-paid':'')+'">'+(t.isPaid?'Pointée':'À pointer')+'</span></td></tr>';}).join(''):'<tr><td colspan="5"><div class="empty-state">Aucune opération pour ce mois avec les filtres choisis.</div></td></tr>';
   $('history-footer').textContent=rows.length+' opération(s) affichée(s) pour '+monthName(month)+'.';
 }
 function monthValueNow(){return today().slice(0,7);}

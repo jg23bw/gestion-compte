@@ -67,13 +67,18 @@ test('updates an existing account without losing unrelated professional settings
 
 test('removes an account and all linked records, returning cloud cleanup details', () => {
   const { state, commands } = setup([{ id: 'a', name: 'Compte A' }, { id: 'b', name: 'Compte B' }]);
-  state.transactions = [{ id: 't1', accountId: 'a' }, { id: 't2', accountId: 'b' }];
+  state.transactions = [
+    { id: 't1', accountId: 'a' },
+    { id: 't2', accountId: 'b' },
+    { id: 'transfer-out', accountId: 'a', transferId: 'pair-1', transferRole: 'outgoing', transferAccountId: 'b' },
+    { id: 'transfer-in', accountId: 'b', transferId: 'pair-1', transferRole: 'incoming', transferAccountId: 'a' }
+  ];
   state.recurringTemplates = [{ id: 'r1', accountId: 'a' }, { id: 'r2', accountId: 'b' }];
   state.stockHoldings = [{ id: 's1', accountId: 'a' }, { id: 's2', accountId: 'b' }];
   state.accountPledges = { a: { note: 'Nanti' }, b: { note: 'Autre' } };
   const result = commands.remove('a');
   assert.equal(result.account.id, 'a');
-  assert.deepEqual(result.transactions.map(item => item.id), ['t1']);
+  assert.deepEqual(result.transactions.map(item => item.id), ['t1', 'transfer-out', 'transfer-in']);
   assert.deepEqual(result.templates.map(item => item.id), ['r1']);
   assert.deepEqual(result.stockHoldings.map(item => item.id), ['s1']);
   assert.deepEqual(result.pledge, { note: 'Nanti' });

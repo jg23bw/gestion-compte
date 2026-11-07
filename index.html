@@ -8,7 +8,7 @@
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
   <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
   <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=operations-cleanup-v1">
+  <link rel="stylesheet" href="styles.css?v=account-transfer-v1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
@@ -21,18 +21,18 @@
   <script src="src/domain/accounts/account-pledge-rules.js"></script>
   <script src="src/ports/accounts/account-repository.js"></script>
   <script src="src/adapters/persistence/state/state-account-repository.js"></script>
-  <script src="src/application/accounts/account-commands.js"></script>
+  <script src="src/application/accounts/account-commands.js?v=account-transfer-v1"></script>
   <script src="src/application/accounts/account-pledge-commands.js"></script>
   <script src="src/ports/transactions/transaction-repository.js"></script>
   <script src="src/adapters/persistence/state/state-transaction-repository.js"></script>
-  <script src="src/application/transactions/transaction-queries.js"></script>
-  <script src="src/application/transactions/transaction-commands.js"></script>
-  <script src="src/adapters/persistence/supabase/transaction-mapper.js"></script>
+  <script src="src/application/transactions/transaction-queries.js?v=account-transfer-v1"></script>
+  <script src="src/application/transactions/transaction-commands.js?v=account-transfer-v1"></script>
+  <script src="src/adapters/persistence/supabase/transaction-mapper.js?v=account-transfer-v1"></script>
   <script src="src/adapters/persistence/supabase/account-mapper.js"></script>
   <script src="src/adapters/persistence/supabase/recurring-template-mapper.js"></script>
   <script src="src/adapters/persistence/supabase/crypto-holding-mapper.js"></script>
   <script src="src/ports/transactions/transaction-cloud-repository.js"></script>
-  <script src="src/adapters/persistence/supabase/transaction-repository.js"></script>
+  <script src="src/adapters/persistence/supabase/transaction-repository.js?v=account-transfer-v1"></script>
   <script src="src/ports/accounts/cloud-account-repository.js"></script>
   <script src="src/ports/recurring/cloud-recurring-template-repository.js"></script>
   <script src="src/adapters/persistence/supabase/account-repository.js"></script>
@@ -51,7 +51,7 @@
   <script src="src/ports/authentication/auth-metadata-repository.js"></script>
   <script src="src/adapters/persistence/supabase/auth-metadata-repository.js"></script>
   <script src="src/application/synchronization/cloud-state-loader.js"></script>
-  <script src="src/application/synchronization/cloud-synchronization.js"></script>
+  <script src="src/application/synchronization/cloud-synchronization.js?v=account-transfer-v1"></script>
   <script src="src/domain/recurring/recurring-rules.js"></script>
   <script src="src/domain/portfolio/stock-valuation.js"></script>
   <script src="src/domain/portfolio/stock-holding-rules.js"></script>
@@ -77,13 +77,13 @@
     <script src="src/config/catalogs.js"></script>
     <script src="src/adapters/ui/dom/stocks-screen.js?v=stock-session-note-v1"></script>
     <script src="src/adapters/ui/dom/crypto-screen.js"></script>
-    <script src="src/adapters/ui/dom/accounts-operations-screen.js"></script>
+    <script src="src/adapters/ui/dom/accounts-operations-screen.js?v=account-transfer-v1"></script>
     <script src="src/adapters/ui/dom/wealth-screen.js"></script>
-    <script src="src/adapters/ui/dom/account-editors.js"></script>
+    <script src="src/adapters/ui/dom/account-editors.js?v=account-transfer-v1"></script>
     <script src="src/bootstrap/cloud-session.js"></script>
-    <script src="src/adapters/ui/dom/event-handlers.js"></script>
+    <script src="src/adapters/ui/dom/event-handlers.js?v=account-transfer-v1"></script>
     <script src="src/adapters/ui/dom/opportunities-screen.js?v=stock-session-note-v1"></script>
-  <script src="app.js?v=operations-cleanup-v1" defer></script>
+  <script src="app.js?v=account-transfer-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -163,20 +163,20 @@
       <section class="view" id="transactions-view">
         <div class="page-heading"><div><p class="eyebrow">HISTORIQUE FINANCIER</p><h1>Opérations</h1><p class="subtitle">Sélectionnez un compte pour consulter et gérer ses opérations.</p></div><button class="primary-button" id="transactions-add"><span>＋</span> Ajouter une opération</button></div>
         <section class="transaction-projection" id="transaction-projection" aria-live="polite"></section>
-        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
+        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération"></div><select id="transaction-account-filter" aria-label="Filtrer par compte"></select><select id="transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option><option value="transfer">Virements</option></select><select id="transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="transaction-head"></thead><tbody id="transaction-rows"></tbody></table></div><div class="table-footer" id="transaction-footer"></div></section>
       </section>
 
       <section class="view" id="pro-view">
         <div class="page-heading"><div><p class="eyebrow">GESTION PROFESSIONNELLE</p><h1>Compte professionnel</h1><p class="subtitle">Suivez le solde bancaire réel et le solde disponible après provisions de TVA, cotisations et marge de sécurité.</p></div><button class="primary-button" id="pro-transactions-add"><span>＋</span> Ajouter une opération</button></div>
         <section class="transaction-projection" id="pro-transaction-projection" aria-live="polite"></section>
-        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="pro-transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération professionnelle"></div><select id="pro-transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="pro-transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
+        <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="pro-transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération professionnelle"></div><select id="pro-transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option><option value="transfer">Virements</option></select><select id="pro-transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="pro-transaction-head"></thead><tbody id="pro-transaction-rows"></tbody></table></div><div class="table-footer" id="pro-transaction-footer"></div></section>
       </section>
 
       <section class="view" id="history-view">
         <div class="page-heading"><div><p class="eyebrow">CONSULTATION DES MOUVEMENTS</p><h1>Historique mensuel</h1><p class="subtitle">Consultez les opérations mois par mois, avec les totaux des entrées et des sorties.</p></div></div>
-        <div class="toolbar table-filters"><select id="history-month" class="history-month-select" aria-label="Choisir le mois de l’historique"></select><div class="search-box"><span>⌕</span><input id="history-search" placeholder="Rechercher dans le mois…" aria-label="Rechercher dans l’historique mensuel"></div><select id="history-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="history-type-filter" aria-label="Filtrer par type"><option value="all">Entrées et sorties</option><option value="income">Entrées</option><option value="expense">Sorties</option></select><select id="history-sort" aria-label="Trier l’historique"><option value="date-asc">Date croissante</option><option value="date-desc">Date décroissante</option><option value="label">Libellé A → Z</option><option value="account">Compte</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
+        <div class="toolbar table-filters"><select id="history-month" class="history-month-select" aria-label="Choisir le mois de l’historique"></select><div class="search-box"><span>⌕</span><input id="history-search" placeholder="Rechercher dans le mois…" aria-label="Rechercher dans l’historique mensuel"></div><select id="history-account-filter" aria-label="Filtrer par compte"><option value="all">Tous les comptes</option></select><select id="history-type-filter" aria-label="Filtrer par type"><option value="all">Entrées et sorties</option><option value="income">Entrées</option><option value="expense">Sorties</option><option value="transfer">Virements</option></select><select id="history-sort" aria-label="Trier l’historique"><option value="date-asc">Date croissante</option><option value="date-desc">Date décroissante</option><option value="label">Libellé A → Z</option><option value="account">Compte</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <div class="history-summary-grid"><article class="history-summary-card"><span>Entrées</span><strong id="history-incoming">0,00 €</strong></article><article class="history-summary-card"><span>Sorties</span><strong id="history-outgoing">0,00 €</strong></article><article class="history-summary-card"><span>Solde net du mois</span><strong id="history-net">0,00 €</strong></article></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Date</th><th>Opération</th><th>Compte</th><th>Montant</th><th>Pointage</th></tr></thead><tbody id="history-rows"></tbody></table></div><div class="table-footer" id="history-footer">Choisissez un mois pour consulter son historique.</div></section>
       </section>
@@ -324,7 +324,9 @@
     <form id="transaction-form">
       <div class="modal-heading"><div><p class="eyebrow">HISTORIQUE DU COMPTE</p><h2 id="transaction-modal-title">Nouvelle opération</h2></div><button type="button" class="close-button" data-close="transaction-dialog" aria-label="Fermer">×</button></div>
       <input type="hidden" id="transaction-id">
-      <label>Compte<select id="transaction-account" required></select></label>
+      <label>Type d’opération<select id="transaction-kind" required><option value="standard">Opération classique</option><option value="transfer">Virement entre comptes</option></select></label>
+      <label><span id="transaction-account-caption">Compte</span><select id="transaction-account" required></select></label>
+      <div id="transaction-transfer-fields" hidden><label>Compte destinataire<select id="transaction-transfer-account"></select></label></div>
       <div class="form-row"><label>Date<input id="transaction-date" type="date" required></label><label>Montant (€)<input id="transaction-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" required placeholder="0,00"></label></div>
       <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
       <fieldset id="transaction-classification" class="pledge-field" hidden>
@@ -342,7 +344,7 @@
         </div>
         <p class="form-help">Sans sélection, l’opération est une dépense classique et impacte les deux soldes.</p>
       </fieldset>
-      <p class="form-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
+      <p class="form-help" id="transaction-amount-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="transaction-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>

@@ -11,6 +11,7 @@
         throw new TypeError('account selectors are required');
       }
       if (!transactionRepository || typeof transactionRepository.findByAccount !== 'function'
+        || typeof transactionRepository.findAll !== 'function'
         || typeof transactionRepository.delete !== 'function') throw new TypeError('transaction repository is required');
       if (!recurringTemplateRepository || typeof recurringTemplateRepository.findAll !== 'function'
         || typeof recurringTemplateRepository.delete !== 'function') throw new TypeError('recurring template repository is required');
@@ -45,7 +46,11 @@
         remove(id) {
           const account = repo.findById(id);
           if (!account) return null;
-          const transactions = transactionRepository.findByAccount(id);
+          const accountTransactions = transactionRepository.findByAccount(id);
+          const transferIds = new Set(accountTransactions.map(item => item.transferId).filter(Boolean));
+          const transactions = transactionRepository.findAll().filter(item =>
+            item.accountId === id || (item.transferId && transferIds.has(item.transferId))
+          );
           const templates = recurringTemplateRepository.findAll().filter(item => item.accountId === id);
           const stockHoldings = stockHoldingCommands.findAll().filter(item => item.accountId === id);
           const pledge = repo.findPledgeByAccount(id);

@@ -26,6 +26,9 @@
         if (!Array.isArray(rows)) throw new TypeError('rows must be an array');
         if (!rows.length) return { compatibilityFallback: false };
         let result = await client.from('transactions').upsert(rows, { onConflict: 'id' });
+        if (result.error && /transfer_(id|role|account_id)/i.test(result.error.message || '')) {
+          throw new Error('Migration Supabase requise : exécutez supabase/migrations/202611070001_account_transfers.sql dans SQL Editor avant de synchroniser des virements.');
+        }
         if (result.error && LEGACY_SCHEMA_ERROR.test(result.error.message || '')) {
           const compatibleRows = rows.map(({ recurring_key, is_paid, sort_order, ...row }) => row);
           result = await client.from('transactions').upsert(compatibleRows, { onConflict: 'id' });

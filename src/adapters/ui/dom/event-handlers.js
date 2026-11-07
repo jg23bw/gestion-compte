@@ -324,15 +324,33 @@ function initializeDomEventHandlers() {
     $('transaction-social-treatment-fields').hidden=!$('transaction-social').checked;
   }
   ['transaction-provision','transaction-vat','transaction-social'].forEach(id=>$(id).addEventListener('change',updateTransactionClassificationFields));
-  $('transaction-account').addEventListener('change',()=>{
-    const account=accountById($('transaction-account').value);
-    $('transaction-classification').hidden=effectiveAccountType(account||{kind:'bank'})!=='pro';
-  });
+  $('transaction-kind').addEventListener('change',updateTransactionFormMode);
+  $('transaction-account').addEventListener('change',updateTransactionFormMode);
+  $('transaction-transfer-account').addEventListener('change',updateTransactionFormMode);
   $('transaction-form').addEventListener('submit',event=>{
     event.preventDefault();
     const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
     if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
     const previous=id?transactionCommands.findById(id):null;
+    if($('transaction-kind').value==='transfer'){
+      const destinationAccountId=$('transaction-transfer-account').value;
+      if(!accountById(accountId)||!accountById(destinationAccountId)||accountId===destinationAccountId){
+        showToast('Choisissez un compte source et un compte destinataire différents.');return;
+      }
+      if(amount<=0){showToast('Le montant du virement doit être supérieur à zéro.');return;}
+      const linked=previous?transactionCommands.findLinkedTransactions(previous.id):[];
+      const outgoing=linked.find(item=>item.transferRole==='outgoing');
+      const incoming=linked.find(item=>item.transferRole==='incoming');
+      prepareUndo();
+      try{
+        transactionCommands.saveTransfer({
+          id:outgoing?.id||crypto.randomUUID(),incomingId:incoming?.id||crypto.randomUUID(),
+          transferId:previous?.transferId||crypto.randomUUID(),
+          sourceAccountId:accountId,destinationAccountId,date,amount,label,createdAt:Date.now()
+        });
+      }catch(error){showToast(error.message||'Impossible d’enregistrer ce virement.');return;}
+      $('transaction-dialog').close();renderAll();showToast(previous?'Virement modifié.':'Virement ajouté.',true);return;
+    }
     const account=accountById(accountId),isProfessional=effectiveAccountType(account||{kind:'bank'})==='pro';
     let professionalCategory=null,professionalTreatment=null;
     if(isProfessional){
@@ -471,7 +489,15 @@ function initializeDomEventHandlers() {
     const edit=event.target.closest('[data-edit-transaction]');
     if(edit){const t=state.transactions.find(t=>t.id===edit.dataset.editTransaction);if(t)openTransaction(t.accountId,t);return;}
     const del=event.target.closest('[data-delete-transaction]');
-    if(del){const t=transactionCommands.findById(del.dataset.deleteTransaction);if(t&&window.confirm('Supprimer l’opération « '+t.label+' » ?')){prepareUndo();if(cloud.user)cloud.pendingDeletes.add(t.id);transactionCommands.remove(t.id);renderAll();showToast('Opération supprimée.',true);}return;}
+    if(del){
+      const t=transactionCommands.findById(del.dataset.deleteTransaction);
+      const linked=t?transactionCommands.findLinkedTransactions(t.id):[];
+      if(t&&window.confirm((t.transferId?'Supprimer le virement « ':'Supprimer l’opération « ')+t.label+' » ?')){
+        prepareUndo();if(cloud.user)linked.forEach(item=>cloud.pendingDeletes.add(item.id));
+        transactionCommands.remove(t.id);renderAll();showToast(t.transferId?'Virement supprimé.':'Opération supprimée.',true);
+      }
+      return;
+    }
     const editRecurring=event.target.closest('[data-edit-recurring]');
     if(editRecurring){openRecurringEditor(editRecurring.dataset.editRecurring);return;}
     const deleteRecurring=event.target.closest('[data-delete-recurring]');

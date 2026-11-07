@@ -18,6 +18,7 @@
       },
       save(input) {
         const previous = input.id ? repository.findById(input.id) : null;
+        if (previous?.transferId) throw new Error('Un virement doit être modifié avec saveTransfer.');
         const transaction = domain.createTransactionRecord({
           transactions: repository.findAll(),
           previous,
@@ -26,19 +27,68 @@
         repository.save(transaction);
         return transaction;
       },
+      findLinkedTransactions(id) {
+        const transaction = repository.findById(id);
+        if (!transaction) return [];
+        if (!transaction.transferId) return [transaction];
+        return repository.findAll().filter(item => item.transferId === transaction.transferId);
+      },
+      saveTransfer({ id, incomingId, transferId, sourceAccountId, destinationAccountId, date, amount, label, createdAt }) {
+        if (!sourceAccountId || !destinationAccountId || sourceAccountId === destinationAccountId) {
+          throw new TypeError('Deux comptes différents sont nécessaires pour un virement.');
+        }
+        if (!repository.findAccount(sourceAccountId) || !repository.findAccount(destinationAccountId)) {
+          throw new TypeError('Les deux comptes du virement doivent exister.');
+        }
+        const parsedAmount = Math.abs(Number(amount));
+        if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) throw new TypeError('Le montant du virement doit être supérieur à zéro.');
+        const value = Math.round(parsedAmount * 100) / 100;
+        if (value <= 0) throw new TypeError('Le montant du virement doit être supérieur à zéro.');
+        if (!transferId || !id || !incomingId) throw new TypeError('Les identifiants du virement sont requis.');
+        const allTransactions = repository.findAll();
+        const linked = allTransactions.filter(item => item.transferId === transferId);
+        const previousOutgoing = linked.find(item => item.transferRole === 'outgoing') || null;
+        const previousIncoming = linked.find(item => item.transferRole === 'incoming') || null;
+        const transactions = allTransactions.filter(item => item.transferId !== transferId);
+        const outgoing = domain.createTransactionRecord({
+          transactions, previous: previousOutgoing, id,
+          accountId: sourceAccountId, date, amount: -value, label, createdAt,
+          professionalCategory: null, professionalTreatment: null, professionalAmount: -value
+        });
+        const incoming = domain.createTransactionRecord({
+          transactions, previous: previousIncoming, id: incomingId,
+          accountId: destinationAccountId, date, amount: value, label, createdAt,
+          professionalCategory: null, professionalTreatment: null, professionalAmount: value
+        });
+        const isPaid = previousOutgoing?.isPaid === true || previousIncoming?.isPaid === true;
+        Object.assign(outgoing, { transferId, transferRole: 'outgoing', transferAccountId: destinationAccountId, isPaid });
+        Object.assign(incoming, { transferId, transferRole: 'incoming', transferAccountId: sourceAccountId, isPaid });
+        repository.save(outgoing);
+        repository.save(incoming);
+        return Object.freeze({ transferId, outgoing, incoming });
+      },
       remove(id) {
-        return repository.delete(id);
+        const transaction = repository.findById(id);
+        if (!transaction) return null;
+        const linked = transaction.transferId
+          ? repository.findAll().filter(item => item.transferId === transaction.transferId)
+          : [transaction];
+        linked.forEach(item => repository.delete(item.id));
+        return transaction;
       },
       setPaid(id, { isPaid, date } = {}) {
         const previous = repository.findById(id);
         if (!previous) return null;
-        const transaction = {
-          ...previous,
-          ...(date ? { date } : {}),
-          isPaid: isPaid === true
-        };
-        repository.save(transaction);
-        return transaction;
+        const linked = previous.transferId
+          ? repository.findAll().filter(item => item.transferId === previous.transferId)
+          : [previous];
+        let updated = null;
+        for (const item of linked) {
+          const transaction = { ...item, ...(date ? { date } : {}), isPaid: isPaid === true };
+          repository.save(transaction);
+          if (item.id === id) updated = transaction;
+        }
+        return updated;
       },
       normalizeOrder(accounts) {
         let changed = 0;

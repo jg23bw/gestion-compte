@@ -12,6 +12,7 @@ Référence du projet vue dans la configuration publique : `gpzqvkkysolqksimiqac
 - `supabase/schema.sql` : schéma SQL de référence et RLS.
 - `supabase/migrations/202610180001_mcp_tokens.sql` : table des jetons MCP.
 - `supabase/migrations/202610180002_transaction_pointage_order.sql` : colonnes de pointage, ordre et clé de récurrence.
+- `supabase/migrations/202611070001_account_transfers.sql` : métadonnées et contraintes des virements entre comptes.
 - `supabase/migrations/202610220001_crypto_holdings.sql` : table des positions crypto, RLS et index.
 - `supabase/config.toml` : paramètres des Edge Functions ; les fonctions actuellement présentes sont `mcp-transactions`, `quick-add` et `mcp-tokens`.
 - `supabase/functions/` : implémentations des Edge Functions.
@@ -26,6 +27,7 @@ Contient l’utilisateur, le compte, date, libellé, montant, source, référenc
 - `is_paid boolean not null default false`
 - `sort_order integer`
 - `recurring_key text`
+- `transfer_id text`, `transfer_role text` et `transfer_account_id text` pour relier le débit et le crédit d’un virement.
 
 Le montant positif correspond à une entrée et le montant négatif à une sortie. Un index unique partiel protège l’unicité de `(user_id, recurring_key)` lorsque la clé n’est pas nulle.
 

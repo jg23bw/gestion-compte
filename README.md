@@ -37,6 +37,7 @@ Les noms sont des valeurs initiales du code ; les données personnelles des util
 - Modification et suppression d’un compte, avec confirmation et avertissement sur les opérations/récurrences liées.
 - Gestion d’un crédit lombard déduit des avoirs bruts pour calculer le patrimoine net.
 - Ajout, modification, suppression et annulation de certaines opérations.
+- Virements entre comptes avec deux écritures liées, affichés comme un seul mouvement logique et exclus des totaux de revenus/dépenses.
 - Calcul des soldes à partir d’un solde initial et des opérations datées.
 - Recherche, filtres et tris dans les écrans concernés.
 - Historique mensuel : choix du mois, recherche, filtre par compte/type, tri, total des entrées, sorties et net.

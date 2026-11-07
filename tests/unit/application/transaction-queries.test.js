@@ -111,6 +111,40 @@ test('account transaction query filters by account, type and text, then applies 
   assert.deepEqual(result.map(item => item.id), ['in', 'salary']);
 });
 
+test('monthly history groups transfer pairs and excludes them from income and expense totals', () => {
+  const f = fixture();
+  f.accounts[0].name = 'Compte A';
+  f.accounts.push({ id: 'b', name: 'Compte B', opening: 0 });
+  f.transactions.push(
+    { id: 'transfer-out', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: -75, label: 'Épargne', transferId: 'transfer-1', transferRole: 'outgoing', transferAccountId: 'b' },
+    { id: 'transfer-in', accountId: 'b', date: '2026-01-03', createdAt: 3, amount: 75, label: 'Épargne', transferId: 'transfer-1', transferRole: 'incoming', transferAccountId: 'a' }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const all = queries.monthlyHistory({ month: '2026-01', accountFilter: 'all', typeFilter: 'all' });
+  assert.equal(all.rows.filter(item => item.isTransfer).length, 1);
+  assert.equal(all.rows.find(item => item.isTransfer).displayAccountName, 'Compte A → Compte B');
+  assert.equal(all.rows.find(item => item.isTransfer).amount, 75);
+  assert.equal(all.incoming, 950);
+  assert.equal(all.outgoing, -10);
+  assert.equal(all.net, 940);
+  const selected = queries.monthlyHistory({ month: '2026-01', accountFilter: 'b', typeFilter: 'transfer' });
+  assert.equal(selected.rows.length, 1);
+  assert.equal(selected.incoming, 0);
+  assert.equal(selected.outgoing, 0);
+});
+
+test('account transaction type filters classify transfers separately from income and expenses', () => {
+  const f = fixture();
+  f.accounts.push({ id: 'b', name: 'Compte B', opening: 0 });
+  f.transactions.push(
+    { id: 'transfer-out', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: -75, label: 'Épargne', transferId: 'transfer-1', transferRole: 'outgoing', transferAccountId: 'b' },
+    { id: 'transfer-in', accountId: 'b', date: '2026-01-03', createdAt: 3, amount: 75, label: 'Épargne', transferId: 'transfer-1', transferRole: 'incoming', transferAccountId: 'a' }
+  );
+  const queries = create({ repository: f.repository, domain });
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', typeFilter: 'transfer' }).map(item => item.id), ['transfer-out']);
+  assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', typeFilter: 'expense' }).map(item => item.id), ['out']);
+});
+
 test('account transaction query always prioritizes pending rows, then applies the selected sort', () => {
   const f = fixture();
   f.transactions[0].sortOrder = 2;

@@ -34,6 +34,11 @@
           recurring_template_id: transaction.recurringTemplateId || null,
           generated_month: transaction.recurringKey ? transaction.date.slice(0, 7) : null,
           recurring_key: transaction.recurringKey || null,
+          ...(transaction.transferId ? {
+            transfer_id: transaction.transferId,
+            transfer_role: transaction.transferRole,
+            transfer_account_id: transaction.transferAccountId
+          } : {}),
           created_at: created.toISOString(),
           updated_at: timestamp.toISOString()
         };
@@ -53,7 +58,12 @@
           sortOrder: Number.isFinite(Number(row.sort_order)) && row.sort_order !== null ? Number(row.sort_order) : undefined,
           createdAt: Number.isFinite(createdAt) && createdAt > 0 ? createdAt : now().getTime(),
           recurringKey: row.recurring_key || undefined,
-          recurringTemplateId: row.recurring_template_id || undefined
+          recurringTemplateId: row.recurring_template_id || undefined,
+          ...(row.transfer_id ? {
+            transferId: row.transfer_id,
+            transferRole: row.transfer_role,
+            transferAccountId: row.transfer_account_id
+          } : {})
         };
       }
     });

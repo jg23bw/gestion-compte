@@ -20,6 +20,27 @@ test('maps an ordinary transaction to the existing Supabase schema', () => {
   });
 });
 
+test('maps both transfer legs and their linked account metadata', () => {
+  const mapper = create({ now: () => new Date('2026-10-31T10:00:00.000Z') });
+  const row = mapper.toCloud({
+    id: 'tx-transfer-out', accountId: 'account-1', date: '2026-10-30',
+    label: 'Épargne', amount: -80, transferId: 'transfer-1',
+    transferRole: 'outgoing', transferAccountId: 'account-2'
+  }, 'user-1');
+  assert.equal(row.transfer_id, 'transfer-1');
+  assert.equal(row.transfer_role, 'outgoing');
+  assert.equal(row.transfer_account_id, 'account-2');
+  const restored = mapper.fromCloud({
+    id: 'tx-transfer-in', account_id: 'account-2', transaction_date: '2026-10-30',
+    amount: '80', label: 'Épargne', is_paid: false, sort_order: 1,
+    created_at: '2026-10-30T10:00:00.000Z', transfer_id: 'transfer-1',
+    transfer_role: 'incoming', transfer_account_id: 'account-1'
+  });
+  assert.equal(restored.transferId, 'transfer-1');
+  assert.equal(restored.transferRole, 'incoming');
+  assert.equal(restored.transferAccountId, 'account-1');
+});
+
 test('maps recurring transaction metadata without changing its keys', () => {
   const mapper = create({ now: () => new Date('2026-10-31T10:00:00.000Z') });
   const row = mapper.toCloud({

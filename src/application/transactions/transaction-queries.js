@@ -49,29 +49,50 @@
     return Object.freeze({
       monthlyHistory({ month, accountFilter = 'all', typeFilter = 'all', query = '', sort = 'date-asc' } = {}) {
         const normalizedQuery = String(query).trim().toLocaleLowerCase('fr');
-        const rows = repository.findAll().filter(transaction => {
-          const account = repository.findAccount(transaction.accountId);
-          const accountName = account?.name || '';
-          const amount = Number(transaction.amount);
-          return String(transaction.date || '').slice(0, 7) === month
-            && (accountFilter === 'all' || transaction.accountId === accountFilter)
-            && (typeFilter === 'all' || (typeFilter === 'income' ? amount >= 0 : amount < 0))
-            && (String(transaction.label || '') + ' ' + accountName).toLocaleLowerCase('fr').includes(normalizedQuery);
+        const monthTransactions = repository.findAll().filter(item => String(item.date || '').slice(0, 7) === month);
+        const transferGroups = new Map();
+        const ordinaryRows = [];
+        for (const transaction of monthTransactions) {
+          if (!transaction.transferId) { ordinaryRows.push(transaction); continue; }
+          if (!transferGroups.has(transaction.transferId)) transferGroups.set(transaction.transferId, []);
+          transferGroups.get(transaction.transferId).push(transaction);
+        }
+        const transferRows = [...transferGroups.entries()].map(([transferId, linked]) => {
+          const outgoing = linked.find(item => item.transferRole === 'outgoing') || linked[0];
+          const incoming = linked.find(item => item.transferRole === 'incoming') || null;
+          const sourceName = repository.findAccount(outgoing.accountId)?.name || 'Compte supprimé';
+          const destinationId = outgoing.transferAccountId || incoming?.accountId;
+          const destinationName = repository.findAccount(destinationId)?.name || 'Compte supprimé';
+          return {
+            ...outgoing, id: 'transfer:' + transferId, amount: Math.abs(Number(outgoing.amount)),
+            displayAccountName: sourceName + ' → ' + destinationName,
+            displayLabel: outgoing.label || 'Virement', isTransfer: true,
+            isPaid: linked.length > 1 ? linked.every(item => item.isPaid === true) : outgoing.isPaid === true,
+            transferSourceAccountId: outgoing.accountId, transferDestinationAccountId: destinationId
+          };
+        });
+        const rows = [...ordinaryRows, ...transferRows].filter(transaction => {
+          const isTransfer = transaction.isTransfer === true, amount = Number(transaction.amount);
+          const accountName = transaction.displayAccountName || repository.findAccount(transaction.accountId)?.name || '';
+          const accountMatches = accountFilter === 'all' || transaction.accountId === accountFilter
+            || (isTransfer && transaction.transferDestinationAccountId === accountFilter);
+          const typeMatches = typeFilter === 'all' || (typeFilter === 'transfer' && isTransfer)
+            || (typeFilter === 'income' && !isTransfer && amount >= 0)
+            || (typeFilter === 'expense' && !isTransfer && amount < 0);
+          const searchable = (transaction.displayLabel || transaction.label || '') + ' ' + accountName;
+          return accountMatches && typeMatches && searchable.toLocaleLowerCase('fr').includes(normalizedQuery);
         });
         rows.sort((a, b) => {
-          if (sort === 'date-desc') return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
-          if (sort === 'label') return a.label.localeCompare(b.label, 'fr');
+          if (sort === 'date-desc') return b.date.localeCompare(a.date) || Number(b.createdAt || 0) - Number(a.createdAt || 0);
+          if (sort === 'label') return String(a.displayLabel || a.label || '').localeCompare(String(b.displayLabel || b.label || ''), 'fr');
           if (sort === 'amount-asc') return Number(a.amount) - Number(b.amount);
           if (sort === 'amount-desc') return Number(b.amount) - Number(a.amount);
-          if (sort === 'account') {
-            const accountA = repository.findAccount(a.accountId)?.name || '';
-            const accountB = repository.findAccount(b.accountId)?.name || '';
-            return accountA.localeCompare(accountB, 'fr') || a.date.localeCompare(b.date);
-          }
-          return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+          if (sort === 'account') return String(a.displayAccountName || repository.findAccount(a.accountId)?.name || '').localeCompare(String(b.displayAccountName || repository.findAccount(b.accountId)?.name || ''), 'fr') || a.date.localeCompare(b.date);
+          return a.date.localeCompare(b.date) || Number(a.createdAt || 0) - Number(b.createdAt || 0);
         });
-        const incoming = rows.filter(item => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);
-        const outgoing = rows.filter(item => Number(item.amount) < 0).reduce((sum, item) => sum + Number(item.amount), 0);
+        const ordinary = rows.filter(item => item.isTransfer !== true);
+        const incoming = ordinary.filter(item => Number(item.amount) > 0).reduce((sum, item) => sum + Number(item.amount), 0);
+        const outgoing = ordinary.filter(item => Number(item.amount) < 0).reduce((sum, item) => sum + Number(item.amount), 0);
         return Object.freeze({ rows, incoming, outgoing, net: incoming + outgoing });
       },
       listAccountTransactions(accountId) {
@@ -84,8 +105,13 @@
           const account = repository.findAccount(transaction.accountId);
           const accountName = account?.name || '';
           const amount = Number(transaction.amount);
-          return (typeFilter === 'all' || (typeFilter === 'income' ? amount >= 0 : amount < 0))
-            && (String(transaction.label || '') + ' ' + accountName).toLocaleLowerCase('fr').includes(normalizedQuery);
+          const isTransfer = Boolean(transaction.transferId);
+          const peerAccount = isTransfer ? repository.findAccount(transaction.transferAccountId) : null;
+          const typeMatches = typeFilter === 'all' || (typeFilter === 'transfer' && isTransfer)
+            || (typeFilter === 'income' && !isTransfer && amount >= 0)
+            || (typeFilter === 'expense' && !isTransfer && amount < 0);
+          return typeMatches
+            && (String(transaction.label || '') + ' ' + accountName + ' ' + (peerAccount?.name || '')).toLocaleLowerCase('fr').includes(normalizedQuery);
         });
         return sortDisplayRows(rows, sort, domain);
       },

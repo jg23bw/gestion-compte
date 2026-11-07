@@ -28,13 +28,24 @@ create table if not exists public.transactions (
   recurring_template_id text,
   generated_month text,
   recurring_key text,
+  transfer_id text,
+  transfer_role text,
+  transfer_account_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   foreign key (user_id, account_id) references public.accounts(user_id, id) on delete cascade,
+  constraint transactions_transfer_account_fk foreign key (user_id, transfer_account_id) references public.accounts(user_id, id) on delete cascade,
+  constraint transactions_transfer_shape_check check (
+    (transfer_id is null and transfer_role is null and transfer_account_id is null)
+    or (transfer_id is not null and transfer_role in ('outgoing', 'incoming') and transfer_account_id is not null)
+  ),
   unique (user_id, recurring_template_id, generated_month, transaction_date, label)
 );
 
 alter table public.transactions add column if not exists recurring_key text;
+alter table public.transactions add column if not exists transfer_id text;
+alter table public.transactions add column if not exists transfer_role text;
+alter table public.transactions add column if not exists transfer_account_id text;
 alter table public.transactions add column if not exists is_paid boolean not null default false;
 alter table public.transactions add column if not exists sort_order integer;
 
@@ -46,6 +57,9 @@ update public.transactions t set sort_order = ranked.position from ranked where 
 
 create unique index if not exists transactions_user_recurring_key_uidx
   on public.transactions(user_id, recurring_key) where recurring_key is not null;
+
+create unique index if not exists transactions_user_transfer_role_uidx
+  on public.transactions(user_id, transfer_id, transfer_role) where transfer_id is not null;
 
 create table if not exists public.recurring_templates (
   id text not null,

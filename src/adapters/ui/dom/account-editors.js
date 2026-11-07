@@ -2,31 +2,61 @@
  * DOM adapters for account, transaction and Lombard editing dialogs.
  * Business mutations remain delegated to application commands.
  */
+function updateTransactionFormMode(){
+  const isTransfer=$('transaction-kind').value==='transfer';
+  const sourceId=$('transaction-account').value;
+  const destinationSelect=$('transaction-transfer-account');
+  destinationSelect.disabled=!isTransfer;
+  destinationSelect.required=isTransfer;
+  if(isTransfer&&destinationSelect.value===sourceId){
+    const alternative=[...destinationSelect.options].find(option=>option.value&&option.value!==sourceId);
+    if(alternative)destinationSelect.value=alternative.value;
+  }
+  $('transaction-transfer-fields').hidden=!isTransfer;
+  $('transaction-account-caption').textContent=isTransfer?'Compte source':'Compte';
+  const account=accountById(sourceId);
+  $('transaction-classification').hidden=isTransfer||effectiveAccountType(account||{kind:'bank'})!=='pro';
+  $('transaction-amount-help').textContent=isTransfer
+    ?'Saisissez un montant positif : le compte source sera débité et le compte destinataire crédité.'
+    :'Utilisez un montant positif pour une entrée d’argent et négatif pour une sortie.';
+  if(isTransfer){
+    $('transaction-provision').checked=false;$('transaction-vat').checked=false;$('transaction-social').checked=false;
+    document.querySelectorAll('input[name="transaction-vat-treatment"],input[name="transaction-social-treatment"]').forEach(input=>{input.checked=false;});
+    $('transaction-vat-treatment-fields').hidden=true;$('transaction-social-treatment-fields').hidden=true;
+  }
+}
 function openTransaction(accountId=null,transaction=null){
-  $('transaction-form').reset();$('transaction-id').value=transaction?.id||'';
-  $('transaction-modal-title').textContent=transaction?'Modifier l’opération':'Nouvelle opération';
-  const transactionAccount=transaction?accountById(transaction.accountId):null;
-  $('transaction-date').value=dateInputFormat(transaction?.date||today());
-  // Keep the sign: a negative amount is an expense and must remain negative when edited.
-  const legacyTemplate=transaction?.professionalAmount===undefined&&Number(transaction?.amount)===0&&transaction?.recurringTemplateId
-    ?recurringTemplateCommands.findById(transaction.recurringTemplateId):null;
-  const editableAmount=transaction?.professionalTreatment==='effective'
-    ?Number(transaction.amount)
-    :transaction?.professionalAmount!==undefined?Number(transaction.professionalAmount)
-    :legacyTemplate?-Math.abs(Number(legacyTemplate.amount)||0):Number(transaction?.amount);
+  const linked=transaction?.transferId?transactionCommands.findLinkedTransactions(transaction.id):[];
+  const record=linked.find(item=>item.transferRole==='outgoing')||transaction;
+  const isTransfer=Boolean(record?.transferId);
+  const incoming=linked.find(item=>item.transferRole==='incoming');
+  $('transaction-form').reset();
+  $('transaction-id').value=record?.id||'';
+  $('transaction-modal-title').textContent=transaction?(isTransfer?'Modifier le virement':'Modifier l’opération'):'Nouvelle opération';
+  $('transaction-kind').value=isTransfer?'transfer':'standard';
+  $('transaction-kind').disabled=Boolean(transaction);
+  $('transaction-date').value=dateInputFormat(record?.date||today());
+  const legacyTemplate=record?.professionalAmount===undefined&&Number(record?.amount)===0&&record?.recurringTemplateId
+    ?recurringTemplateCommands.findById(record.recurringTemplateId):null;
+  const editableAmount=isTransfer?Math.abs(Number(record.amount))
+    :record?.professionalTreatment==='effective'?Number(record.amount)
+    :record?.professionalAmount!==undefined?Number(record.professionalAmount)
+    :legacyTemplate?-Math.abs(Number(legacyTemplate.amount)||0):Number(record?.amount);
   $('transaction-amount').value=transaction?editableAmount:'';
-  $('transaction-provision').checked=transaction?.professionalCategory==='provision';
-  $('transaction-vat').checked=transaction?.professionalCategory==='vat';
-  $('transaction-social').checked=transaction?.professionalCategory==='social';
-  const treatment=transaction?.professionalTreatment||'';
+  $('transaction-provision').checked=record?.professionalCategory==='provision';
+  $('transaction-vat').checked=record?.professionalCategory==='vat';
+  $('transaction-social').checked=record?.professionalCategory==='social';
+  const treatment=record?.professionalTreatment||'';
   document.querySelectorAll('input[name="transaction-vat-treatment"],input[name="transaction-social-treatment"]').forEach(input=>{input.checked=input.value===treatment;});
-  $('transaction-label').value=transaction?.label||'';
+  $('transaction-label').value=record?.label||'';
   fillAccountSelects();
-  $('transaction-account').value=transaction?.accountId||accountId||state.accounts[0]?.id||'';
-  const isProfessional=effectiveAccountType(accountById($('transaction-account').value)||{kind:'bank'})==='pro';
-  $('transaction-classification').hidden=!isProfessional;
-  $('transaction-vat-treatment-fields').hidden=!$('transaction-vat').checked;
-  $('transaction-social-treatment-fields').hidden=!$('transaction-social').checked;
+  $('transaction-account').value=record?.accountId||accountId||state.accounts[0]?.id||'';
+  $('transaction-transfer-account').value=record?.transferAccountId||incoming?.accountId||'';
+  if(!$('transaction-transfer-account').value){
+    const alternative=[...$('transaction-transfer-account').options].find(option=>option.value&&option.value!==$('transaction-account').value);
+    $('transaction-transfer-account').value=alternative?.value||'';
+  }
+  updateTransactionFormMode();
   $('transaction-dialog').showModal();
 }
 function fillBankOptions(selected='other'){

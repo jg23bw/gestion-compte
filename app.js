@@ -507,7 +507,11 @@ function exportData(){
 }
 function downloadCsv(){
   const rows=[['Date','Opération','Compte','Montant','Solde à date','Montant après provisions','Solde net estimé']];
-  [...state.transactions].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{const a=accountById(t.accountId);rows.push([t.date,t.label,a?.name||'',t.amount,balanceAt(t.accountId,t.date),a?.id==='tiime'&&a?.kind==='pro'?tiimeCalc(a,t.amount).net:'',a?.id==='tiime'&&a?.kind==='pro'?tiimeNetBalance(a):'']);});
+  [...state.transactions].filter(t=>!t.transferId||t.transferRole==='outgoing').sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{
+    const a=accountById(t.accountId),peer=t.transferId?accountById(t.transferAccountId):null;
+    const accountLabel=t.transferId?(a?.name||'')+' → '+(peer?.name||'Compte supprimé'):(a?.name||'');
+    rows.push([t.date,t.transferId?'Virement · '+t.label:t.label,accountLabel,t.amount,balanceAt(t.accountId,t.date),a?.id==='tiime'&&a?.kind==='pro'?tiimeCalc(a,t.amount).net:'',a?.id==='tiime'&&a?.kind==='pro'?tiimeNetBalance(a):'']);
+  });
   const csv=rows.map(row=>row.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='operations-'+today()+'.csv';a.click();URL.revokeObjectURL(url);showToast('Export CSV téléchargé.');
 }
