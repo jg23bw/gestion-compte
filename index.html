@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#111b2e">
+  <meta name="theme-color" content="#101b2c">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="mask-icon" href="favicon.svg" color="#536dff">
-  <meta name="description" content="Espace privé pour gérer vos comptes, opérations, actions et récurrences avec sauvegarde en ligne.">
-  <title>Gestion de comptes</title>
-  <link rel="stylesheet" href="styles.css?v=account-transfer-v1">
+  <meta name="description" content="Gestion Compte : pilotez vos comptes, votre trésorerie et vos investissements dans un espace financier clair et sécurisé.">
+  <title>Gestion Compte — Votre espace financier</title>
+  <link rel="stylesheet" href="styles.css?v=premium-fintech-v1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
@@ -88,7 +88,7 @@
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
     <div class="auth-gate-card">
-      <span class="brand-mark">G<span>+</span></span>
+      <span class="brand-mark" aria-hidden="true"><img src="assets/logos/gestion-compte-mark.svg" alt=""></span>
       <h1>Votre espace de comptes est privé</h1>
       <p>Connectez-vous pour charger vos comptes, opérations et récurrences depuis votre espace personnel sécurisé.</p>
       <div class="auth-gate-actions"><button type="button" class="primary-button" id="auth-login">Se connecter</button><button type="button" class="secondary-button" id="auth-signup">Créer un compte</button></div>
@@ -99,7 +99,7 @@
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="Accueil Gestion de comptes">
         <span class="brand-mark">G<span>+</span></span>
-        <span><strong>Comptes</strong><small>ESPACE PERSONNEL</small></span>
+        <span><strong>Gestion Compte</strong><small>VOTRE ESPACE FINANCIER</small></span>
       </a>
       <div class="nav-label">ESPACE</div>
       <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">⌂</span> <span class="nav-label-text">Vue d’ensemble</span></button>
