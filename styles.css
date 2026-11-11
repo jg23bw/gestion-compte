@@ -2521,3 +2521,14 @@ html body .app-shell :focus-visible{outline:3px solid rgba(20,125,112,.28);outli
   background:#453c2b!important;
   color:#f0d49a!important;
 }
+
+
+/* Dashboard hero contrast repair: dark surface with light typography in light theme. */
+:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card{
+  background:radial-gradient(ellipse at 85% 10%,rgba(64,148,130,.32),transparent 38%),linear-gradient(115deg,#142d3d 0%,#183b48 58%,#14594f 100%)!important;
+  color:#f2f6f4!important;border-color:#173e49!important;
+}
+:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .card-top{color:#d2e2de!important}
+:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .metric{color:#ffffff!important}
+:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .muted{color:#c3d8d2!important}
+:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .trend-pill{background:rgba(224,201,149,.16)!important;color:#f0d9a8!important;border-color:rgba(224,201,149,.28)!important}
