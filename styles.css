@@ -2459,3 +2459,65 @@ html body .app-shell :focus-visible{outline:3px solid rgba(20,125,112,.28);outli
 :root[data-theme="dark"] .badge-danger{background:#49272e;color:#ffb1b6;border:1px solid #75404a}
 :root[data-theme="dark"] .status-warning,
 :root[data-theme="dark"] .badge-warning{background:#47371f;color:#f4d28c;border:1px solid #70572d}
+
+
+/* Contrast repair from real dark-theme screenshots:
+   settled transaction rows and secondary dashboard metrics. */
+:root[data-theme="dark"] .app-shell .transaction-paid td{
+  background:#223448!important;
+  color:#c4d1dc!important;
+  border-color:#3a5063!important;
+}
+:root[data-theme="dark"] .app-shell .transaction-paid .transaction-label,
+:root[data-theme="dark"] .app-shell .transaction-paid .table-amount,
+:root[data-theme="dark"] .app-shell .transaction-paid .table-balance,
+:root[data-theme="dark"] .app-shell .transaction-paid .table-account>span,
+:root[data-theme="dark"] .app-shell .transaction-paid .positive,
+:root[data-theme="dark"] .app-shell .transaction-paid .negative{
+  color:#c4d1dc!important;
+}
+:root[data-theme="dark"] .app-shell .transaction-paid .paid-check{
+  color:#b8c8d3!important;
+}
+:root[data-theme="dark"] .app-shell .transaction-paid .paid-check input{
+  accent-color:#75cdb5;
+}
+:root[data-theme="dark"] .app-shell .transaction-paid .row-actions button,
+:root[data-theme="dark"] .app-shell .transaction-paid .order-actions button{
+  background:#2b4054!important;
+  color:#d4e0e8!important;
+  border-color:#50677a!important;
+}
+:root:not([data-theme="dark"]) .app-shell .transaction-paid td{
+  background:#edf2f0!important;
+  color:#52636b!important;
+  border-color:#dbe4e0!important;
+}
+:root:not([data-theme="dark"]) .app-shell .transaction-paid .transaction-label,
+:root:not([data-theme="dark"]) .app-shell .transaction-paid .table-amount,
+:root:not([data-theme="dark"]) .app-shell .transaction-paid .table-balance,
+:root:not([data-theme="dark"]) .app-shell .transaction-paid .positive,
+:root:not([data-theme="dark"]) .app-shell .transaction-paid .negative,
+:root:not([data-theme="dark"]) .app-shell .transaction-paid .paid-check{
+  color:#52636b!important;
+}
+:root[data-theme="dark"] .app-shell .summary-card:not(.total-card) .metric,
+:root[data-theme="dark"] .app-shell .account-card-balance,
+:root[data-theme="dark"] .app-shell .summary-card:not(.total-card) .card-top,
+:root[data-theme="dark"] .app-shell .summary-card:not(.total-card) .muted{
+  color:#edf4f7!important;
+}
+:root[data-theme="dark"] .app-shell .summary-card:not(.total-card) .card-top{
+  color:#b8c8d2!important;
+}
+:root[data-theme="dark"] .app-shell .summary-card:not(.total-card) .muted{
+  color:#b0c0ca!important;
+}
+:root[data-theme="dark"] .app-shell .summary-card:not(.total-card) .card-icon{
+  background:#294354!important;
+  color:#a9e2d2!important;
+}
+:root[data-theme="dark"] .app-shell .summary-card.lombard-card .card-icon{
+  background:#453c2b!important;
+  color:#f0d49a!important;
+}
