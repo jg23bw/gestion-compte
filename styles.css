@@ -2257,15 +2257,15 @@ html body .app-shell :focus-visible{outline:3px solid rgba(20,125,112,.28);outli
   html body .app-shell .summary-card:not(.total-card) .metric{font-size:18px}
   html body .app-shell .page-heading h1{font-size:25px}
 }
-:root[data-theme="dark"] html body .app-shell .summary-card,
-:root[data-theme="dark"] html body .app-shell .panel,
-:root[data-theme="dark"] html body .app-shell .account-card,
-:root[data-theme="dark"] html body .app-shell .history-summary-card{background:#17283a;border-color:#2b4050}
-:root[data-theme="dark"] html body .app-shell .page-heading h1,
-:root[data-theme="dark"] html body .app-shell .panel-heading h2,
-:root[data-theme="dark"] html body .app-shell .account-info strong,
-:root[data-theme="dark"] html body .app-shell .account-balance,
-:root[data-theme="dark"] html body .app-shell .history-summary-card strong{color:#e2ecec}
-:root[data-theme="dark"] html body .app-shell .topbar{background:rgba(16,31,46,.92);border-color:#2b4050}
-:root[data-theme="dark"] html body .app-shell .fire-hero{background:#17283a;border-color:#2b4050}
-:root[data-theme="dark"] html body .app-shell .fire-controls{background:#122337;border-color:#2b4050}
+:root[data-theme="dark"] .app-shell .summary-card,
+:root[data-theme="dark"] .app-shell .panel,
+:root[data-theme="dark"] .app-shell .account-card,
+:root[data-theme="dark"] .app-shell .history-summary-card{background:#17283a;border-color:#2b4050}
+:root[data-theme="dark"] .app-shell .page-heading h1,
+:root[data-theme="dark"] .app-shell .panel-heading h2,
+:root[data-theme="dark"] .app-shell .account-info strong,
+:root[data-theme="dark"] .app-shell .account-balance,
+:root[data-theme="dark"] .app-shell .history-summary-card strong{color:#e2ecec}
+:root[data-theme="dark"] .app-shell .topbar{background:rgba(16,31,46,.92);border-color:#2b4050}
+:root[data-theme="dark"] .app-shell .fire-hero{background:#17283a;border-color:#2b4050}
+:root[data-theme="dark"] .app-shell .fire-controls{background:#122337;border-color:#2b4050}
