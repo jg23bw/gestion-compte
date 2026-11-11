@@ -1736,3 +1736,5 @@ td{border-color:#edf1f3}
 .brand strong{font-size:16px;letter-spacing:-.55px;color:#f5f8fa}
 .brand small{font-size:8px;letter-spacing:1.35px;color:#9cabb9}
 @media(max-width:900px){.brand-mark{width:43px;height:43px;flex-basis:43px}}
+
+.brand-mark:after{content:none}

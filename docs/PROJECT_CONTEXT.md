@@ -1,6 +1,6 @@
 # Contexte projet — Gestion de comptes
 
-**Dernière mise à jour documentaire : 2026-11-11.**
+**Dernière mise à jour documentaire : 2026-11-11.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
 ## Identité visuelle — novembre 2026
 
