@@ -647,3 +647,14 @@ Le design system transversal est défini en fin de `styles.css` avec des tokens 
 - déclinaisons des composants pour le thème sombre existant.
 
 Le cache CSS est versionné dans `index.html` sous `design-system-v1`. Les identifiants, attributs de navigation et hooks DOM sont conservés. Cette livraison est une harmonisation CSS transversale ; les écrans complexes doivent encore faire l'objet d'une revue visuelle réelle sur navigateur.
+
+
+## Refonte visuelle Premium Fintech — novembre 2026
+- Branche de travail : `feature/premium-fintech-redesign`.
+- Direction artistique : bleu encre / pétrole / ivoire / champagne, avec une hiérarchie plus marquée.
+- Refonte CSS transversale : navigation latérale, en-tête, tableau de bord, cartes de synthèse, comptes, activité, tableaux, indicateurs marchés et écran FIRE.
+- Le patrimoine net devient le bloc principal du tableau de bord ; les panneaux et listes adoptent une densité et une hiérarchie plus soignées.
+- Responsive revu pour la navigation compacte, les cartes et les simulations.
+- Aucun changement de logique métier, de calcul, d'identifiant DOM ou de gestionnaire d'événement.
+- Feuille de style versionnée : `styles.css?v=premium-fintech-v1`.
+- Contrôle statique à faire avant fusion ; aucun rendu navigateur n'a été validé à ce stade.
