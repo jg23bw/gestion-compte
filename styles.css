@@ -71,8 +71,7 @@
 
 /* ── Modern signature refresh · Atelier Finance ───────────────────────── */
 :root{
-  color-scheme:light;
-  --navy:#111b2e;--muted:#748096;--line:#e8edf4;
+    --navy:#111b2e;--muted:#748096;--line:#e8edf4;
   --blue:#536dff;--green:#149b78;--purple:#8667ee;
   --ink:#172238;--paper:#f4f6fb;--accent:#c9f36b;
 }
@@ -1950,3 +1949,10 @@ canvas,svg{max-width:100%}
  .summary-card{padding:15px}.metric{font-size:23px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
+:root[data-theme="dark"] .form-help,:root[data-theme="dark"] .tip-panel{background:#172c3a;border-color:#294a53;color:#a8c3c4}
+:root[data-theme="dark"] input:not([type=checkbox]):not([type=radio]):not([type=range]),:root[data-theme="dark"] select,:root[data-theme="dark"] textarea,:root[data-theme="dark"] .modal input,:root[data-theme="dark"] .modal select,:root[data-theme="dark"] .modal textarea{background:#111e30;color:#e0e8f4;border-color:#34465d}
+:root[data-theme="dark"] .modal,:root[data-theme="dark"] .app-dialog{background:#17243a;color:#dce5f3;border-color:#2b3a53}
+:root[data-theme="dark"] .modal-heading h2,:root[data-theme="dark"] .modal label{color:#e0e8f4}
+:root[data-theme="dark"] .notes-panel,:root[data-theme="dark"] .mcp-token-row{background:#17243a;border-color:#2b3a53}
+:root[data-theme="dark"] tbody tr:hover td{background:#1b2c43}
+:root[data-theme="dark"] .secondary-button:hover,:root[data-theme="dark"] .icon-button:hover{background:#20344b;border-color:#45636c;color:#e0e8f4}
