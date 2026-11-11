@@ -1,6 +1,6 @@
 # Contexte projet — Gestion de comptes
 
-**Dernière mise à jour documentaire : 2026-11-07.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
+**Dernière mise à jour documentaire : 2026-11-11.** À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
 
 > La vue d’ensemble affiche explicitement une carte « Cryptomonnaies » avec la valorisation totale en euros. Cette valeur est distincte des comptes personnels/professionnels, mais elle est incluse dans les avoirs bruts et le patrimoine net.
@@ -614,3 +614,15 @@ Les écrans « Opérations » et « Compte pro » affichent en haut une projecti
 
 - L'écran Compte pro ne présente plus de liste de sélection de compte : les opérations et projections utilisent directement l'unique compte professionnel configuré.
 - Dans Opérations, le compte reste choisi via le filtre en haut, mais la colonne Compte du tableau est supprimée pour éviter une information redondante.
+
+
+## Identité visuelle — 2026-11-11
+
+Une première direction artistique « Premium Fintech » a été intégrée :
+- symbole vectoriel dans `assets/logos/gestion-compte-mark.svg`, utilisé dans l'écran de connexion et la navigation ;
+- favicon actualisé ;
+- palette bleu nuit / vert pétrole / or doux et retouches transverses des composants dans `styles.css` ;
+- cache CSS actualisé dans `index.html` ;
+- règles de marque documentées dans `docs/BRAND_GUIDELINES.md`.
+
+Cette itération est une première base cohérente, pas une validation finale de l'identité. Les écrans métier restent à auditer individuellement et à tester visuellement sur mobile et desktop.
