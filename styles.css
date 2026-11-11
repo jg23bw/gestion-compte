@@ -1646,3 +1646,84 @@ input,select,textarea{accent-color:#536dff}
 :root[data-theme="dark"] .projection-card>small,:root[data-theme="dark"] .projection-empty{color:#9eacc1}
 @media(max-width:900px){#pro-transaction-projection{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.transaction-projection,#pro-transaction-projection{grid-template-columns:1fr 1fr;gap:8px}.projection-card{padding:12px}.projection-card>strong{font-size:17px}}
+
+
+/* ── Identité Gestion Compte · Premium Fintech ─────────────────────────── */
+:root{
+  color-scheme:light;
+  font-family:'DM Sans',sans-serif;
+  color:#1d2939;
+  background:#f4f6f8;
+  --navy:#101b2c;
+  --muted:#7d8999;
+  --line:#e8edf1;
+  --blue:#147d70;
+  --green:#13856f;
+  --purple:#687d9a;
+  --brand-ink:#101b2c;
+  --brand-teal:#147d70;
+  --brand-gold:#c5a66b;
+  --surface:#fff;
+  --surface-soft:#f6f8f9;
+  --shadow-soft:0 8px 28px rgba(16,27,44,.055);
+}
+body{background:#f4f6f8;color:#1d2939}
+.sidebar{background:linear-gradient(180deg,#101b2c 0%,#14253a 100%);border-right:1px solid #24354a;padding-top:25px}
+.brand{padding-bottom:34px;gap:12px}
+.brand-mark{width:41px;height:41px;flex:0 0 41px;border-radius:13px;background:linear-gradient(145deg,#1b8c7c,#11685f);box-shadow:0 5px 16px rgba(10,120,103,.24);display:grid;place-items:center;overflow:hidden}
+.brand-mark img{width:100%;height:100%;display:block}
+.brand strong{font:800 16px Manrope,sans-serif;letter-spacing:-.65px}
+.brand small{font-size:8px;letter-spacing:1.35px;color:#91a4b8}
+.nav-label,.eyebrow{letter-spacing:1.55px}
+.nav-item{border-radius:10px;padding:12px 13px;color:#b5c1d0;transition:background .18s ease,color .18s ease,transform .18s ease}
+.nav-item:hover{background:rgba(255,255,255,.075);transform:translateX(1px)}
+.nav-item.active{background:linear-gradient(90deg,rgba(20,125,112,.25),rgba(20,125,112,.09));box-shadow:inset 3px 0 #5bc0a9;color:#fff}
+.nav-item.active .nav-icon{color:#75d0bc}
+.privacy-card{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.09);border-radius:13px}
+.privacy-icon{color:#79cbb8}
+.main-content{padding-left:40px;padding-right:40px}
+.topbar{border-color:#e7ecf0}
+.view{padding-top:34px}
+.page-heading{margin-bottom:27px}
+.page-heading h1{font:800 28px Manrope,sans-serif;letter-spacing:-1.05px;color:#142337}
+.eyebrow{color:#758697}
+.subtitle{color:#8290a0;line-height:1.6}
+.summary-card,.panel,.account-card{border:1px solid #e8edf1;border-radius:15px;box-shadow:var(--shadow-soft)}
+.summary-card{padding:20px 21px;min-height:151px;transition:transform .18s ease,box-shadow .18s ease}
+.summary-card:hover,.account-card:hover{box-shadow:0 12px 30px rgba(16,27,44,.08)}
+.card-icon.navy{background:#edf1f4;color:#334b62}
+.card-icon.blue{background:#e5f3f0;color:#147d70}
+.card-icon.purple{background:#f0f1f6;color:#657a98}
+.metric{font:800 26px Manrope,sans-serif;letter-spacing:-.9px;color:#17283a}
+.trend-pill{background:#e8f4f1;color:#147d70}
+.panel{overflow:hidden}
+.panel-heading{padding:21px 22px 14px}
+.panel-heading h2{font:700 14px Manrope,sans-serif;color:#1b2b3d}
+.account-row,.recent-row{border-color:#edf1f3}
+.account-row:hover{background:#fafcfc}
+.account-card{transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.account-card:hover{transform:translateY(-3px);border-color:#c9ddd8}
+.primary-button{background:#147d70;border-color:#147d70;box-shadow:0 5px 13px rgba(20,125,112,.18);transition:background .18s ease,transform .18s ease,box-shadow .18s ease}
+.primary-button:hover{background:#106b60;transform:translateY(-1px);box-shadow:0 7px 16px rgba(20,125,112,.22)}
+.secondary-button{border-color:#dce5e8;color:#435365;transition:background .18s ease,border-color .18s ease}
+.secondary-button:hover{background:#f7faf9;border-color:#c8d8d5}
+.icon-button{border-radius:10px}
+.search-box,.transaction-toolbar select,.modal input,.modal select{border-color:#dfe7e9;border-radius:9px}
+.search-box:focus-within{border-color:#74afa5;box-shadow:0 0 0 3px rgba(20,125,112,.09)}
+.modal{border-radius:18px;box-shadow:0 28px 90px rgba(10,24,39,.25)}
+.modal-heading h2{font-family:Manrope,sans-serif}
+.modal input:focus,.modal select:focus{border-color:#65a99d;box-shadow:0 0 0 3px rgba(20,125,112,.11)}
+.tip-panel{background:#edf5f3;border-color:#dcebe7;border-radius:14px}
+.tip-icon{background:#dceee9;color:#147d70}
+.tip-panel strong{color:#285e56}
+.tip-panel p{color:#66847e}
+.app-footer{color:#8996a4}
+.table-panel{border-radius:15px;box-shadow:var(--shadow-soft)}
+thead{background:#f7f9fa}
+th{color:#748494;letter-spacing:.55px}
+td{border-color:#edf1f3}
+.row-actions button{border-radius:7px}
+.toast{background:#14283a;border:1px solid rgba(255,255,255,.08);border-radius:11px}
+@media(max-width:1200px){.main-content{padding-left:25px;padding-right:25px}}
+@media(max-width:580px){.main-content{padding-left:13px;padding-right:13px}.page-heading h1{font-size:25px}.summary-card{border-radius:13px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
