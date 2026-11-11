@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0d1b2a">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=brand-v2">
-  <link rel="mask-icon" href="favicon.svg?v=brand-v2" color="#0d1b2a">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=brand-v3">
+  <link rel="mask-icon" href="favicon.svg?v=brand-v3" color="#0d1b2a">
   <meta name="description" content="Gestion Compte : pilotez vos comptes, votre trésorerie et vos investissements dans un espace financier clair et sécurisé.">
   <title>Gestion Compte — Pilotage financier</title>
-  <link rel="stylesheet" href="styles.css?v=brand-v2">
+  <link rel="stylesheet" href="styles.css?v=brand-v3">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
@@ -87,18 +87,35 @@
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
-    <div class="auth-gate-card">
-      <span class="brand-mark" aria-hidden="true"><img src="assets/logos/gestion-compte-mark.svg?v=brand-v2" alt=""></span>
-      <h1>Votre espace de comptes est privé</h1>
-      <p>Connectez-vous pour charger vos comptes, opérations et récurrences depuis votre espace personnel sécurisé.</p>
-      <div class="auth-gate-actions"><button type="button" class="primary-button" id="auth-login">Se connecter</button><button type="button" class="secondary-button" id="auth-signup">Créer un compte</button></div>
-      <p class="auth-gate-note">Aucune donnée de compte n’est affichée avant la connexion.</p>
+    <div class="auth-gate-inner">
+      <div class="auth-gate-intro">
+        <a class="auth-brand" href="#" aria-label="Gestion Compte">
+          <span class="brand-mark" aria-hidden="true"><img src="assets/logos/gestion-compte-mark.svg?v=brand-v3" alt=""></span>
+          <span class="auth-brand-copy"><strong>Gestion Compte</strong><small>VOTRE ESPACE FINANCIER</small></span>
+        </a>
+        <div class="auth-hero-copy">
+          <p class="auth-kicker"><span></span> VOTRE PATRIMOINE, EN UN SEUL ENDROIT</p>
+          <h1>Vos finances méritent<br><em>une vision claire.</em></h1>
+          <p class="auth-lead">Comptes, trésorerie et investissements réunis dans un espace personnel conçu pour vous aider à garder le cap.</p>
+          <div class="auth-benefits">
+            <div><span class="auth-benefit-icon">↗</span><span><strong>Une vue d’ensemble</strong><small>Votre patrimoine et vos soldes en un coup d’œil.</small></span></div>
+            <div><span class="auth-benefit-icon">⇄</span><span><strong>Un suivi maîtrisé</strong><small>Opérations, récurrences et trésorerie au même endroit.</small></span></div>
+            <div><span class="auth-benefit-icon">◇</span><span><strong>Un espace privé</strong><small>Vos données restent accessibles après authentification.</small></span></div>
+          </div>
+        </div>
+        <p class="auth-footnote">GESTION COMPTE <span>•</span> PILOTAGE FINANCIER PERSONNEL</p>
+      </div>
+      <div class="auth-gate-card">
+        <div class="auth-card-heading"><p class="auth-card-eyebrow">ESPACE PERSONNEL</p><h2>Ravi de vous revoir.</h2><p>Connectez-vous pour retrouver votre situation financière.</p></div>
+        <div class="auth-gate-actions"><button type="button" class="primary-button" id="auth-login">Se connecter</button><button type="button" class="secondary-button" id="auth-signup">Créer un compte</button></div>
+        <div class="auth-security"><span aria-hidden="true">✓</span><span><strong>Accès sécurisé</strong><small>Aucune donnée de compte n’est affichée avant la connexion.</small></span></div>
+      </div>
     </div>
   </section>
   <div class="app-shell" id="app-shell" hidden>
     <aside class="sidebar">
       <a class="brand" href="#" aria-label="Accueil Gestion Compte">
-        <span class="brand-mark" aria-hidden="true"><img src="assets/logos/gestion-compte-mark.svg?v=brand-v2" alt=""></span>
+        <span class="brand-mark" aria-hidden="true"><img src="assets/logos/gestion-compte-mark.svg?v=brand-v3" alt=""></span>
         <span><strong>Gestion Compte</strong><small>VOTRE ESPACE FINANCIER</small></span>
       </a>
       <div class="nav-label">ESPACE</div>
