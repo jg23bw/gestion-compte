@@ -1,13 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Gestion Compte">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1b8c7c"/>
-      <stop offset="1" stop-color="#105e58"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#19364a"/>
+      <stop offset="1" stop-color="#102333"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5f8f6"/>
+      <stop offset="1" stop-color="#cfe6df"/>
     </linearGradient>
   </defs>
-  <rect width="128" height="128" rx="30" fill="#101b2c"/>
-  <rect x="9" y="9" width="110" height="110" rx="25" fill="url(#bg)"/>
-  <path d="M83 38a34 34 0 1 0 7 41" fill="none" stroke="#f5faf8" stroke-width="10" stroke-linecap="round"/>
-  <path d="M65 65h29V36" fill="none" stroke="#d9c08e" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="91" cy="38" r="5" fill="#d9c08e"/>
+  <rect width="128" height="128" rx="30" fill="#0d1b2a"/>
+  <rect x="7" y="7" width="114" height="114" rx="25" fill="url(#tile)" stroke="#ffffff" stroke-opacity=".09" stroke-width="1.5"/>
+  <path d="M83.5 35.5A36 36 0 1 0 94 72.5V63H66.5" fill="none" stroke="url(#stroke)" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="94" cy="63" r="6" fill="#c9ad78"/>
+  <path d="M83.5 35.5l7.5-7.5" fill="none" stroke="#55b9a5" stroke-width="4.5" stroke-linecap="round"/>
 </svg>
