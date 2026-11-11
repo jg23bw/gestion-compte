@@ -635,3 +635,15 @@ Une première direction artistique « Premium Fintech » a été intégrée :
 - règles de marque documentées dans `docs/BRAND_GUIDELINES.md`.
 
 Cette itération est une première base cohérente, pas une validation finale de l'identité. Les écrans métier restent à auditer individuellement et à tester visuellement sur mobile et desktop.
+
+
+## Harmonisation visuelle de l'application — 11 novembre 2026
+
+Le design system transversal est défini en fin de `styles.css` avec des tokens `--gc-*` (palette, surfaces, bordures, rayons, ombres et focus). Il harmonise les écrans métier sans modifier leur logique :
+- navigation latérale et état actif, en-tête, titres et hiérarchie typographique ;
+- cartes de synthèse, panneaux, comptes, mouvements et composants de portefeuille ;
+- boutons, champs, formulaires, tableaux, dialogues et notifications ;
+- espacements et comportements responsive sur tablette et mobile ;
+- déclinaisons des composants pour le thème sombre existant.
+
+Le cache CSS est versionné dans `index.html` sous `design-system-v1`. Les identifiants, attributs de navigation et hooks DOM sont conservés. Cette livraison est une harmonisation CSS transversale ; les écrans complexes doivent encore faire l'objet d'une revue visuelle réelle sur navigateur.
