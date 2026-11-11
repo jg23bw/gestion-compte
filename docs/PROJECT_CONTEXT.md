@@ -5,11 +5,11 @@
 ## Identité visuelle — novembre 2026
 
 - Direction retenue : **Premium Fintech**, sobre, lisible et chaleureuse, sans codes visuels de banque traditionnelle.
-- Logo : monogramme « G » dessiné en SVG, boucle claire sur fond bleu nuit, accent vert d’eau et point champagne. Le symbole est partagé entre le favicon, l’écran d’authentification et la barre latérale.
+- Logo : pictogramme SVG représentant un relevé financier et une courbe de progression. Le même fichier maître est utilisé dans l’accueil, la barre latérale et le favicon ; les images sont explicitement dimensionnées en CSS pour éviter leur affichage à taille intrinsèque.
 - Signature produit : « Gestion Compte » avec le descripteur « VOTRE ESPACE FINANCIER ».
 - Palette de marque : bleu nuit `#0D1B2A`, bleu pétrole `#19364A`, vert d’eau `#55B9A5`, champagne `#C9AD78`, blanc cassé `#F5F8F6`.
 - Fichiers maîtres : `assets/logos/gestion-compte-mark.svg` et `favicon.svg`. Le logo reste vectoriel pour les petits formats et les écrans haute densité.
-- Les règles d'interface existantes sont conservées ; cette itération met à niveau l'identité et ses déclinaisons, pas l'ensemble du design system. À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
+- L’écran d’accueil non authentifié présente désormais la proposition de valeur, les bénéfices principaux et les actions de connexion/création de compte dans une mise en page responsive. Cette itération ne modifie pas le parcours d’authentification ni les écrans métier. À relire et actualiser lors de chaque changement important. Cette documentation décrit le dépôt tel qu’inspecté ; elle ne prouve pas que les fonctions distantes Supabase ou le site hébergé ont été testés de bout en bout.
 
 
 > La vue d’ensemble affiche explicitement une carte « Cryptomonnaies » avec la valorisation totale en euros. Cette valeur est distincte des comptes personnels/professionnels, mais elle est incluse dans les avoirs bruts et le patrimoine net.
