@@ -1956,3 +1956,50 @@ canvas,svg{max-width:100%}
 :root[data-theme="dark"] .notes-panel,:root[data-theme="dark"] .mcp-token-row{background:#17243a;border-color:#2b3a53}
 :root[data-theme="dark"] tbody tr:hover td{background:#1b2c43}
 :root[data-theme="dark"] .secondary-button:hover,:root[data-theme="dark"] .icon-button:hover{background:#20344b;border-color:#45636c;color:#e0e8f4}
+
+
+/* Correctifs visuels issus du contrôle sur capture réelle — v2 */
+html body .app-shell .sidebar{
+  background:linear-gradient(180deg,#102437 0%,#0b1b2a 100%)!important;
+  color:#eaf1f5!important;
+  border-right:1px solid rgba(255,255,255,.08)!important;
+  box-shadow:8px 0 28px rgba(12,31,46,.10)!important;
+}
+html body .app-shell .sidebar .brand strong{color:#f5f8fa!important}
+html body .app-shell .sidebar .brand small,
+html body .app-shell .sidebar .nav-label{color:#91a5b5!important}
+html body .app-shell .sidebar .nav-item{color:#c3d0d9!important}
+html body .app-shell .sidebar .nav-item:hover{background:rgba(255,255,255,.07)!important}
+html body .app-shell .sidebar .nav-item.active{
+  color:#fff!important;
+  background:linear-gradient(90deg,rgba(25,151,130,.30),rgba(25,151,130,.10))!important;
+  box-shadow:inset 3px 0 #65cbb4!important;
+}
+html body .app-shell .sidebar .nav-item.active .nav-icon{color:#8ce0cb!important}
+html body .app-shell .sidebar .privacy-card,
+html body .app-shell .sidebar .user-chip{
+  background:rgba(255,255,255,.055)!important;
+  border-color:rgba(255,255,255,.12)!important;
+  color:#eaf1f5!important;
+}
+html body .app-shell .sidebar .privacy-card *,
+html body .app-shell .sidebar .user-chip *{color:inherit}
+html body .app-shell .main-content,
+html body .app-shell .main-content .view{min-width:0;max-width:100%}
+html body .app-shell .main-content .content-grid{
+  grid-template-columns:minmax(0,1.55fr) minmax(280px,.95fr);
+  min-width:0;
+}
+html body .app-shell .main-content .content-grid>.panel{min-width:0;width:100%}
+html body .app-shell .main-content .account-list,
+html body .app-shell .main-content .recent-list{min-width:0}
+html body .app-shell .main-content .account-row,
+html body .app-shell .main-content .recent-row{min-width:0}
+html body .app-shell .main-content .account-info,
+html body .app-shell .main-content .recent-info{min-width:0}
+@media(max-width:1100px){
+  html body .app-shell .main-content .content-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:900px){
+  html body .app-shell .sidebar{background:linear-gradient(180deg,#102437 0%,#0b1b2a 100%)!important}
+}
