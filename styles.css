@@ -2523,12 +2523,18 @@ html body .app-shell :focus-visible{outline:3px solid rgba(20,125,112,.28);outli
 }
 
 
-/* Dashboard hero contrast repair: dark surface with light typography in light theme. */
-:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card{
+/* Dashboard hero contrast repair: valid root selector, including narrow mobile layouts. */
+:root:not([data-theme="dark"]) body .app-shell .summary-card.total-card{
   background:radial-gradient(ellipse at 85% 10%,rgba(64,148,130,.32),transparent 38%),linear-gradient(115deg,#142d3d 0%,#183b48 58%,#14594f 100%)!important;
   color:#f2f6f4!important;border-color:#173e49!important;
 }
-:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .card-top{color:#d2e2de!important}
-:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .metric{color:#ffffff!important}
-:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .muted{color:#c3d8d2!important}
-:root:not([data-theme="dark"]) html body .app-shell .summary-card.total-card .trend-pill{background:rgba(224,201,149,.16)!important;color:#f0d9a8!important;border-color:rgba(224,201,149,.28)!important}
+:root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .card-top{color:#d2e2de!important}
+:root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .metric{color:#ffffff!important}
+:root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .muted{color:#c3d8d2!important}
+:root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .trend-pill{background:rgba(224,201,149,.16)!important;color:#f0d9a8!important;border-color:rgba(224,201,149,.28)!important}
+@media(max-width:700px){
+  :root:not([data-theme="dark"]) body .app-shell .summary-card.total-card{min-height:190px;background:linear-gradient(145deg,#142d3d 0%,#183b48 62%,#14594f 100%)!important}
+  :root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .metric{font-size:clamp(25px,7vw,30px)!important;color:#fff!important}
+  :root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .card-top{color:#dce9e5!important}
+  :root:not([data-theme="dark"]) body .app-shell .summary-card.total-card .muted{color:#d0dfdb!important}
+}
