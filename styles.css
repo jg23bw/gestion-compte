@@ -1825,3 +1825,128 @@ td{border-color:#edf1f3}
   .auth-benefits small{font-size:10px}
   .auth-gate-card{padding:24px}
 }
+
+/* --------------------------------------------------------------------------
+   Design system transversal — Gestion Compte / Premium Fintech
+   Tokens et composants partagés pour tous les écrans métier.
+   -------------------------------------------------------------------------- */
+:root{
+  color-scheme:light;
+  --gc-ink:#14283a;--gc-ink-soft:#30485a;--gc-muted:#718392;--gc-subtle:#94a2ad;
+  --gc-line:#e5ecee;--gc-line-strong:#d6e1e3;--gc-surface:#fff;--gc-surface-soft:#f7faf9;
+  --gc-canvas:#f3f7f7;--gc-teal:#147d70;--gc-teal-dark:#10685f;--gc-teal-soft:#e8f4f1;
+  --gc-gold:#b99b68;--gc-danger:#bd5b55;--gc-danger-soft:#fff0ee;
+  --gc-success:#21836a;--gc-success-soft:#eaf6f1;
+  --gc-shadow-card:0 3px 12px rgba(19,43,57,.035),0 1px 2px rgba(19,43,57,.025);
+  --gc-shadow-raised:0 14px 34px rgba(19,43,57,.075);
+  --gc-radius-sm:9px;--gc-radius-md:14px;--gc-radius-lg:18px;
+  --gc-focus:0 0 0 3px rgba(20,125,112,.13)
+}
+html{scroll-behavior:smooth}
+body{background:var(--gc-canvas);color:var(--gc-ink);font-family:'DM Sans',sans-serif}
+button,input,select,textarea{font-family:inherit}
+button{transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:0;box-shadow:var(--gc-focus)}
+.app-shell{background:var(--gc-canvas)}
+.sidebar{background:linear-gradient(180deg,#102437 0%,#0d1d2d 100%);border-right:1px solid rgba(255,255,255,.055);box-shadow:5px 0 24px rgba(13,29,45,.035)}
+.brand{padding-top:2px}
+.brand-mark{box-shadow:0 8px 20px rgba(0,0,0,.16)}
+.brand strong{letter-spacing:-.6px}
+.nav-label{color:#8094a5}
+.nav-item{min-height:42px;font-size:12px;letter-spacing:.05px}
+.nav-item.active{background:linear-gradient(90deg,rgba(31,147,129,.25),rgba(31,147,129,.075));box-shadow:inset 3px 0 #69c7b1}
+.nav-count{background:rgba(255,255,255,.1);color:#dce8e8}
+.user-chip{border-color:rgba(255,255,255,.1)}
+.main-content{padding-left:clamp(24px,3vw,46px);padding-right:clamp(24px,3vw,46px)}
+.topbar{height:72px;border-color:var(--gc-line)}
+.breadcrumb{color:#8998a3;font-size:11px}.breadcrumb strong{color:#3a5261}
+.local-status{color:#82929c}
+.view{padding-top:35px;padding-bottom:38px}
+.page-heading{margin-bottom:27px}
+.page-heading h1{color:var(--gc-ink);font-size:29px;letter-spacing:-1.1px}
+.eyebrow{color:var(--gc-teal);font-size:9px;letter-spacing:1.65px}
+.subtitle{color:var(--gc-muted);font-size:12px;line-height:1.65}
+.summary-grid{gap:15px}
+.summary-card,.panel,.account-card,.table-panel,.notes-panel,.tip-panel{border-color:var(--gc-line);border-radius:var(--gc-radius-md);box-shadow:var(--gc-shadow-card)}
+.summary-card{background:var(--gc-surface);padding:21px 22px;min-height:150px}
+.summary-card:hover,.account-card:hover{box-shadow:var(--gc-shadow-raised)}
+.card-top{color:#718391;font-size:11px}
+.card-icon{border-radius:10px}
+.card-icon.navy{background:#edf1f4;color:#38566a}.card-icon.blue{background:#e5f3f0;color:var(--gc-teal)}.card-icon.purple{background:#f0f1f6;color:#697c92}
+.metric{color:var(--gc-ink);font-size:27px;font-variant-numeric:tabular-nums}
+.card-foot{color:var(--gc-muted)}
+.trend-pill{background:var(--gc-teal-soft);color:var(--gc-teal);border-radius:6px;font-weight:700}
+.content-grid{gap:17px}
+.panel{background:var(--gc-surface)}
+.panel-heading{padding:20px 22px 14px}
+.panel-heading h2{color:#20394a;font-size:14px;letter-spacing:-.25px}
+.panel-heading p{color:#8998a2;line-height:1.5}
+.account-row,.recent-row{border-color:#edf1f2}
+.account-row:hover,.recent-row:hover{background:#f8fbfa}
+.account-info strong{color:#314b5a}
+.account-info small,.account-balance small{color:#8797a1}
+.account-balance,.account-card-balance{color:var(--gc-ink);font-variant-numeric:tabular-nums}
+.account-card{background:#fff}
+.account-card:hover{border-color:#b9d7d0;transform:translateY(-2px)}
+.account-card-foot{border-color:#edf1f2}
+.bank-logo.generic{background:#eaf2f1;color:#386b65}
+.movement-icon.income{background:var(--gc-success-soft);color:var(--gc-success)}
+.movement-icon.expense{background:var(--gc-danger-soft);color:var(--gc-danger)}
+.text-button{color:var(--gc-teal);font-weight:700}.text-button:hover{color:var(--gc-teal-dark)}
+.primary-button{background:var(--gc-teal);border-color:var(--gc-teal);box-shadow:0 4px 11px rgba(20,125,112,.16);border-radius:10px;font-size:11px;font-weight:700}
+.primary-button:hover{background:var(--gc-teal-dark);border-color:var(--gc-teal-dark)}
+.secondary-button{background:#fff;border-color:var(--gc-line-strong);color:#425969;border-radius:10px;font-size:11px;font-weight:700}
+.secondary-button:hover{background:#f5f9f8;border-color:#bfd5d0;color:#245b54}
+.icon-button{width:36px;height:36px;border:1px solid var(--gc-line);border-radius:10px;color:#5c7280}
+.icon-button:hover{background:#f1f7f5;border-color:#c9ded9;color:var(--gc-teal)}
+.search-box,.transaction-toolbar select,.toolbar select,.toolbar input,.modal input,.modal select,.modal textarea,input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{border-color:var(--gc-line-strong);border-radius:9px;color:#2f4858;background-color:#fff}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,select:focus,textarea:focus,.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:#70aa9f;box-shadow:var(--gc-focus);outline:0}
+input::placeholder,textarea::placeholder{color:#a3afb6}
+label{color:#536a78}
+.form-help{background:#f4f8f7;color:#71858d;border:1px solid #e8f0ee;border-radius:9px;line-height:1.65}
+.table-panel{background:#fff;overflow:hidden}
+.table-scroll{scrollbar-color:#c8d6d7 #f4f7f7;scrollbar-width:thin}
+table{font-variant-numeric:tabular-nums}
+thead{background:#f5f8f8}
+th{color:#718590;border-color:var(--gc-line);font-size:9px;letter-spacing:.7px;text-transform:uppercase}
+td{color:#526875;border-color:#edf1f2;font-size:10px}
+tbody tr:hover td{background:#f8fbfa}
+.transaction-label{color:#2d4655}.table-balance{color:#263f50}
+.row-actions button{border-color:#e1e9e9;color:#6a7f88}
+.row-actions button:hover{background:#eef6f4;border-color:#c6ddd7;color:var(--gc-teal)}
+.modal,.app-dialog{border:1px solid rgba(214,225,227,.9);border-radius:18px;background:#fff;box-shadow:0 28px 90px rgba(10,24,39,.22)}
+.modal::backdrop,.app-dialog::backdrop{background:rgba(12,31,44,.58);backdrop-filter:blur(4px)}
+.modal form{padding:27px}.modal-heading{margin-bottom:23px}
+.modal-heading h2{color:var(--gc-ink);font-size:21px}
+.modal label{color:#526a78;font-size:11px}.modal input,.modal select{height:42px}
+.close-button{background:#f1f6f5;color:#58717b;border-radius:9px}
+.close-button:hover{background:#e5f1ee;color:var(--gc-teal)}
+.modal-actions{border-color:var(--gc-line)}
+.toast{background:#112b3b;border:1px solid rgba(255,255,255,.1);border-radius:12px;box-shadow:0 12px 32px rgba(10,24,39,.2)}
+.tip-panel{background:#edf6f3;border-color:#dcece7}.tip-icon{background:#dceee9;color:var(--gc-teal)}
+.tip-panel strong{color:#285e56}.tip-panel p{color:#66847e}
+.app-footer{color:#8b9aa2}.notes-panel{background:#fff}.notes-toolbar{color:#80919b}
+.mcp-token-row{border-color:var(--gc-line);background:#f8fbfa;border-radius:11px}
+.empty-state,.empty-message,.recurring-empty{color:#84959e}
+.badge,.status-badge,.pill{border-radius:999px}
+.danger-button{color:#b54f49!important;border-color:#efd1ce!important}
+.danger-button:hover{background:#fff5f4!important;border-color:#e5b9b4!important}
+hr{border:0;border-top:1px solid var(--gc-line)}
+canvas,svg{max-width:100%}
+@media(max-width:1200px){.main-content{padding-left:25px;padding-right:25px}.summary-grid{gap:12px}}
+@media(max-width:900px){.sidebar{background:linear-gradient(180deg,#102437 0%,#0d1d2d 100%)}.main-content{margin-left:68px;padding-left:22px;padding-right:22px}}
+@media(max-width:580px){
+ .main-content{padding-left:13px;padding-right:13px}.topbar{height:58px}.view{padding-top:24px}
+ .page-heading h1{font-size:25px}.summary-card{padding:17px 18px;min-height:130px}
+ .content-grid{gap:12px}.panel-heading{padding:16px 15px 12px}
+ .account-list,.recent-list{padding-left:15px;padding-right:15px}
+ .table-panel{border-radius:12px}.table-scroll{max-width:100%;overscroll-behavior-x:contain}
+ th,td{padding:11px 12px}.modal form{padding:21px}
+ .primary-button,.secondary-button{min-height:38px}
+}
+@media(max-width:380px){
+ .main-content{padding-left:10px;padding-right:10px}.topbar-actions{gap:6px}
+ .icon-button{width:33px;height:33px}.page-heading h1{font-size:23px}
+ .summary-card{padding:15px}.metric{font-size:23px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition:none!important;animation:none!important}}
