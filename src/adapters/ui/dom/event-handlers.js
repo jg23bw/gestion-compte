@@ -349,6 +349,7 @@ function initializeDomEventHandlers() {
           sourceAccountId:accountId,destinationAccountId,date,amount,label,createdAt:Date.now()
         });
       }catch(error){showToast(error.message||'Impossible d’enregistrer ce virement.');return;}
+      saveState();
       $('transaction-dialog').close();renderAll();showToast(previous?'Virement modifié.':'Virement ajouté.',true);return;
     }
     const account=accountById(accountId),isProfessional=effectiveAccountType(account||{kind:'bank'})==='pro';
