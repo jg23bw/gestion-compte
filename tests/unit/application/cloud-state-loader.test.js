@@ -49,7 +49,8 @@ test('loads cloud records and maps them with authenticated user metadata', async
         accountTypes: { 'account-1': 'pea' },
         accountPledges: { 'account-1': { note: 'Nantissement' } },
         lombardCredit: { amount: 60000 },
-        stockHoldings: [{ id: 'holding-1' }]
+        stockHoldings: [{ id: 'holding-1' }],
+        defaultTransactionAccountId: 'account-1'
       }
     }
   });
@@ -58,6 +59,7 @@ test('loads cloud records and maps them with authenticated user metadata', async
   assert.deepEqual(result.accountPledges, { 'account-1': { note: 'Nantissement' } });
   assert.deepEqual(result.lombardCredit, { amount: 60000 });
   assert.deepEqual(result.stockHoldings, [{ id: 'holding-1' }]);
+  assert.equal(result.defaultTransactionAccountId, 'account-1');
   assert.deepEqual(result.transactions.map(row => row.id), ['early', 'late']);
   assert.deepEqual(result.cryptoHoldings, [{ id: 'crypto-1' }]);
   assert.equal(result.cryptoTableReady, true);
