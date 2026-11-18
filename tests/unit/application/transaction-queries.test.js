@@ -188,7 +188,7 @@ test('account transaction display rows calculate balances and manual positions i
     accountId: 'a', typeFilter: 'all', query: '', sort: 'date-desc'
   });
   assert.deepEqual(rows.map(row => row.transaction.id), ['later', 'out', 'in']);
-  assert.deepEqual(rows.map(row => row.balance), [140, 140, 150]);
+  assert.deepEqual(rows.map(row => row.balance), [165, 140, 150]);
   assert.deepEqual(rows.map(row => row.position), [2, 1, 0]);
   assert.ok(rows.every(row => row.accountTransactionCount === 3));
 });
@@ -200,7 +200,19 @@ test('unpointed transaction does not change the balance shown on its row', () =>
   );
   const queries = create({ repository: f.repository, domain });
   const rows = queries.accountTransactionDisplayRows({ accountId: 'a', sort: 'date-asc' });
-  assert.equal(rows.find(row => row.transaction.id === 'pending').balance, 140);
+  assert.equal(rows.find(row => row.transaction.id === 'pending').balance, -60);
+});
+
+test('pending rows accumulate from the current actual balance in chronological order', () => {
+  const f = fixture();
+  f.transactions.push(
+    { id: 'pending-one', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: -130.21, isPaid: false },
+    { id: 'pending-two', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -50, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const rows = queries.accountTransactionDisplayRows({ accountId: 'a', sort: 'date-desc' });
+  assert.equal(rows.find(row => row.transaction.id === 'pending-one').balance, 9.79);
+  assert.equal(rows.find(row => row.transaction.id === 'pending-two').balance, -40.21);
 });
 
 test('account transaction display rows retain zero balance and missing position for a deleted account', () => {
