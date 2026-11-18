@@ -22,7 +22,7 @@
 
   function balanceAt(openingBalance, transactions, untilDate = null) {
     return Number(openingBalance || 0) + transactions
-      .filter(transaction => !untilDate || transaction.date <= untilDate)
+      .filter(transaction => transaction.isPaid === true && (!untilDate || transaction.date <= untilDate))
       .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   }
 
@@ -47,7 +47,7 @@
     // Fall back to the regular opening balance for legacy accounts.
     const opening = Number(account.netOpening ?? account.opening) || 0;
     return opening + sortAccountTransactions(transactions, account.id)
-      .filter(transaction => transaction.date <= untilDate)
+      .filter(transaction => transaction.isPaid === true && transaction.date <= untilDate)
       .reduce((sum, transaction) => sum + professionalAdjustedDelta(transaction, recurringTemplates), 0);
   }
 
