@@ -5,9 +5,9 @@ const { create } = require('../../../src/application/transactions/transaction-qu
 
 function fixture() {
   const transactions = [
-    { id: 'in', accountId: 'a', date: '2026-01-01', createdAt: 1, amount: 50 },
-    { id: 'out', accountId: 'a', date: '2026-01-02', createdAt: 2, amount: -10 },
-    { id: 'other', accountId: 'b', date: '2026-01-01', createdAt: 1, amount: 900 }
+    { id: 'in', accountId: 'a', date: '2026-01-01', createdAt: 1, amount: 50, isPaid: true },
+    { id: 'out', accountId: 'a', date: '2026-01-02', createdAt: 2, amount: -10, isPaid: true },
+    { id: 'other', accountId: 'b', date: '2026-01-01', createdAt: 1, amount: 900, isPaid: true }
   ];
   const accounts = [{ id: 'a', opening: 100, netOpening: 100 }];
   return {
@@ -33,6 +33,13 @@ test('balance use case obtains account and transactions through repository port'
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.balanceAt('a'), 140);
   assert.equal(queries.balanceAt('a', '2026-01-01'), 150);
+});
+
+test('balance use case excludes unpointed transactions even when their dates are in the past', () => {
+  const f = fixture();
+  f.transactions.push({ id: 'pending-old', accountId: 'a', date: '2025-12-15', createdAt: 0, amount: -75, isPaid: false });
+  const queries = create({ repository: f.repository, domain });
+  assert.equal(queries.balanceAt('a', '2026-01-31'), 140);
 });
 
 test('unknown account returns zero without throwing', () => {
@@ -203,6 +210,18 @@ test('account projection starts from today balance, includes future operations a
   assert.equal(result.lowestBalance, -540);
   assert.equal(result.lowestDate, '2026-02-01');
   assert.equal(result.futureCount, 2);
+});
+
+test('projection retains unpointed past operations without adding them to the actual balance', () => {
+  const f = fixture();
+  f.transactions.push(
+    { id: 'pending-old', accountId: 'a', date: '2025-12-31', createdAt: 0, amount: -500, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const result = queries.projectAccountBalance('a', '2026-01-31');
+  assert.equal(queries.balanceAt('a', '2026-01-31'), 140);
+  assert.equal(result.endingBalance, -360);
+  assert.equal(result.futureCount, 1);
 });
 
 test('professional projection uses adjusted amounts for future movements and ignores historical lows', () => {
