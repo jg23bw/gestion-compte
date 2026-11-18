@@ -2540,16 +2540,14 @@ html body .app-shell :focus-visible{outline:3px solid rgba(20,125,112,.28);outli
 }
 
 
-/* Negative projected balances on transactions that are still awaiting reconciliation. */
+/* Subtle warning for negative balances on pending transactions. */
 :root:not([data-theme="dark"]) .app-shell td.pending-negative-balance{
-  color:#98232d!important;
-  background:#fce9e9!important;
-  box-shadow:inset 3px 0 0 #c93643;
-  font-weight:800;
+  color:#a34b50!important;
+  background:rgba(201,54,67,.055)!important;
+  font-weight:650;
 }
 :root[data-theme="dark"] .app-shell td.pending-negative-balance{
-  color:#ffb1b6!important;
-  background:#49272e!important;
-  box-shadow:inset 3px 0 0 #ff929b;
-  font-weight:800;
+  color:#e39a9e!important;
+  background:rgba(255,146,155,.075)!important;
+  font-weight:650;
 }
