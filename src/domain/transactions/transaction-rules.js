@@ -55,7 +55,7 @@
     const opening = Number(account.netOpening ?? account.opening) || 0;
     let balance = opening;
     for (const transaction of sortAccountTransactions(transactions, account.id)) {
-      balance += professionalAdjustedDelta(transaction, recurringTemplates);
+      if (transaction.isPaid === true) balance += professionalAdjustedDelta(transaction, recurringTemplates);
       if (transaction.id === transactionId) return balance;
     }
     return balance;
