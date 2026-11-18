@@ -157,7 +157,7 @@
         if (!account) return projection(0, [], () => 0);
         const transactions = repository.findByAccount(accountId);
         const startingBalance = domain.balanceAt(account.opening, transactions, asOfDate);
-        return projection(startingBalance, transactions.filter(item => item.date > asOfDate), item => item.amount);
+        return projection(startingBalance, transactions.filter(item => item.date > asOfDate || item.isPaid !== true), item => item.amount);
       },
       professionalAdjustedBalanceAt(accountId, untilDate) {
         const account = repository.findAccount(accountId);
@@ -177,7 +177,7 @@
         const startingBalance = domain.professionalAdjustedBalanceAt(account, transactions, templates, asOfDate);
         return projection(
           startingBalance,
-          transactions.filter(item => item.date > asOfDate),
+          transactions.filter(item => item.date > asOfDate || item.isPaid !== true),
           item => domain.professionalAdjustedDelta(item, templates)
         );
       },
