@@ -120,11 +120,24 @@
         const ordered = domain.sortAccountTransactions(repository.findByAccount(accountId), accountId);
         const positions = new Map();
         const balances = new Map();
-        let balance = Number(account?.opening || 0);
+        let actualBalance = Number(account?.opening || 0);
+        for (const transaction of ordered) {
+          if (transaction.isPaid === true) actualBalance += Number(transaction.amount);
+        }
+        // Pointed rows keep their historical running balance. Pending rows show
+        // a forecast starting from the current actual balance, then accumulate
+        // pending movements in chronological order.
+        let paidRunningBalance = Number(account?.opening || 0);
+        let pendingForecastBalance = actualBalance;
         ordered.forEach((transaction, position) => {
           positions.set(transaction.id, position);
-          if (transaction.isPaid === true) balance += Number(transaction.amount);
-          balances.set(transaction.id, balance);
+          if (transaction.isPaid === true) {
+            paidRunningBalance += Number(transaction.amount);
+            balances.set(transaction.id, paidRunningBalance);
+          } else {
+            pendingForecastBalance += Number(transaction.amount);
+            balances.set(transaction.id, pendingForecastBalance);
+          }
         });
         return this.filterAccountTransactions({ accountId, typeFilter, query, sort }).map(transaction => ({
           transaction,
