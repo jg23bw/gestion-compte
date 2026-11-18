@@ -157,7 +157,7 @@ function isActiveOpportunityChart(assetId,period){
   const activePeriod=document.querySelector('[data-chart-period].is-active')?.dataset.chartPeriod||'1y';
   return !!select&&select.value===assetId&&activePeriod===period;
 }
-async function loadOpportunityHistory(assetId,period){
+async function loadOpportunityHistory(assetId,period,options={}){
   const asset=opportunityAssets().find(a=>a.id===assetId);if(!asset)return;
   // 1m, 3m et 1y utilisent le même historique annuel : on évite les appels
   // identiques et on conserve 200 clôtures pour calculer la MM200.
@@ -189,7 +189,7 @@ async function loadOpportunityHistory(assetId,period){
       // le rafraîchir dès que l'historique devient disponible pour synchroniser la MM200.
       const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
       if(isActiveOpportunityChart(assetId,period))renderOpportunityChart(assetId,period);
-      else renderOpportunityHeatmap(activePeriod);
+      else if(options.refreshTable!==false)renderOpportunityHeatmap(activePeriod);
     }catch(error){
       opportunityHistoryAttempts[key]=Date.now();
       opportunityHistoryErrors[key]=error.message||'La source n’a pas répondu.';
@@ -213,7 +213,38 @@ const opportunityHistoryLoading={};
 // Dernier échec par actif : évite de relancer une rafale d’appels à chaque rendu
 // quand un fournisseur est momentanément limité. Un clic sur l’actif force une nouvelle tentative.
 const opportunityHistoryAttempts={};
+
 const opportunityHistoryErrors={};
+let opportunityHeatmapHistoryPromise=null;
+async function loadOpportunityHeatmapHistories(){
+  if(opportunityHeatmapHistoryPromise)return opportunityHeatmapHistoryPromise;
+  opportunityHeatmapHistoryPromise=(async()=>{
+    const assets=opportunityAssets();
+    let loaded=0;
+    try{
+      for(const asset of assets){
+        if(!$('opportunities-view')?.classList.contains('active'))break;
+        const key=asset.id+'|1y';
+        if(opportunityHistory[key]||opportunityHistoryLoading[key])continue;
+        // Les positions manuelles et les actifs sans identifiant de source ne
+        // peuvent pas fournir de série exploitable pour une MM200.
+        if(asset.type==='stock'&&(isManualValueHolding(asset.raw)||!asset.raw?.priceId))continue;
+        if(asset.type==='crypto'&&!asset.raw?.coingeckoId)continue;
+        // Un échec récent n'est pas retenté à chaque rendu de l'écran.
+        if(opportunityHistoryAttempts[key]&&Date.now()-opportunityHistoryAttempts[key]<15*60*1000)continue;
+        await loadOpportunityHistory(asset.id,'1y',{refreshTable:false});
+        loaded++;
+        // Une requête à la fois et un court intervalle pour limiter la pression
+        // sur les fournisseurs d'historiques (actions et CoinGecko).
+        if(loaded<assets.length)await new Promise(resolve=>setTimeout(resolve,350));
+      }
+    }finally{
+      opportunityHeatmapHistoryPromise=null;
+      if($('opportunities-view')?.classList.contains('active'))renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');
+    }
+  })();
+  return opportunityHeatmapHistoryPromise;
+}
 const STOCK_VARIATION_CACHE_KEY='gestion-comptes-stock-variations-v2';
 const STOCK_VARIATION_CACHE_TTL=5*60*1000;
 const stockVariationCache={};
@@ -511,4 +542,6 @@ function renderOpportunities(){
   // Les variations actions sont chargées séparément, en série et mises en cache ;
   // l'historique long du graphique reste chargé à la demande pour l'actif sélectionné.
   loadStockVariationHistory();
+  // Charge progressivement les historiques manquants afin de renseigner la MM200 de tout le portefeuille.
+  loadOpportunityHeatmapHistories();
 }
