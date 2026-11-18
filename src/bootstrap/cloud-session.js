@@ -89,7 +89,8 @@ async function loadCloudState(user){
       lombardCredit:remoteLombard,
       accountTypes:remoteAccountTypes,
       accountPledges:remoteAccountPledges,
-      stockHoldings:remoteStockHoldings
+      stockHoldings:remoteStockHoldings,
+      defaultTransactionAccountId:remoteDefaultTransactionAccountId
     }=remoteData;
 
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
@@ -108,10 +109,10 @@ async function loadCloudState(user){
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
       const importedAccounts=legacy?accountTypeCommands.applyOverrides(legacy.accounts||[],remoteAccountTypes):[];
-      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard};
+      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
-      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId};
     }
 
     cloud.accountTypesDirty=importLocal&&accountTypeCommands.hasOverrides(state.accounts);
