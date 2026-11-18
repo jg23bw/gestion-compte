@@ -223,7 +223,8 @@ async function loadOpportunityHeatmapHistories(){
     let loaded=0;
     try{
       for(const asset of assets){
-        if(!$('opportunities-view')?.classList.contains('active'))break;
+        // Le chargement ne dépend pas de la classe CSS active : renderOpportunities()
+        // peut être appelé juste avant que la navigation n'active visuellement la vue.
         const key=asset.id+'|1y';
         if(opportunityHistory[key]||opportunityHistoryLoading[key])continue;
         // Les positions manuelles et les actifs sans identifiant de source ne
@@ -240,7 +241,7 @@ async function loadOpportunityHeatmapHistories(){
       }
     }finally{
       opportunityHeatmapHistoryPromise=null;
-      if($('opportunities-view')?.classList.contains('active'))renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');
+      if($('opportunity-heatmap'))renderOpportunityHeatmap(document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h');
     }
   })();
   return opportunityHeatmapHistoryPromise;
@@ -380,7 +381,9 @@ function setupOpportunityChart(){
   renderOpportunityChart(select.value,period);
 }
 function opportunityMovingAverageStatus(asset){
-  const history=opportunityHistory[asset.id+'|1y']||[];
+  const key=asset.id+'|1y';
+  const history=opportunityHistory[key]||[];
+  if(opportunityHistoryLoading[key])return {label:'Calcul en cours…',tone:'neutral',distance:null};
   if(history.length<200)return {label:'MM200 indisponible',tone:'neutral',distance:null};
   const sma=opportunitySmaPoints(history,asset.type,200),last=history[history.length-1],avg=sma[sma.length-1];
   if(!Number.isFinite(avg)||avg<=0)return {label:'MM200 indisponible',tone:'neutral',distance:null};
