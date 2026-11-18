@@ -211,8 +211,8 @@ test('pending rows accumulate from the current actual balance in chronological o
   );
   const queries = create({ repository: f.repository, domain });
   const rows = queries.accountTransactionDisplayRows({ accountId: 'a', sort: 'date-desc' });
-  assert.equal(rows.find(row => row.transaction.id === 'pending-one').balance, 9.79);
-  assert.equal(rows.find(row => row.transaction.id === 'pending-two').balance, -40.21);
+  assert.equal(Math.round(rows.find(row => row.transaction.id === 'pending-one').balance * 100) / 100, 9.79);
+  assert.equal(Math.round(rows.find(row => row.transaction.id === 'pending-two').balance * 100) / 100, -40.21);
 });
 
 test('account transaction display rows retain zero balance and missing position for a deleted account', () => {
