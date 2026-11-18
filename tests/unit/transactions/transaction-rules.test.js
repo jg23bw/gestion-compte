@@ -47,6 +47,16 @@ test('balance at date excludes future transactions and includes the boundary dat
   ], '2026-01-10'), 105);
 });
 
+test('balance at date includes only paid transactions on or before the cutoff', () => {
+  assert.equal(rules.balanceAt(100, [
+    tx('paid-before', { date: '2026-01-01', amount: 10, isPaid: true }),
+    tx('pending-before', { date: '2026-01-02', amount: -30, isPaid: false }),
+    tx('paid-boundary', { date: '2026-01-10', amount: -5, isPaid: true }),
+    tx('pending-boundary', { date: '2026-01-10', amount: -20, isPaid: false }),
+    tx('paid-after', { date: '2026-01-11', amount: 100, isPaid: true })
+  ], '2026-01-10'), 105);
+});
+
 test('professional classification is explicit and never inferred from transaction or template labels', () => {
   assert.equal(rules.professionalRecurringKind(tx('manual', { label: 'TVA mensuelle' })), null);
   assert.equal(rules.professionalRecurringKind(tx('generated', { label: 'TVA mensuelle', recurringKey: '2026-01' })), null);
@@ -85,6 +95,15 @@ test('professional balance uses net opening balance and respects date cutoff', (
     tx('future', { amount: 500, date: '2026-02-01' })
   ];
   assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 100);
+});
+
+test('professional balance at date excludes unpointed transactions', () => {
+  const account = { id: 'bank-1', opening: 1000, netOpening: 900 };
+  const transactions = [
+    tx('paid', { amount: -100, date: '2026-01-01', isPaid: true, professionalAmount: -100 }),
+    tx('pending', { amount: -250, date: '2026-01-02', isPaid: false, professionalAmount: -250 })
+  ];
+  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 800);
 });
 
 test('professional amounts calculate VAT, social charges and net for positive income', () => {
