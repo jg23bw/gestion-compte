@@ -66,7 +66,14 @@ function fillAccountSelects(){
   const personalAccounts=accountGroups.personal,personalOpts=personalAccounts.map(a=>'<option value="'+a.id+'">'+escapeHtml(a.name)+'</option>').join('');
   const current=$('transaction-account-filter').value;
   $('transaction-account-filter').innerHTML=personalOpts;
-  $('transaction-account-filter').value=personalAccounts.some(a=>a.id===current)?current:(personalAccounts[0]?.id||'');
+  const preferred=personalAccounts.some(a=>a.id===state.defaultTransactionAccountId)?state.defaultTransactionAccountId:'';
+  $('transaction-account-filter').value=personalAccounts.some(a=>a.id===current)?current:(preferred||personalAccounts[0]?.id||'');
+  const defaultSelect=$('default-transaction-account');
+  if(defaultSelect){
+    const saved=state.defaultTransactionAccountId||'';
+    defaultSelect.innerHTML='<option value="">Premier compte disponible</option>'+personalOpts;
+    defaultSelect.value=personalAccounts.some(a=>a.id===saved)?saved:'';
+  }
   for(const id of ['history-account-filter','recurring-account-filter']){
     const filter=$(id); if(!filter) continue;
     const selected=filter.value;
