@@ -188,8 +188,8 @@ async function loadOpportunityHistory(assetId,period){
       // Le tableau est calculé avant le chargement asynchrone du graphique :
       // le rafraîchir dès que l'historique devient disponible pour synchroniser la MM200.
       const activePeriod=document.querySelector('[data-op-period].is-active')?.dataset.opPeriod||'24h';
-      renderOpportunityHeatmap(activePeriod);
       if(isActiveOpportunityChart(assetId,period))renderOpportunityChart(assetId,period);
+      else renderOpportunityHeatmap(activePeriod);
     }catch(error){
       opportunityHistoryAttempts[key]=Date.now();
       opportunityHistoryErrors[key]=error.message||'La source n’a pas répondu.';
