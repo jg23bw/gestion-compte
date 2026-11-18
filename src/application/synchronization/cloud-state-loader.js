@@ -75,7 +75,8 @@
           lombardCredit: normalizeLombardCredit(metadata.lombardCredit),
           accountTypes,
           accountPledges,
-          stockHoldings: normalizeStockHoldings(metadata.stockHoldings)
+          stockHoldings: normalizeStockHoldings(metadata.stockHoldings),
+          defaultTransactionAccountId: typeof metadata.defaultTransactionAccountId === 'string' ? metadata.defaultTransactionAccountId : null
         };
       }
     });
