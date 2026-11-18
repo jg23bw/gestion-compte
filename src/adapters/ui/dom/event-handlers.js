@@ -19,6 +19,20 @@ function initializeDomEventHandlers() {
   $('notes-save')?.addEventListener('click',saveNotesToSupabase);
   $('notes-new')?.addEventListener('click',createNote);
   $('notes-delete')?.addEventListener('click',deleteCurrentNote);
+  $('default-transaction-account')?.addEventListener('change',async event=>{
+    const select=event.currentTarget,status=$('default-transaction-account-status');
+    select.disabled=true;status.textContent='Enregistrement de votre préférence…';
+    try{
+      const saved=await saveDefaultTransactionAccount(select.value);
+      $('transaction-account-filter').value=saved||AccountListRules.selectGroups(state.accounts,{effectiveType:effectiveAccountType}).personal[0]?.id||'';
+      renderTransactions();
+      status.textContent=saved?'Compte par défaut enregistré.':'Aucun compte favori : le premier compte disponible sera utilisé.';
+      showToast('Préférence enregistrée.');
+    }catch(error){
+      status.textContent='Enregistrement impossible : '+(error.message||'réessayez.');
+      fillAccountSelects();
+    }finally{select.disabled=false;}
+  });
   
   const fireSliderFormats={
    'fire-age':v=>Math.round(v)+' ans','fire-end-age':v=>Math.round(v)+' ans',
