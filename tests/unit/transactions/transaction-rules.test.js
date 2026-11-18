@@ -36,13 +36,13 @@ test('account transaction sorting filters out other accounts', () => {
 });
 
 test('balance starts with opening balance and includes positive and negative transactions', () => {
-  assert.equal(rules.balanceAt(100, [tx('in', { amount: 50 }), tx('out', { amount: -20 })]), 130);
+  assert.equal(rules.balanceAt(100, [tx('in', { amount: 50, isPaid: true }), tx('out', { amount: -20, isPaid: true })]), 130);
 });
 
 test('balance at date excludes future transactions and includes the boundary date', () => {
   assert.equal(rules.balanceAt(100, [
-    tx('before', { date: '2026-01-01', amount: 10 }),
-    tx('boundary', { date: '2026-01-10', amount: -5 }),
+    tx('before', { date: '2026-01-01', amount: 10, isPaid: true }),
+    tx('boundary', { date: '2026-01-10', amount: -5, isPaid: true }),
     tx('after', { date: '2026-01-11', amount: 100 })
   ], '2026-01-10'), 105);
 });
@@ -74,9 +74,9 @@ test('adjusted amount comes from the explicit transaction amount', () => {
 test('adjusted balance uses explicit provisions and does not infer them from template labels', () => {
   const account = { id: 'bank-1', opening: 1000, netOpening: 1000 };
   const transactions = [
-    tx('real', { amount: 200, date: '2026-01-01', professionalAmount: 200 }),
-    tx('provision', { amount: 0, date: '2026-01-02', professionalCategory: 'provision', professionalAmount: -150, recurringTemplateId: 'margin-template' }),
-    tx('unclassified', { amount: 0, date: '2026-01-03', recurringTemplateId: 'vat-template' })
+    tx('real', { amount: 200, date: '2026-01-01', isPaid: true, professionalAmount: 200 }),
+    tx('provision', { amount: 0, date: '2026-01-02', isPaid: true, professionalCategory: 'provision', professionalAmount: -150, recurringTemplateId: 'margin-template' }),
+    tx('unclassified', { amount: 0, date: '2026-01-03', isPaid: true, recurringTemplateId: 'vat-template' })
   ];
   const templates = [{ id: 'margin-template', label: 'Marge sécurité', amount: -150 }, { id: 'vat-template', label: 'TVA', amount: -90 }];
   assert.equal(rules.balanceAt(account.opening, transactions), 1200);
@@ -91,7 +91,7 @@ test('ordinary recurring transaction keeps its signed amount', () => {
 test('professional balance uses net opening balance and respects date cutoff', () => {
   const account = { id: 'bank-1', opening: 100, netOpening: 80 };
   const transactions = [
-    tx('current', { amount: 20, date: '2026-01-01' }),
+    tx('current', { amount: 20, date: '2026-01-01', isPaid: true }),
     tx('future', { amount: 500, date: '2026-02-01' })
   ];
   assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 100);
