@@ -49,7 +49,7 @@ const parseFrenchNumber = value => {if(value===null||value===undefined)return Na
 const formatFrenchNumberInput = value => {if(value===null||value===undefined||value==='')return '';const n=Number(value);return Number.isFinite(n)?String(n).replace('.',','):String(value);};
 const dateInputFormat = value => String(value||'');
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
-let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
+let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null,defaultTransactionAccountId:null};
 const transactionRepository = StateTransactionRepository.create(() => state);
 const recurringTemplateRepository = StateRecurringTemplateRepository.create(() => state);
 const stockHoldingRepository = StateStockHoldingRepository.create(() => state);
@@ -191,6 +191,14 @@ function authMetadataRepository(){
 async function saveAccountMetadataToAuth(overrides=accountTypeOverrides(),pledges=accountPledgeOverrides()){
   if(!cloud.user)throw new Error('Connectez-vous pour enregistrer les paramètres des comptes.');
   await authMetadataRepository().update({accountTypes:overrides,accountPledges:pledges});
+}
+async function saveDefaultTransactionAccount(accountId){
+  if(!cloud.user)throw new Error('Connectez-vous pour enregistrer vos préférences.');
+  const valid=accountId&&state.accounts.some(account=>account.id===accountId&&effectiveAccountType(account)!=='pro'&&!['pea','av','cto'].includes(effectiveAccountType(account)));
+  const value=valid?accountId:null;
+  await authMetadataRepository().update({defaultTransactionAccountId:value});
+  state.defaultTransactionAccountId=value;
+  return value;
 }
 async function saveStockHoldingsToAuth(holdings){
   return stockHoldingMetadataCommands.save({
@@ -437,10 +445,11 @@ function wealthSnapshot(){return wealthSnapshotQueries.snapshot();}
 function navigate(view){
   document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id===view+'-view'));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.view===view));
-  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',pro:'Compte professionnel',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',opportunities:'Opportunités',recurring:'Récurrences',notes:'Notes',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
+  $('breadcrumb-current').textContent=({dashboard:"Vue d'ensemble",accounts:'Mes comptes',transactions:'Opérations',pro:'Compte professionnel',history:'Historique mensuel',crypto:'Crypto',stocks:'Actions',opportunities:'Opportunités',recurring:'Récurrences',notes:'Notes',settings:'Paramètres',fire:'FIRE',comparisons:'Comparaisons',lombard:'Lombard'})[view]||view;
   if(['dashboard','fire','comparisons','lombard'].includes(view))renderWealthViews();
   if(view==='recurring')renderRecurring();
   if(view==='notes')$('notes-editor').focus();
+  if(view==='settings')fillAccountSelects();
   if(view==='accounts')renderAccounts();if(view==='transactions'||view==='pro')renderTransactions();if(view==='history')renderMonthlyHistory();
   if(view==='crypto'){renderCrypto();if(Date.now()-cryptoPrices.updatedAt>CRYPTO_REFRESH_MS)loadCryptoPrices();}
   if(view==='stocks'){renderStocks();if(Date.now()-stockPrices.updatedAt>STOCK_REFRESH_MS)loadStockPrices();}
