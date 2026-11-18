@@ -50,7 +50,7 @@ test('unknown account returns zero without throwing', () => {
 
 test('professional adjusted balance uses the explicit adjusted amount, not recurring template labels', () => {
   const f = fixture();
-  f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, professionalCategory: 'vat', professionalTreatment: 'provision', professionalAmount: -20, label: 'N’importe quel libellé' });
+  f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, professionalCategory: 'vat', professionalTreatment: 'provision', professionalAmount: -20, isPaid: true, label: 'N’importe quel libellé' });
   const queries = create({ repository: f.repository, domain });
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
 });
@@ -200,7 +200,7 @@ test('account transaction display rows retain zero balance and missing position 
 test('account projection starts from today balance, includes future operations and finds the forward cash low', () => {
   const f = fixture();
   f.transactions.push(
-    { id: 'past', accountId: 'a', date: '2025-12-31', createdAt: 0, amount: -500 },
+    { id: 'past', accountId: 'a', date: '2025-12-31', createdAt: 0, amount: -500, isPaid: true },
     { id: 'future-out', accountId: 'a', date: '2026-02-01', createdAt: 4, amount: -180 },
     { id: 'future-in', accountId: 'a', date: '2026-03-01', createdAt: 5, amount: 250 }
   );
