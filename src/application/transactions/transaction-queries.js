@@ -123,7 +123,7 @@
         let balance = Number(account?.opening || 0);
         ordered.forEach((transaction, position) => {
           positions.set(transaction.id, position);
-          balance += Number(transaction.amount);
+          if (transaction.isPaid === true) balance += Number(transaction.amount);
           balances.set(transaction.id, balance);
         });
         return this.filterAccountTransactions({ accountId, typeFilter, query, sort }).map(transaction => ({
@@ -147,7 +147,7 @@
           repository.findByAccount(transaction.accountId),
           transaction.accountId
         )) {
-          balance += Number(item.amount);
+          if (item.isPaid === true) balance += Number(item.amount);
           if (item.id === transaction.id) break;
         }
         return balance;
