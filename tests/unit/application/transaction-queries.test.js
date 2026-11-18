@@ -106,6 +106,7 @@ test('account transaction query filters by account, type and text, then applies 
   const f = fixture();
   f.accounts[0].name = 'Compte courant';
   f.transactions[0].label = 'Salaire complémentaire';
+  f.transactions[0].isPaid = false;
   f.transactions.push(
     { id: 'salary', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 2000, label: 'Salaire', isPaid: true },
     { id: 'bill', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -30, label: 'Facture énergie' },
@@ -157,6 +158,7 @@ test('account transaction query always prioritizes pending rows, then applies th
   f.transactions[0].sortOrder = 2;
   f.transactions[1].sortOrder = 1;
   f.transactions[0].isPaid = true;
+  f.transactions[1].isPaid = false;
   const queries = create({ repository: f.repository, domain });
   assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-desc' }).map(item => item.id), ['out', 'in']);
   assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-asc' }).map(item => item.id), ['out', 'in']);
@@ -167,6 +169,7 @@ test('account transaction display sorting prioritizes pending rows and does not 
   f.transactions[0].sortOrder = 2;
   f.transactions[1].sortOrder = 1;
   f.transactions[0].isPaid = true;
+  f.transactions[1].isPaid = false;
   const original = f.transactions.map(item => ({ ...item }));
   const queries = create({ repository: f.repository, domain });
   assert.deepEqual(queries.filterAccountTransactions({ accountId: 'a', sort: 'date-desc' }).map(item => item.id), ['out', 'in']);
@@ -227,7 +230,7 @@ test('projection retains unpointed past operations without adding them to the ac
 test('professional projection uses adjusted amounts for future movements and ignores historical lows', () => {
   const f = fixture();
   f.transactions.push(
-    { id: 'old-loss', accountId: 'a', date: '2025-12-01', createdAt: 0, amount: -900, professionalAmount: -900 },
+    { id: 'old-loss', accountId: 'a', date: '2025-12-01', createdAt: 0, amount: -900, professionalAmount: -900, isPaid: true },
     { id: 'future-provision', accountId: 'a', date: '2026-02-01', createdAt: 4, amount: 0, professionalAmount: -35 },
     { id: 'future-payment', accountId: 'a', date: '2026-03-01', createdAt: 5, amount: -20, professionalCategory: 'vat', professionalTreatment: 'effective', professionalAmount: 0 }
   );
