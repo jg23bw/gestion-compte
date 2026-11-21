@@ -97,13 +97,14 @@ test('professional balance uses net opening balance and respects date cutoff', (
   assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 100);
 });
 
-test('professional balance at date excludes unpointed transactions', () => {
+test('professional balance at date includes unpointed transactions and their adjusted amounts', () => {
   const account = { id: 'bank-1', opening: 1000, netOpening: 900 };
   const transactions = [
     tx('paid', { amount: -100, date: '2026-01-01', isPaid: true, professionalAmount: -100 }),
-    tx('pending', { amount: -250, date: '2026-01-02', isPaid: false, professionalAmount: -250 })
+    tx('pending', { amount: 0, date: '2026-01-02', isPaid: false, professionalAmount: -250 }),
+    tx('future', { amount: -500, date: '2026-02-01', isPaid: false, professionalAmount: -500 })
   ];
-  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 800);
+  assert.equal(rules.professionalAdjustedBalanceAt(account, transactions, [], '2026-01-31'), 550);
 });
 
 test('professional amounts calculate VAT, social charges and net for positive income', () => {

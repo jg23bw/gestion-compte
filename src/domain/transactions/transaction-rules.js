@@ -13,7 +13,10 @@
   'use strict';
 
   function transactionOrder(a, b) {
-    return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
+    return a.date.localeCompare(b.date)
+      || Number(a.createdAt || 0) - Number(b.createdAt || 0)
+      || Number(a.sortOrder || 0) - Number(b.sortOrder || 0)
+      || String(a.id || '').localeCompare(String(b.id || ''));
   }
 
   function sortAccountTransactions(transactions, accountId) {
