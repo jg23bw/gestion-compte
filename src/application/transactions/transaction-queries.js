@@ -13,8 +13,8 @@
     return rows.slice().sort((a, b) => {
       const pendingFirst = Number(a.isPaid === true) - Number(b.isPaid === true);
       if (pendingFirst) return pendingFirst;
-      if (sort === 'date-asc') return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
-      if (sort === 'date-desc') return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
+      if (sort === 'date-asc') return domain.transactionOrder(a, b);
+      if (sort === 'date-desc') return domain.transactionOrder(b, a);
       if (sort === 'label') return a.label.localeCompare(b.label, 'fr');
       if (sort === 'amount-asc') return Number(a.amount) - Number(b.amount);
       if (sort === 'amount-desc') return Number(b.amount) - Number(a.amount);
@@ -38,7 +38,7 @@
     let lowestBalance = balance;
     let lowestDate = null;
     const ordered = futureTransactions.slice().sort((a, b) =>
-      a.date.localeCompare(b.date) || Number(a.createdAt || 0) - Number(b.createdAt || 0)
+      domain.transactionOrder(a, b)
     );
     for (const transaction of ordered) {
       balance += Number(amountOf(transaction)) || 0;
