@@ -341,9 +341,13 @@ function initializeDomEventHandlers() {
   $('transaction-kind').addEventListener('change',updateTransactionFormMode);
   $('transaction-account').addEventListener('change',updateTransactionFormMode);
   $('transaction-transfer-account').addEventListener('change',updateTransactionFormMode);
+  const clearTransactionError=()=>{const error=$('transaction-error');if(error){error.hidden=true;error.textContent='';}};
+  $('transaction-amount').addEventListener('input',clearTransactionError);
+  $('transaction-dialog').addEventListener('close',clearTransactionError);
   $('transaction-form').addEventListener('submit',event=>{
     event.preventDefault();
     const id=$('transaction-id').value,accountId=$('transaction-account').value,date=dateInputParse($('transaction-date').value),amount=parseFrenchNumber($('transaction-amount').value),label=$('transaction-label').value.trim();
+    clearTransactionError();
     if(!date||!label||!Number.isFinite(amount)){showToast('Vérifiez les informations saisies.');return;}
     const previous=id?transactionCommands.findById(id):null;
     if($('transaction-kind').value==='transfer'){
@@ -351,7 +355,7 @@ function initializeDomEventHandlers() {
       if(!accountById(accountId)||!accountById(destinationAccountId)||accountId===destinationAccountId){
         showToast('Choisissez un compte source et un compte destinataire différents.');return;
       }
-      if(amount<=0){showToast('Le montant du virement doit être supérieur à zéro.');return;}
+      if(amount<=0){const error=$('transaction-error');if(error){error.textContent='Le montant du virement doit être supérieur à zéro.';error.hidden=false;}$('transaction-amount').focus();return;}
       const linked=previous?transactionCommands.findLinkedTransactions(previous.id):[];
       const outgoing=linked.find(item=>item.transferRole==='outgoing');
       const incoming=linked.find(item=>item.transferRole==='incoming');
