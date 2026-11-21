@@ -2558,3 +2558,8 @@ html body .app-shell :focus-visible{outline:3px solid rgba(20,125,112,.28);outli
 .settings-field select{width:100%;min-height:44px;padding:10px 12px;border:1px solid #e1e6ef;border-radius:10px;background:#fff;color:#20283a;font:inherit}
 html[data-theme="dark"] .settings-field{color:#e5eaf3}
 html[data-theme="dark"] .settings-field select{border-color:#35435a;background:#182337;color:#e5eaf3}
+
+/* Erreur de validation du virement : affichée dans la modale, au-dessus du backdrop. */
+.transaction-validation-error{margin:0 0 18px;padding:11px 13px;border:1px solid #e6aaa6;border-radius:9px;background:#fff3f2;color:#a32620;font-size:12px;font-weight:650;line-height:1.5;}
+.transaction-validation-error[hidden]{display:none!important;}
+:root[data-theme="dark"] .transaction-validation-error{border-color:#75434a;background:#3a2029;color:#ffb7b5;}
