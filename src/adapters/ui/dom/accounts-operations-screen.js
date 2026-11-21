@@ -113,7 +113,7 @@ function renderTransactions(){
     }
   }
   head.innerHTML='<tr><th>POINTÉE</th><th>DATE</th><th>OPÉRATION</th><th>MONTANT</th><th>SOLDE À DATE</th>'+(isPro?'<th>MONTANT (AVEC TVA ET CHARGES SOCIALES)</th><th>SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES)</th>':'')+'<th>ACTIONS</th></tr>';
-  const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="3"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(proAdjustedBalanceAt(account,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
+  const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="3"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(transactionQueries.professionalAdjustedBalanceAt(account.id,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
   rows.innerHTML=balanceRow+(displayRows.length?displayRows.map(({transaction:t,balance})=>{
       const recurringKind=isPro?proRecurringKind(t):null,actualAmount=Number(t.amount),adjusted=isPro?proAdjustedAmount(t):0;
       const adjustedBalance=isPro?transactionQueries.professionalAdjustedBalanceAfterTransaction(t):0;
