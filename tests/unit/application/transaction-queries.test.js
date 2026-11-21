@@ -71,6 +71,33 @@ test('regular balance excludes unpointed operations while adjusted professional 
   assert.equal(queries.professionalAdjustedBalanceAfterTransaction(f.transactions.find(item => item.id === 'pending-today')), -180);
 });
 
+test('professional row balances use the current adjusted balance as the forecast baseline, like Operations', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1040.12;
+  f.accounts[0].netOpening = 1040.12;
+  f.transactions.splice(0, f.transactions.length,
+    { id: 'vat-today', accountId: 'a', date: '2026-11-21', createdAt: 1, amount: 0, professionalAmount: -2640, isPaid: false },
+    { id: 'franchise', accountId: 'a', date: '2026-11-30', createdAt: 2, amount: -500, professionalAmount: -500, isPaid: false },
+    { id: 'margin', accountId: 'a', date: '2026-11-30', createdAt: 3, amount: 0, professionalAmount: -500, isPaid: false },
+    { id: 'expert', accountId: 'a', date: '2026-11-30', createdAt: 4, amount: -118.8, professionalAmount: -118.8, isPaid: false },
+    { id: 'invoice', accountId: 'a', date: '2026-12-01', createdAt: 5, amount: 15840, professionalAmount: 15840, isPaid: false },
+    { id: 'transfer', accountId: 'a', date: '2026-12-01', createdAt: 6, amount: -6000, professionalAmount: -6000, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-11-21'), -1599.88);
+  const rows = queries.professionalAdjustedTransactionDisplayRows({
+    accountId: 'a', asOfDate: '2026-11-21', sort: 'date-desc'
+  });
+  const balance = id => Math.round(rows.find(row => row.transaction.id === id).balance * 100) / 100;
+  assert.equal(balance('vat-today'), -1599.88);
+  assert.equal(balance('franchise'), -2099.88);
+  assert.equal(balance('margin'), -2599.88);
+  assert.equal(balance('expert'), -2718.68);
+  assert.equal(balance('invoice'), 13121.32);
+  assert.equal(balance('transfer'), 7121.32);
+  assert.deepEqual(rows.map(row => row.transaction.id), ['transfer', 'invoice', 'expert', 'margin', 'franchise', 'vat-today']);
+});
+
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
