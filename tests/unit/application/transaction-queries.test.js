@@ -55,6 +55,21 @@ test('professional adjusted balance uses the explicit adjusted amount, not recur
   assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
 });
 
+test('today balances for professional accounts exclude every unpointed operation', () => {
+  const f = fixture();
+  f.transactions.push(
+    { id: 'paid-vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0,
+      professionalAmount: -20, professionalCategory: 'vat', professionalTreatment: 'provision', isPaid: true },
+    { id: 'pending-today', accountId: 'a', date: '2026-01-04', createdAt: 4, amount: -300,
+      professionalAmount: -300, isPaid: false },
+    { id: 'pending-future', accountId: 'a', date: '2026-02-01', createdAt: 5, amount: 500,
+      professionalAmount: 500, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  assert.equal(queries.balanceAt('a', '2026-01-31'), 140);
+  assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
+});
+
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
