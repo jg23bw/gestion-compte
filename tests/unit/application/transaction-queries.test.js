@@ -98,6 +98,27 @@ test('professional row balances use the current adjusted balance as the forecast
   assert.deepEqual(rows.map(row => row.transaction.id), ['transfer', 'invoice', 'expert', 'margin', 'franchise', 'vat-today']);
 });
 
+
+test('professional row balances are recalculated for each transaction sharing the same date and timestamp', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1000;
+  f.accounts[0].netOpening = 1000;
+  f.transactions.splice(0, f.transactions.length,
+    { id: 'same-1', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 1, amount: -100, professionalAmount: -100, isPaid: false },
+    { id: 'same-2', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 2, amount: -200, professionalAmount: -200, isPaid: false },
+    { id: 'same-3', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 3, amount: 50, professionalAmount: 50, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const rows = queries.professionalAdjustedTransactionDisplayRows({
+    accountId: 'a', asOfDate: '2026-11-30', sort: 'date-desc'
+  });
+  const balances = Object.fromEntries(rows.map(row => [row.transaction.id, row.balance]));
+  assert.equal(balances['same-1'], 900);
+  assert.equal(balances['same-2'], 700);
+  assert.equal(balances['same-3'], 750);
+  assert.deepEqual(rows.map(row => row.transaction.id), ['same-3', 'same-2', 'same-1']);
+});
+
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
