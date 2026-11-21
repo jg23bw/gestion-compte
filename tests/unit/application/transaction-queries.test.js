@@ -52,10 +52,11 @@ test('professional adjusted balance uses the explicit adjusted amount, not recur
   const f = fixture();
   f.transactions.push({ id: 'vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0, professionalCategory: 'vat', professionalTreatment: 'provision', professionalAmount: -20, isPaid: true, label: 'N’importe quel libellé' });
   const queries = create({ repository: f.repository, domain });
-  assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), 120);
+  assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-01-31'), -180);
+  assert.equal(queries.professionalAdjustedBalanceAfterTransaction(f.transactions.find(item => item.id === 'pending-today')), -180);
 });
 
-test('today balances for professional accounts exclude every unpointed operation', () => {
+test('regular balance excludes unpointed operations while adjusted professional balance includes them through today', () => {
   const f = fixture();
   f.transactions.push(
     { id: 'paid-vat', accountId: 'a', date: '2026-01-03', createdAt: 3, amount: 0,
