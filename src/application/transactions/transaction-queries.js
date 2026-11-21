@@ -38,7 +38,10 @@
     let lowestBalance = balance;
     let lowestDate = null;
     const ordered = futureTransactions.slice().sort((a, b) =>
-      domain.transactionOrder(a, b)
+      a.date.localeCompare(b.date)
+      || Number(a.createdAt || 0) - Number(b.createdAt || 0)
+      || Number(a.sortOrder || 0) - Number(b.sortOrder || 0)
+      || String(a.id || '').localeCompare(String(b.id || ''))
     );
     for (const transaction of ordered) {
       balance += Number(amountOf(transaction)) || 0;
