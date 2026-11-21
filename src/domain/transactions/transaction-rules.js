@@ -47,7 +47,7 @@
     // Fall back to the regular opening balance for legacy accounts.
     const opening = Number(account.netOpening ?? account.opening) || 0;
     return opening + sortAccountTransactions(transactions, account.id)
-      .filter(transaction => transaction.isPaid === true && transaction.date <= untilDate)
+      .filter(transaction => !untilDate || transaction.date <= untilDate)
       .reduce((sum, transaction) => sum + professionalAdjustedDelta(transaction, recurringTemplates), 0);
   }
 
@@ -55,7 +55,7 @@
     const opening = Number(account.netOpening ?? account.opening) || 0;
     let balance = opening;
     for (const transaction of sortAccountTransactions(transactions, account.id)) {
-      if (transaction.isPaid === true) balance += professionalAdjustedDelta(transaction, recurringTemplates);
+      balance += professionalAdjustedDelta(transaction, recurringTemplates);
       if (transaction.id === transactionId) return balance;
     }
     return balance;

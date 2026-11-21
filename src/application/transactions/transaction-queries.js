@@ -29,6 +29,10 @@
       && (!untilDate || transaction.date <= untilDate));
   }
 
+  function transactionsThrough(transactions, untilDate) {
+    return transactions.filter(transaction => !untilDate || transaction.date <= untilDate);
+  }
+
   function projection(startingBalance, futureTransactions, amountOf) {
     let balance = Number(startingBalance) || 0;
     let lowestBalance = balance;
@@ -185,7 +189,7 @@
         if (!account) return 0;
         return domain.professionalAdjustedBalanceAt(
           account,
-          pointedTransactionsThrough(repository.findByAccount(accountId), untilDate),
+          transactionsThrough(repository.findByAccount(accountId), untilDate),
           repository.findRecurringTemplates(),
           untilDate
         );
@@ -198,7 +202,7 @@
         const startingBalance = domain.professionalAdjustedBalanceAt(account, transactions, templates, asOfDate);
         return projection(
           startingBalance,
-          transactions.filter(item => item.date > asOfDate || item.isPaid !== true),
+          transactions.filter(item => item.date > asOfDate),
           item => domain.professionalAdjustedDelta(item, templates)
         );
       },
