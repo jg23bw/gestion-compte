@@ -22,6 +22,13 @@
     });
   }
 
+  // Today's actual balances must never include pending transactions. Keep this
+  // filter at the application-query boundary so both account types share it.
+  function pointedTransactionsThrough(transactions, untilDate) {
+    return transactions.filter(transaction => transaction.isPaid === true
+      && (!untilDate || transaction.date <= untilDate));
+  }
+
   function projection(startingBalance, futureTransactions, amountOf) {
     let balance = Number(startingBalance) || 0;
     let lowestBalance = balance;
@@ -149,7 +156,8 @@
       balanceAt(accountId, untilDate = null) {
         const account = repository.findAccount(accountId);
         if (!account) return 0;
-        return domain.balanceAt(account.opening, repository.findByAccount(accountId), untilDate);
+        return domain.balanceAt(account.opening,
+          pointedTransactionsThrough(repository.findByAccount(accountId), untilDate), untilDate);
       },
       balanceAfterTransaction(transaction) {
         if (!transaction) return 0;
@@ -177,7 +185,7 @@
         if (!account) return 0;
         return domain.professionalAdjustedBalanceAt(
           account,
-          repository.findByAccount(accountId),
+          pointedTransactionsThrough(repository.findByAccount(accountId), untilDate),
           repository.findRecurringTemplates(),
           untilDate
         );
