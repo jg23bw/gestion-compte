@@ -8,7 +8,7 @@
   <link rel="mask-icon" href="favicon.svg?v=brand-v3" color="#0d1b2a">
   <meta name="description" content="Gestion Compte : pilotez vos comptes, votre trésorerie et vos investissements dans un espace financier clair et sécurisé.">
   <title>Gestion Compte — Pilotage financier</title>
-  <link rel="stylesheet" href="styles.css?v=contrast-mobile-v4">
+  <link rel="stylesheet" href="styles.css?v=transfer-validation-v1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
@@ -374,6 +374,7 @@
         <p class="form-help">Sans sélection, l’opération est une dépense classique et impacte les deux soldes.</p>
       </fieldset>
       <p class="form-help" id="transaction-amount-help">Utilisez un montant positif pour une entrée d'argent et négatif pour une sortie.</p>
+      <p id="transaction-error" class="transaction-validation-error" role="alert" aria-live="assertive" hidden></p>
       <div class="modal-actions"><button type="button" class="secondary-button" data-close="transaction-dialog">Annuler</button><button type="submit" class="primary-button">Enregistrer</button></div>
     </form>
   </dialog>
