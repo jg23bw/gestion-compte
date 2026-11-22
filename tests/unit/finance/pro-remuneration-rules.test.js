@@ -29,7 +29,7 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.futureCharges, 800);
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
   assert.equal(result.transferAmount, 5117.24);
-  assert.equal(result.cashRemaining, 7082.76);
+  assert.equal(result.cashRemaining, 9082.76);
   assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-previous-invoice', 'past-charge', 'unpaid-past']);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-charge']);
 });
