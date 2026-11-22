@@ -66,10 +66,10 @@
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Rémunération estimée</span><strong>' + euro(result.remuneration) + '</strong></article>'
         + '<article><span>Provision URSSAF (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
-        + '<article><span>Charges futures hors URSSAF et TVA (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
+        + '<article><span>Charges à venir hors URSSAF, TVA et marge (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
         + '<article class="highlight"><span>Virement personnel estimé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
         + '</div>'
-        + '<details class="pro-remuneration-live-details"><summary>Voir les opérations retenues</summary><h4>Charges débitées sur la période</h4>' + detailList(result.pastChargeItems, 'Aucune charge passée retenue.') + '<h4>Charges à venir hors URSSAF et TVA</h4>' + detailList(result.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
+        + '<details class="pro-remuneration-live-details"><summary>Voir les opérations retenues</summary><h4>Charges débitées sur la période</h4>' + detailList(result.pastChargeItems, 'Aucune charge passée retenue.') + '<h4>Charges à venir hors URSSAF, TVA et marge</h4>' + detailList(result.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
         + (!result.currentInvoicePaid ? '<p class="pro-remuneration-warning">Cette facture n’est pas encore pointée comme encaissée. La rémunération est estimative ; vérifiez la trésorerie avant tout virement.</p>' : '')
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
@@ -94,7 +94,7 @@
       + '<div><span>Provision URSSAF</span><strong>' + euro(item.socialProvision) + '</strong></div>'
       + '<div><span>Virement estimé</span><strong class="positive">' + euro(item.transferAmount) + '</strong></div>'
       + '<details><summary>Détail des charges retenues</summary><h4>Dépenses passées (pointées ou non, hors URSSAF et TVA)</h4>' + detailList(item.pastChargeItems, 'Aucune charge passée retenue.')
-      + '<h4>Charges futures hors URSSAF et TVA</h4>' + detailList(item.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
+      + '<h4>Charges à venir hors URSSAF, TVA et marge</h4>' + detailList(item.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
       + '</article>').join('') : '<div class="pro-remuneration-empty">Aucune simulation enregistrée pour ce compte.</div>';
   }
 
