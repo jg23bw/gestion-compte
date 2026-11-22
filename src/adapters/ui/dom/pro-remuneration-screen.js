@@ -47,7 +47,7 @@
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Rémunération estimée</span><strong>' + euro(result.remuneration) + '</strong></article>'
         + '<article><span>Provision URSSAF (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
-        + '<article><span>Charges futures hors URSSAF</span><strong>' + euro(result.futureCharges) + '</strong></article>'
+        + '<article><span>Charges futures hors URSSAF (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
         + '<article class="highlight"><span>Virement personnel estimé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
         + '</div>'
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
