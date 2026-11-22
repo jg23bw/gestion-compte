@@ -77,7 +77,7 @@
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
         + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES) après virement et recalcul URSSAF : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Le calcul part de la projection réelle, conserve toutes les opérations déjà saisies et calcule uniquement un virement et une provision URSSAF supplémentaires. Les charges futures sont déjà déduites dans cette projection.</small>' : '')
-        + (result.cashRemaining !== null && result.cashRemaining < 0 ? '<p class="pro-remuneration-warning">La projection actuelle est déjà négative : aucun virement supplémentaire n'est possible.</p>' : '');
+        + (result.cashRemaining !== null && result.cashRemaining < 0 ? '<p class="pro-remuneration-warning">La projection actuelle est déjà négative : aucun virement supplémentaire possible.</p>' : '');
       target.dataset.result = 'valid';
     } catch (error) {
       target.innerHTML = '<p class="pro-remuneration-empty">' + escapeHtml(error.message || 'Renseignez les paramètres pour afficher la simulation.') + '</p>';
