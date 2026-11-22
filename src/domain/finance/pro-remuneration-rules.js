@@ -39,6 +39,8 @@
         availableResult: roundMoney(item.availableResult),
         remuneration: roundMoney(item.remuneration),
         socialProvision: roundMoney(item.socialProvision),
+        existingSocialProvision: roundMoney(item.existingSocialProvision),
+        totalSocialProvision: roundMoney(item.totalSocialProvision),
         futureCharges: roundMoney(item.futureCharges),
         transferAmount: roundMoney(item.transferAmount),
         cashBalance: item.cashBalance !== null && item.cashBalance !== undefined && item.cashBalance !== '' && Number.isFinite(Number(item.cashBalance)) ? roundMoney(item.cashBalance) : null,
@@ -255,7 +257,7 @@
       currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, theoreticalRemuneration, socialProvision, theoreticalSocialProvision,
       futureCharges, futureChargeItems, transferAmount, cashBalance: normalizedCashBalance,
-      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, existingPersonalTransfers, resultIsNegative: availableResult < 0,
+      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, totalSocialProvision: roundMoney(existingSocialProvision + socialProvision), existingPersonalTransfers, resultIsNegative: availableResult < 0,
       futureChargesExceedRemuneration: transferBeforeFloor < 0,
       futureShortfall: roundMoney(Math.max(0, -transferBeforeFloor))
     };
