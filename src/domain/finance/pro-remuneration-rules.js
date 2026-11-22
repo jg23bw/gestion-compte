@@ -170,12 +170,16 @@
         && (!nextInvoice || ordered.indexOf(item) < nextInvoice.index))
       : ordered.filter(item => item.date > invoiceDate && item.date <= futurePeriodEndDate);
 
-    const isEligibleExpense = item => Number(item.amount) < 0
+    // La simulation travaille sur le montant professionnel ajusté, pas sur le
+    // débit bancaire. Certaines charges (ex. Marge AEN) ont amount=0 mais
+    // professionalAmount<0 et doivent donc être prises en compte.
+    const professionalAmount = item => Number(item.professionalAmount ?? item.amount);
+    const isEligibleExpense = item => professionalAmount(item) < 0
       && !isInvoice(item) && !isTransfer(item) && !isAlreadyProvisionedCharge(item);
     const toChargeItem = item => ({
       id: String(item.id), date: item.date,
       label: String(item.label || 'Charge'),
-      amount: roundMoney(Math.abs(Number(item.amount)))
+      amount: roundMoney(Math.abs(professionalAmount(item)))
     });
 
     // Le pointage ne change pas l'appartenance à la période : toutes les dépenses
