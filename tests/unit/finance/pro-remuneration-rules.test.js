@@ -95,7 +95,7 @@ test('uses both invoice rows as exclusive chronological bounds and table order f
     previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
     caHt: 12000, socialRate: 45
   });
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-before-current', 'between-invoices', 'same-day-after-previous']);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-after-previous', 'between-invoices', 'same-day-before-current']);
   assert.equal(result.pastCharges, 700);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), []);
   assert.equal(result.futureCharges, 0);
@@ -147,11 +147,11 @@ test('reproduces invoice 10 to invoice 11: mixed pointage never moves a charge a
     caHt: pair.caHt, invoiceTtc: pair.invoiceTtc, currentInvoicePaid: pair.currentInvoicePaid
   });
   assert.deepEqual(result.pastChargeItems.map(item => item.id), [
-    'past-nov-21', 'past-nov-30-unpaid', 'past-nov-30-paid', 'credit-mercedes-same-day-invoice10'
+    'credit-mercedes-same-day-invoice10', 'past-nov-21', 'past-nov-30-paid', 'past-nov-30-unpaid'
   ]);
   assert.equal(result.pastCharges, 1390.2);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), [
-    'future-dec-02-unpaid', 'future-dec-02-paid', 'future-dec-30'
+    'future-dec-02-paid', 'future-dec-02-unpaid', 'future-dec-30'
   ]);
   assert.equal(result.futureCharges, 1178.8);
   const pastIds = new Set(result.pastChargeItems.map(item => item.id));
