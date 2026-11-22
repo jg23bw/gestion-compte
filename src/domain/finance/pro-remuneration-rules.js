@@ -9,7 +9,12 @@
   'use strict';
 
   const roundMoney = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
-  const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole);
+  // External personal transfers may be entered as ordinary expenses rather than
+  // linked account-to-account transfers. Detect common bank-statement labels
+  // generically (e.g. "Vers [beneficiary]"), without depending on a bank name.
+  const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole)
+    || transaction.professionalCategory === 'personal-transfer'
+    || /^(?:vers\\s+\\S|virement\\b|transfert\\b)/i.test(String(transaction.label || '').trim());
   // VAT and social-contribution payments are cash movements for provisions
   // already accounted for separately; they must not reduce remuneration twice.
   const isAlreadyProvisionedCharge = transaction => ['social', 'vat'].includes(transaction.professionalCategory)
