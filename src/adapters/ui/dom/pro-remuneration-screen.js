@@ -50,6 +50,7 @@
         + '<article><span>Charges futures hors URSSAF (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
         + '<article class="highlight"><span>Virement personnel estimé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
         + '</div>'
+        + '<details class="pro-remuneration-live-details"><summary>Voir les opérations retenues</summary><h4>Charges débitées sur la période</h4>' + detailList(result.pastChargeItems, 'Aucune charge passée retenue.') + '<h4>Charges à venir hors URSSAF</h4>' + detailList(result.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
         + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">Trésorerie estimée restante après virement et charges futures : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Ce contrôle suppose que l’encaissement de la facture est aussi enregistré comme opération pointée.</small>' : '');
