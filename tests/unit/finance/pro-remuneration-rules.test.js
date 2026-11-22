@@ -114,3 +114,28 @@ test('future charges use rows below the current invoice until the next invoice',
   assert.equal(result.futureCharges, 300);
   assert.equal(result.futurePeriodEndDate, '2026-10-05');
 });
+
+
+test('finds the two latest invoices and converts TTC to HT at 20 percent', () => {
+  const ledger = [
+    { id: 'invoice-new', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false, createdAt: 500 },
+    { id: 'invoice-old', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true, createdAt: 300 },
+    { id: 'ordinary-income', accountId: 'pro', date: '2026-09-20', amount: 4000, label: 'Autre entrée', professionalOperationType: 'expense', isPaid: true }
+  ];
+  const pair = Rules.findLatestInvoicePair(ledger, 'pro');
+  assert.equal(pair.currentInvoice.id, 'invoice-new');
+  assert.equal(pair.previousInvoice.id, 'invoice-old');
+  assert.equal(pair.invoiceTtc, 12000);
+  assert.equal(pair.caHt, 10000);
+  assert.equal(pair.currentInvoicePaid, false);
+});
+
+test('finds an unencashed invoice as a period marker without counting it as cash', () => {
+  const ledger = [
+    { id: 'new', accountId: 'pro', date: '2026-11-05', amount: 6000, label: 'Facture 2', professionalOperationType: 'invoice', isPaid: false },
+    { id: 'old', accountId: 'pro', date: '2026-10-05', amount: 3000, label: 'Facture 1', professionalOperationType: 'invoice', isPaid: true }
+  ];
+  const pair = Rules.findLatestInvoicePair(ledger, 'pro');
+  assert.equal(pair.currentInvoicePaid, false);
+  assert.equal(pair.caHt, 5000);
+});
