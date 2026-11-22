@@ -204,10 +204,8 @@ test('adds the cash-optimised complement to the CA-based transfer without using 
   });
   assert.equal(result.existingSocialProvision, 900);
   assert.equal(result.existingPersonalTransfers, 500);
-  assert.ok(result.cashRemaining >= 0.01);
-  const nextTransfer = roundMoneyForTest(result.additionalTransferAmount + 0.01);
-  const nextSocial = roundMoneyForTest(nextTransfer * 0.45);
-  assert.ok(roundMoneyForTest(result.professionalAdjustedBalance - nextTransfer - nextSocial) < 0.01);
+  assert.ok(result.cashRemaining < 0.01);
+  assert.equal(result.additionalTransferAmount, 0);
   assert.equal(result.transferAmount, result.theoreticalTransfer + result.additionalTransferAmount);
   assert.equal(result.remuneration, result.additionalTransferAmount + result.socialProvision);
   assert.equal(result.socialProvision, roundMoneyForTest(result.additionalTransferAmount * 0.45));
@@ -229,26 +227,27 @@ test('ignores bank balance and invoice status when the real adjusted projection 
 test('optimises the CA-based transfer with the real remaining adjusted balance', () => {
   const result = Rules.calculate({
     transactions: [
-      { id: 'previous-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true },
-      { id: 'invoice', accountId: 'pro', date: '2026-11-05', amount: 15840, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false },
-      { id: 'future-charge', accountId: 'pro', date: '2026-11-30', amount: -3106.89, isPaid: false, label: 'Charges déjà saisies' },
-      { id: 'old-social-provision', accountId: 'pro', date: '2026-11-20', amount: 0, professionalAmount: -6217.67, professionalCategory: 'social', professionalTreatment: 'provision', isPaid: false, label: 'Provision URSSAF existante' },
-      { id: 'old-personal-transfer', accountId: 'pro', date: '2026-11-21', amount: -10710.16, professionalAmount: -10710.16, isPaid: false, label: 'Vers compte personnel' }
+      { id: 'previous-invoice', accountId: 'pro', date: '2026-10-30', amount: 9000, label: 'Facture 10', professionalOperationType: 'invoice', isPaid: true },
+      { id: 'past-charge', accountId: 'pro', date: '2026-11-15', amount: -1888.76, isPaid: false, label: 'Dépenses passées' },
+      { id: 'invoice', accountId: 'pro', date: '2026-12-01', amount: 15840, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: false },
+      { id: 'future-charge', accountId: 'pro', date: '2026-12-30', amount: -3106.89, isPaid: false, label: 'Charges déjà saisies' },
+      { id: 'old-social-provision', accountId: 'pro', date: '2026-12-02', amount: 0, professionalAmount: -3943.45, professionalCategory: 'social', professionalTreatment: 'provision', isPaid: false, label: 'Provision URSSAF existante' },
+      { id: 'old-personal-transfer', accountId: 'pro', date: '2026-12-01', amount: -4892.60, professionalAmount: -4892.60, isPaid: false, label: 'Vers Fortuneo' }
     ],
-    accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
+    accountId: 'pro', previousInvoiceDate: '2026-10-30', invoiceDate: '2026-12-01',
     previousInvoiceId: 'previous-invoice', invoiceId: 'invoice',
     caHt: 13200, invoiceTtc: 15840, socialRate: 45,
-    professionalAdjustedBalance: 288.03
+    professionalAdjustedBalance: 951.98
   });
-  assert.equal(result.existingSocialProvision, 6217.67);
-  assert.equal(result.existingPersonalTransfers, 10710.16);
+  assert.equal(result.existingSocialProvision, 3943.45);
+  assert.equal(result.existingPersonalTransfers, 4892.60);
   assert.equal(result.additionalTransferAmount, 1092.18);
   assert.equal(result.transferAmount, 5786.15);
   assert.equal(result.socialProvision, 491.48);
   assert.equal(result.totalSocialProvision, roundMoneyForTest(result.theoreticalSocialProvision + 491.48));
   assert.equal(result.remuneration, 1583.66);
-  assert.equal(result.replaceableFuturePersonalTransfers, 10710.16);
-  assert.equal(result.replaceableFutureSocialProvision, 6217.67);
+  assert.equal(result.replaceableFuturePersonalTransfers, 4892.60);
+  assert.equal(result.replaceableFutureSocialProvision, 3943.45);
   assert.equal(result.cashRemaining, 0.01);
 });
 
