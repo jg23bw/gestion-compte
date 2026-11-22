@@ -30,7 +30,8 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.socialProvision, 2979.31);
   assert.equal(result.futureCharges, 800);
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
-  assert.equal(result.transferAmount, 5820.69);
+  assert.equal(result.transferAmount, 8520.69);
+  assert.equal(result.additionalTransferAmount, 5820.69);
   assert.equal(result.cashRemaining, null);
   assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge', 'unpaid-past']);
   assert.equal(result.pastChargeItems.some(item => item.id === 'external-personal-transfer'), false);
@@ -46,7 +47,8 @@ test('does not propose remuneration when historical charges exceed turnover', ()
   assert.equal(result.availableResult, -1400);
   assert.equal(result.remuneration, 0);
   assert.equal(result.socialProvision, 0);
-  assert.equal(result.transferAmount, 0);
+  assert.equal(result.transferAmount, 2700);
+  assert.equal(result.additionalTransferAmount, 0);
   assert.equal(result.resultIsNegative, true);
 });
 
@@ -57,6 +59,7 @@ test('shows a future charge shortfall without returning a negative transfer', ()
     invoiceDate: '2026-11-05', caHt: 12000, socialRate: 45
   });
   assert.equal(result.transferAmount, 0);
+  assert.equal(result.additionalTransferAmount, 0);
   assert.equal(result.futureShortfall, 724.14);
   assert.equal(result.futureChargesExceedRemuneration, true);
 });
