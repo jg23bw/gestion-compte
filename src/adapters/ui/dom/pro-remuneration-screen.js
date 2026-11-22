@@ -66,6 +66,7 @@
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Rémunération optimisée (virement + charges à venir)</span><strong>' + euro(result.remuneration) + '</strong></article>'
         + '<article><span>Provision URSSAF recalculée (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
+        + '<article><span>Provision TVA estimée</span><strong>' + euro(result.vatProvision) + '</strong></article>'
         + '<article><span>Charges à venir hors URSSAF, TVA et marge (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
         + '<article class="highlight"><span>Virement personnel maximal optimisé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
         + '</div>'
@@ -73,7 +74,8 @@
         + (!result.currentInvoicePaid ? '<p class="pro-remuneration-warning">Cette facture n’est pas encore pointée comme encaissée. La rémunération est estimative ; vérifiez la trésorerie avant tout virement.</p>' : '')
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
-        + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">Solde estimé après virement, charges et provisions URSSAF / TVA : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Le calcul maximise le virement au centime en conservant au moins 1,00 € de trésorerie. La facture non encaissée est ajoutée au prévisionnel ; la TVA et l’URSSAF sont réservées avant le virement.</small>' : '');
+        + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">Solde estimé après virement, charges et provisions URSSAF / TVA : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Le calcul maximise le virement au centime en conservant au moins 1,00 € de trésorerie. La facture non encaissée est ajoutée au prévisionnel ; la TVA et l’URSSAF sont réservées avant le virement.</small>' : '')
+        + (result.cashRemaining !== null && result.cashRemaining < 1 ? '<p class="pro-remuneration-warning">La trésorerie disponible ne permet pas de conserver le minimum de 1,00 € après les charges et provisions, même sans virement.</p>' : '');
       target.dataset.result = 'valid';
     } catch (error) {
       target.innerHTML = '<p class="pro-remuneration-empty">' + escapeHtml(error.message || 'Renseignez les paramètres pour afficher la simulation.') + '</p>';
