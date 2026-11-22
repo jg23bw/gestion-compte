@@ -30,7 +30,8 @@
           throw new Error('Migration Supabase requise : exécutez supabase/migrations/202611070001_account_transfers.sql dans SQL Editor avant de synchroniser des virements.');
         }
         if (result.error && LEGACY_SCHEMA_ERROR.test(result.error.message || '')) {
-          // Preserve newer business fields: only strip the legacy columns named by this fallback.\n          const compatibleRows = rows.map(({ recurring_key, is_paid, sort_order, ...row }) => row);
+          // Preserve newer business fields: only strip the legacy columns named by this fallback.
+          const compatibleRows = rows.map(({ recurring_key, is_paid, sort_order, ...row }) => row);
           result = await client.from('transactions').upsert(compatibleRows, { onConflict: 'id' });
           if (result.error) throw result.error;
           return { compatibilityFallback: true };
