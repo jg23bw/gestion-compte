@@ -14,7 +14,7 @@
   // generically (e.g. "Vers [beneficiary]"), without depending on a bank name.
   const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole)
     || transaction.professionalCategory === 'personal-transfer'
-    || /^(?:vers\\s+\\S|virement\\b|transfert\\b)/i.test(String(transaction.label || '').trim());
+    || /^(?:vers\s+\S|virement\\b|transfert\\b)/i.test(String(transaction.label || '').trim());
   // VAT and social-contribution payments are cash movements for provisions
   // already accounted for separately; they must not reduce remuneration twice.
   const isAlreadyProvisionedCharge = transaction => ['social', 'vat'].includes(transaction.professionalCategory)
