@@ -119,6 +119,28 @@ test('professional row balances are recalculated for each transaction sharing th
   assert.deepEqual(rows.map(row => row.transaction.id), ['same-3', 'same-2', 'same-1']);
 });
 
+
+test('regular and professional balances advance once per row when several transactions share a date', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1000;
+  f.accounts[0].netOpening = 1000;
+  f.transactions.splice(0, f.transactions.length,
+    { id: 'same-1', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 1, amount: -100, professionalAmount: -100, isPaid: false },
+    { id: 'same-2', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 2, amount: 0, professionalAmount: -200, isPaid: false },
+    { id: 'same-3', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 3, amount: -50, professionalAmount: -50, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const actualRows = queries.accountTransactionDisplayRows({ accountId: 'a', sort: 'date-desc' });
+  const professionalRows = queries.professionalAdjustedTransactionDisplayRows({
+    accountId: 'a', asOfDate: '2026-11-30', sort: 'date-desc'
+  });
+  const actual = Object.fromEntries(actualRows.map(row => [row.transaction.id, row.balance]));
+  const professional = Object.fromEntries(professionalRows.map(row => [row.transaction.id, row.balance]));
+  assert.deepEqual(actual, { 'same-1': 900, 'same-2': 900, 'same-3': 850 });
+  assert.deepEqual(professional, { 'same-1': 900, 'same-2': 700, 'same-3': 650 });
+  assert.deepEqual(actualRows.map(row => row.transaction.id), ['same-3', 'same-2', 'same-1']);
+});
+
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
