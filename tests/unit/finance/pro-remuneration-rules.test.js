@@ -197,7 +197,10 @@ test('maximises the personal transfer while preserving at least one euro after U
     caHt: 10000, invoiceTtc: 12000, currentInvoicePaid: false,
     socialRate: 45, cashBalance: 20000
   });
-  assert.equal(result.cashRemaining, 1);
+  assert.ok(result.cashRemaining >= 1);
+  const nextSocialProvision = roundMoneyForTest((result.remuneration + 0.01) * 0.45);
+  const nextCentimeBalance = roundMoneyForTest(result.cashRemaining - 0.01 - (nextSocialProvision - result.socialProvision));
+  assert.ok(nextCentimeBalance < 1);
   assert.equal(result.minimumCashBalance, 1);
   assert.equal(result.vatProvision, 2000);
   assert.equal(result.remuneration, result.transferAmount + result.futureCharges);
