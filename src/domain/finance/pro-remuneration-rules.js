@@ -224,16 +224,21 @@
       ? null : roundMoney(normalizedCashBalance - transferAmount - futureCharges);
     if (canOptimizeCash) {
       let low = 0;
-      let high = Math.max(0, roundMoney(cashBeforeTransfer - futureCharges - vatProvision - minimumCashBalance));
-      for (let iteration = 0; iteration < 64 && low < high; iteration += 1) {
-        const middle = roundMoney((low + high + 0.01) / 2);
-        const trialRemuneration = roundMoney(middle + futureCharges);
+      let high = Math.max(0, Math.floor((cashBeforeTransfer - futureCharges - vatProvision - minimumCashBalance) * 100 + 1e-8));
+      const remainingForCents = cents => {
+        const trialTransfer = cents / 100;
+        const trialRemuneration = roundMoney(trialTransfer + futureCharges);
         const trialSocialProvision = roundMoney(trialRemuneration * rate / 100);
-        const remaining = roundMoney(cashBeforeTransfer - futureCharges - vatProvision - middle - trialSocialProvision);
-        if (remaining >= minimumCashBalance) low = middle;
-        else high = roundMoney(middle - 0.01);
+        return roundMoney(cashBeforeTransfer - futureCharges - vatProvision - trialTransfer - trialSocialProvision);
+      };
+      while (low < high) {
+        const middle = Math.ceil((low + high) / 2);
+        if (remainingForCents(middle) >= minimumCashBalance) low = middle;
+        else high = middle - 1;
       }
-      transferAmount = Math.max(0, low);
+      // Ajustement final au centime : garantit le plus grand virement possible.
+      while (remainingForCents(low + 1) >= minimumCashBalance) low += 1;
+      transferAmount = Math.max(0, low / 100);
       remuneration = roundMoney(transferAmount + futureCharges);
       socialProvision = roundMoney(remuneration * rate / 100);
       cashRemaining = roundMoney(cashBeforeTransfer - futureCharges - vatProvision - transferAmount - socialProvision);
