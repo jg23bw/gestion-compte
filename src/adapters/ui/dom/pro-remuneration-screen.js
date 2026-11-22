@@ -64,16 +64,16 @@
         + '<article><span>Facture ' + (result.currentInvoicePaid ? 'encaissée' : 'à encaisser') + ' · TTC / CA HT</span><strong>' + euro(result.invoiceTtc) + ' / ' + euro(result.caHt) + '</strong></article>'
         + '<article><span>Dépenses de la période (pointées ou non, hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
-        + '<article><span>Rémunération estimée</span><strong>' + euro(result.remuneration) + '</strong></article>'
-        + '<article><span>Provision URSSAF (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
+        + '<article><span>Rémunération optimisée (virement + charges à venir)</span><strong>' + euro(result.remuneration) + '</strong></article>'
+        + '<article><span>Provision URSSAF recalculée (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
         + '<article><span>Charges à venir hors URSSAF, TVA et marge (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
-        + '<article class="highlight"><span>Virement personnel estimé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
+        + '<article class="highlight"><span>Virement personnel maximal optimisé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
         + '</div>'
         + '<details class="pro-remuneration-live-details"><summary>Voir les opérations retenues</summary><h4>Charges débitées sur la période</h4>' + detailList(result.pastChargeItems, 'Aucune charge passée retenue.') + '<h4>Charges à venir hors URSSAF, TVA et marge</h4>' + detailList(result.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
         + (!result.currentInvoicePaid ? '<p class="pro-remuneration-warning">Cette facture n’est pas encore pointée comme encaissée. La rémunération est estimative ; vérifiez la trésorerie avant tout virement.</p>' : '')
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
-        + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">Trésorerie estimée restante après virement et charges futures : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Ce contrôle suppose que l’encaissement de la facture est aussi enregistré comme opération pointée.</small>' : '');
+        + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">Solde estimé après virement, charges et provisions URSSAF / TVA : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Le calcul maximise le virement au centime en conservant au moins 1,00 € de trésorerie. La facture non encaissée est ajoutée au prévisionnel ; la TVA et l’URSSAF sont réservées avant le virement.</small>' : '');
       target.dataset.result = 'valid';
     } catch (error) {
       target.innerHTML = '<p class="pro-remuneration-empty">' + escapeHtml(error.message || 'Renseignez les paramètres pour afficher la simulation.') + '</p>';
