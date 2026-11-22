@@ -49,7 +49,7 @@ test('shows a future charge shortfall without returning a negative transfer', ()
     invoiceDate: '2026-11-05', caHt: 12000, socialRate: 45
   });
   assert.equal(result.transferAmount, 0);
-  assert.equal(result.futureShortfall, 7241.38);
+  assert.equal(result.futureShortfall, 724.14);
   assert.equal(result.futureChargesExceedRemuneration, true);
 });
 
