@@ -220,6 +220,16 @@
     const existingPersonalTransfers = roundMoney(cycleRows
       .filter(item => isPersonalTransfer(item))
       .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
+    // The adjusted projection already contains future planned personal transfers
+    // and URSSAF provisions. They must be added back before calculating the
+    // replacement totals, otherwise the simulation treats existing entries as
+    // immutable and can never reconcile with the table after editing them.
+    const replaceableFutureSocialProvision = roundMoney(futureRows
+      .filter(item => item.professionalCategory === 'social' && item.professionalTreatment === 'provision')
+      .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
+    const replaceableFuturePersonalTransfers = roundMoney(futureRows
+      .filter(item => isPersonalTransfer(item))
+      .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
 
     let additionalTransferAmount = 0;
     let transferAmount = theoreticalTransfer;
@@ -230,25 +240,30 @@
       let low = 0;
       // L'optimisation porte sur le virement supplémentaire et sa provision URSSAF
       // supplémentaire. Les charges futures sont déjà présentes dans la projection.
-      let high = Math.max(0, Math.min(
-        Math.floor(theoreticalTransfer * 100 + 1e-8),
-        Math.floor(normalizedProfessionalAdjustedBalance * 100 + 1e-8)
-      ));
+      const cashBeforeReplacement = roundMoney(
+        normalizedProfessionalAdjustedBalance
+        + replaceableFuturePersonalTransfers
+        + replaceableFutureSocialProvision
+      );
+      const cashAfterBaseRemuneration = roundMoney(
+        cashBeforeReplacement - theoreticalTransfer - theoreticalSocialProvision
+      );
+      let high = Math.max(0, Math.floor(cashAfterBaseRemuneration * 100 / (1 + rate / 100) + 1e-8));
       const remainingForCents = cents => {
         const trialTransfer = cents / 100;
         const trialSocialProvision = roundMoney(trialTransfer * rate / 100);
-        return roundMoney(normalizedProfessionalAdjustedBalance - trialTransfer - trialSocialProvision);
+        return roundMoney(cashAfterBaseRemuneration - trialTransfer - trialSocialProvision);
       };
       while (low < high) {
         const middle = Math.ceil((low + high) / 2);
         if (remainingForCents(middle) >= minimumCashBalance) low = middle;
         else high = middle - 1;
       }
-      while (remainingForCents(low + 1) >= minimumCashBalance && low < Math.floor(theoreticalTransfer * 100 + 1e-8)) low += 1;
+      while (remainingForCents(low + 1) >= minimumCashBalance && low < Math.floor(cashAfterBaseRemuneration * 100 + 1e-8)) low += 1;
       additionalTransferAmount = Math.max(0, low / 100);
       socialProvision = roundMoney(additionalTransferAmount * rate / 100);
       remuneration = roundMoney(additionalTransferAmount + socialProvision);
-      cashRemaining = roundMoney(normalizedProfessionalAdjustedBalance - additionalTransferAmount - socialProvision);
+      cashRemaining = roundMoney(cashAfterBaseRemuneration - additionalTransferAmount - socialProvision);
     }
     // Le virement maximal part du calcul économique basé sur le CA HT,
     // puis ajoute le complément autorisé par le solde réel après provisions.
@@ -263,7 +278,7 @@
       currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, theoreticalRemuneration, theoreticalTransfer, socialProvision, theoreticalSocialProvision,
       futureCharges, futureChargeItems, transferAmount, additionalTransferAmount, cashBalance: normalizedCashBalance,
-      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, totalSocialProvision: roundMoney(theoreticalSocialProvision + socialProvision), existingPersonalTransfers, resultIsNegative: availableResult < 0,
+      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, replaceableFutureSocialProvision, replaceableFuturePersonalTransfers, totalSocialProvision: roundMoney(theoreticalSocialProvision + socialProvision), existingPersonalTransfers, resultIsNegative: availableResult < 0,
       futureChargesExceedRemuneration: transferBeforeFloor < 0,
       futureShortfall: roundMoney(Math.max(0, -transferBeforeFloor))
     };
