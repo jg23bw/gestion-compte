@@ -12,7 +12,9 @@
   // External personal transfers may be entered as ordinary expenses rather than
   // linked account-to-account transfers. Detect common bank-statement labels
   // generically (e.g. "Vers [beneficiary]"), without depending on a bank name.
-  const isPersonalTransfer = transaction => transaction.professionalCategory === 'personal-transfer'\n    || (!transaction.transferId && !transaction.transferRole\n      && /^(?:vers\\s+\\S|virement\\s+personnel\\b|transfert\\s+personnel\\b)/i.test(String(transaction.label || '').trim()));\n  const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole)
+  const isPersonalTransfer = transaction => transaction.professionalCategory === 'personal-transfer'
+    || (!transaction.transferId && !transaction.transferRole
+      && /^(?:vers\s+\S|virement\s+personnel\b|transfert\s+personnel\b)/i.test(String(transaction.label || '').trim()));\n  const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole)
     || transaction.professionalCategory === 'personal-transfer'
     || /^(?:vers\s+\S|virement\b|transfert\b)/i.test(String(transaction.label || '').trim());
   // VAT and social-contribution payments are cash movements for provisions
