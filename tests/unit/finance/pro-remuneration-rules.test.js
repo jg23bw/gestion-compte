@@ -31,7 +31,7 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.futureCharges, 800);
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
   assert.equal(result.transferAmount, 5820.69);
-  assert.equal(result.cashRemaining, 8379.31);
+  assert.equal(result.cashRemaining, null);
   assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge', 'unpaid-past']);
   assert.equal(result.pastChargeItems.some(item => item.id === 'external-personal-transfer'), false);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-charge']);
@@ -187,36 +187,41 @@ test('finds an unencashed invoice as a period marker without counting it as cash
 });
 
 
-test('maximises the personal transfer while preserving at least one euro after URSSAF and VAT provisions', () => {
+test('optimises the transfer against the real adjusted ending balance and replaces cycle URSSAF provision', () => {
   const result = Rules.calculate({
     transactions: [
       { id: 'invoice', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false },
-      { id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false, label: 'Assurance' }
+      { id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false, label: 'Assurance' },
+      { id: 'old-social-provision', accountId: 'pro', date: '2026-11-20', amount: 0, professionalAmount: -900, professionalCategory: 'social', professionalTreatment: 'provision', isPaid: false, label: 'Provision URSSAF' },
+      { id: 'old-personal-transfer', accountId: 'pro', date: '2026-11-21', amount: -500, professionalAmount: -500, label: 'Vers compte personnel', isPaid: false }
     ],
     accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
     caHt: 10000, invoiceTtc: 12000, currentInvoicePaid: false,
-    socialRate: 45, cashBalance: 20000
+    socialRate: 45, professionalAdjustedBalance: 5000
   });
-  assert.ok(result.cashRemaining >= 1);
-  const nextSocialProvision = roundMoneyForTest((result.remuneration + 0.01) * 0.45);
-  const nextCentimeBalance = roundMoneyForTest(result.cashRemaining - 0.01 - (nextSocialProvision - result.socialProvision));
-  assert.ok(nextCentimeBalance < 1);
-  assert.equal(result.minimumCashBalance, 1);
-  assert.equal(result.vatProvision, 2000);
+  assert.equal(result.existingSocialProvision, 900);
+  assert.equal(result.existingPersonalTransfers, 500);
+  assert.ok(result.cashRemaining >= 0.01);
+  const nextTransfer = roundMoneyForTest(result.transferAmount + 0.01);
+  const nextRemuneration = roundMoneyForTest(nextTransfer + result.futureCharges);
+  const nextSocial = roundMoneyForTest(nextRemuneration * 0.45);
+  assert.ok(roundMoneyForTest(result.professionalAdjustedBalance + result.existingSocialProvision
+    + result.existingPersonalTransfers - nextTransfer - nextSocial) < 0.01);
   assert.equal(result.remuneration, result.transferAmount + result.futureCharges);
-  assert.equal(result.socialProvision, Math.round(result.remuneration * 0.45 * 100) / 100);
-  assert.ok(result.transferAmount > result.theoreticalRemuneration - result.futureCharges);
+  assert.equal(result.socialProvision, roundMoneyForTest(result.remuneration * 0.45));
 });
 
-test('does not add the invoice twice when it is already collected', () => {
+test('ignores bank balance and invoice status when the real adjusted projection is supplied', () => {
   const common = {
     transactions: [{ id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false }],
     accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
-    caHt: 10000, invoiceTtc: 12000, socialRate: 45, cashBalance: 20000
+    caHt: 10000, invoiceTtc: 12000, socialRate: 45, cashBalance: 20000,
+    professionalAdjustedBalance: 5000
   };
   const paid = Rules.calculate({ ...common, currentInvoicePaid: true });
   const unpaid = Rules.calculate({ ...common, currentInvoicePaid: false });
-  assert.equal(roundMoneyForTest(unpaid.transferAmount - paid.transferAmount), roundMoneyForTest(12000 / 1.45));
+  assert.equal(paid.transferAmount, unpaid.transferAmount);
+  assert.equal(paid.cashRemaining, unpaid.cashRemaining);
 });
 
 function roundMoneyForTest(value) {
