@@ -62,8 +62,10 @@
 
     const accountTransactions = transactions.filter(item => item.accountId === accountId);
     const futurePeriodEndDate = addOneMonth(invoiceDate);
-    const pastChargeItems = accountTransactions.filter(item => item.isPaid === true
-      && item.date > previousInvoiceDate && item.date <= invoiceDate
+    // The previous invoice boundary is inclusive: a charge dated on the same day
+    // is part of the interval as soon as it appears after that invoice in the ledger.
+    // Include paid and unpaid operations alike; pointage status must not hide expenses.
+    const pastChargeItems = accountTransactions.filter(item => item.date >= previousInvoiceDate && item.date <= invoiceDate
       && Number(item.amount) < 0 && !isTransfer(item) && !isAlreadyProvisionedCharge(item))
       .sort((a, b) => a.date.localeCompare(b.date)
         || Number(a.createdAt || 0) - Number(b.createdAt || 0)
