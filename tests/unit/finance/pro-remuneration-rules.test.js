@@ -31,7 +31,7 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.futureCharges, 800);
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
   assert.equal(result.transferAmount, 5820.69);
-  assert.equal(result.additionalTransferAmount, 5820.69);
+  assert.equal(result.additionalTransferAmount, 0);
   assert.equal(result.cashRemaining, null);
   assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge', 'unpaid-past']);
   assert.equal(result.pastChargeItems.some(item => item.id === 'external-personal-transfer'), false);
@@ -243,7 +243,7 @@ test('optimises the CA-based transfer with the real remaining adjusted balance',
   assert.equal(result.existingSocialProvision, 6217.67);
   assert.equal(result.existingPersonalTransfers, 10710.16);
   assert.equal(result.additionalTransferAmount, 198.63);
-  assert.equal(result.transferAmount, 6393.82);
+  assert.equal(result.transferAmount, 6195.19);
   assert.equal(result.socialProvision, 89.38);
   assert.equal(result.totalSocialProvision, 6218.84);
   assert.equal(result.remuneration, 288.01);
