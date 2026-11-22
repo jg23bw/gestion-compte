@@ -658,3 +658,14 @@ Le cache CSS est versionné dans `index.html` sous `design-system-v1`. Les ident
 - Aucun changement de logique métier, de calcul, d'identifiant DOM ou de gestionnaire d'événement.
 - Feuille de style versionnée : `styles.css?v=premium-fintech-v1`.
 - Contrôle statique à faire avant fusion ; aucun rendu navigateur n'a été validé à ce stade.
+
+## Simulateur de rémunération EURL (22 novembre 2026)
+
+- Nouvel encart dans « Compte pro » pour estimer la rémunération mensuelle à partir du CA HT saisi, des charges réellement débitées depuis l’encaissement précédent et des charges futures à conserver.
+- Règles métier isolées dans `src/domain/finance/pro-remuneration-rules.js` ; écran DOM dans `src/adapters/ui/dom/pro-remuneration-screen.js`.
+- Charges passées : opérations négatives, pointées, du compte professionnel sélectionné, après la date de facture précédente et jusqu’à la date de la nouvelle facture incluse. Les virements entre comptes sont exclus ; les paiements URSSAF passés restent comptés comme décaissements historiques.
+- Charges futures : opérations négatives non pointées après la date de facture actuelle, hors virements et hors opérations classées `social`/URSSAF. Les provisions sans décaissement bancaire (montant réel nul) ne sont pas traitées comme charges futures de trésorerie.
+- Formules : résultat disponible = CA HT − charges passées ; rémunération = résultat positif ÷ (1 + taux/100) ; provision sociale = rémunération × taux ; virement = max(0, rémunération − charges futures). Taux initial de 45 %, modifiable dans le formulaire.
+- L’interface affiche les détails des charges, les alertes en cas de résultat négatif ou de charges futures supérieures à la rémunération, et une estimation de trésorerie restante après virement et charges futures. Cette dernière suppose que l’encaissement est aussi enregistré comme opération pointée.
+- Les simulations et leurs détails sont conservés dans les métadonnées privées Supabase Auth (`user_metadata.proRemunerationSimulations`) ; aucune migration SQL n’est requise. La date de facture précédente est préremplie à partir de la dernière simulation du compte.
+- Tests unitaires ajoutés dans `tests/unit/finance/pro-remuneration-rules.test.js`. Le test navigateur et la persistance sur un compte Supabase réel restent à effectuer.
