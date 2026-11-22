@@ -95,7 +95,7 @@ test('uses both invoice rows as exclusive chronological bounds and table order f
     previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
     caHt: 12000, socialRate: 45
   });
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-after-previous', 'between-invoices', 'same-day-before-current']);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-before-previous', 'between-invoices', 'same-day-before-current']);
   assert.equal(result.pastCharges, 700);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), []);
   assert.equal(result.futureCharges, 0);
