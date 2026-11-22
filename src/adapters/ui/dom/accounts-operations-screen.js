@@ -93,6 +93,7 @@ function renderTransactions(){
   const accountFilter=(proView?AccountListRules.selectGroups(state.accounts,{effectiveType:effectiveAccountType}).professional[0]?.id:$(prefix+'account-filter').value)||'',typeFilter=$(prefix+'type-filter').value,query=$(prefix+'search').value.trim().toLocaleLowerCase('fr'),sort=$(prefix+'sort')?.value||'date-desc';
   const account=accountById(accountFilter),isPro=account&&effectiveAccountType(account)==='pro',asOf=today(),currentBalance=balanceAt(accountFilter,asOf);
   const displayRows=transactionQueries.accountTransactionDisplayRows({accountId:accountFilter,typeFilter,query,sort});
+  const professionalDisplayBalances=isPro?new Map(transactionQueries.professionalAdjustedTransactionDisplayRows({accountId:accountFilter,asOfDate:asOf,typeFilter,query,sort}).map(row=>[row.transaction.id,row.balance])):new Map();
   const head=$(prefix+'head'),rows=$(prefix+'rows'),footer=$(prefix+'footer');
   const projectionTarget=$(proView?'pro-transaction-projection':'transaction-projection');
   if(projectionTarget){
@@ -116,7 +117,7 @@ function renderTransactions(){
   const balanceRow=account?'<tr class="transaction-current-balance"><td colspan="3"><strong>Solde à date</strong><span class="balance-date">Au '+dateFormat(asOf)+'</span></td><td class="table-amount">—</td><td class="table-balance"><strong>'+euro(currentBalance)+'</strong></td>'+(isPro?'<td>—</td><td class="table-balance"><strong>'+euro(transactionQueries.professionalAdjustedBalanceAt(account.id,asOf))+'</strong></td>':'')+'<td>—</td></tr>':'';
   rows.innerHTML=balanceRow+(displayRows.length?displayRows.map(({transaction:t,balance})=>{
       const recurringKind=isPro?proRecurringKind(t):null,actualAmount=Number(t.amount),adjusted=isPro?proAdjustedAmount(t):0;
-      const adjustedBalance=isPro?transactionQueries.professionalAdjustedBalanceAfterTransaction(t):0;
+      const adjustedBalance=isPro?(professionalDisplayBalances.get(t.id)??0):0;
       const transferPeer=t.transferId?accountById(t.transferAccountId):null;
       const displayLabel=t.transferId?t.label+' · '+(t.transferRole==='outgoing'?'vers ':'depuis ')+(transferPeer?.name||'autre compte'):t.label;
       const negativePendingBalance=!t.isPaid&&Number(balance)<0;

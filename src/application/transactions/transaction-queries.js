@@ -13,8 +13,8 @@
     return rows.slice().sort((a, b) => {
       const pendingFirst = Number(a.isPaid === true) - Number(b.isPaid === true);
       if (pendingFirst) return pendingFirst;
-      if (sort === 'date-asc') return a.date.localeCompare(b.date) || a.createdAt - b.createdAt;
-      if (sort === 'date-desc') return b.date.localeCompare(a.date) || b.createdAt - a.createdAt;
+      if (sort === 'date-asc') return domain.transactionOrder(a, b);
+      if (sort === 'date-desc') return domain.transactionOrder(b, a);
       if (sort === 'label') return a.label.localeCompare(b.label, 'fr');
       if (sort === 'amount-asc') return Number(a.amount) - Number(b.amount);
       if (sort === 'amount-desc') return Number(b.amount) - Number(a.amount);
@@ -38,7 +38,10 @@
     let lowestBalance = balance;
     let lowestDate = null;
     const ordered = futureTransactions.slice().sort((a, b) =>
-      a.date.localeCompare(b.date) || Number(a.createdAt || 0) - Number(b.createdAt || 0)
+      a.date.localeCompare(b.date)
+      || Number(a.createdAt || 0) - Number(b.createdAt || 0)
+      || Number(a.sortOrder || 0) - Number(b.sortOrder || 0)
+      || String(a.id || '').localeCompare(String(b.id || ''))
     );
     for (const transaction of ordered) {
       balance += Number(amountOf(transaction)) || 0;
@@ -205,6 +208,40 @@
           transactions.filter(item => item.date > asOfDate),
           item => domain.professionalAdjustedDelta(item, templates)
         );
+      },
+      professionalAdjustedTransactionDisplayRows({ accountId, asOfDate, typeFilter = 'all', query = '', sort = 'date-desc' } = {}) {
+        const account = repository.findAccount(accountId);
+        if (!account) return [];
+        const ordered = domain.sortAccountTransactions(repository.findByAccount(accountId), accountId);
+        const templates = repository.findRecurringTemplates();
+        const balances = new Map();
+        const positions = new Map();
+        let historicalBalance = Number(account.netOpening ?? account.opening) || 0;
+        let currentAdjustedBalance = historicalBalance;
+        for (const transaction of ordered) {
+          if (transaction.date > asOfDate) continue;
+          historicalBalance += domain.professionalAdjustedDelta(transaction, templates);
+          balances.set(transaction.id, historicalBalance);
+          currentAdjustedBalance = historicalBalance;
+        }
+        // As in the Operations screen, future rows are forecasts from the
+        // current balance, accumulated in chronological order. Unlike the
+        // regular balance, the professional baseline already includes every
+        // transaction through today, including unpointed provisions.
+        let forecastBalance = currentAdjustedBalance;
+        ordered.forEach((transaction, position) => {
+          positions.set(transaction.id, position);
+          if (transaction.date > asOfDate) {
+            forecastBalance += domain.professionalAdjustedDelta(transaction, templates);
+            balances.set(transaction.id, forecastBalance);
+          }
+        });
+        return this.filterAccountTransactions({ accountId, typeFilter, query, sort }).map(transaction => ({
+          transaction,
+          balance: balances.get(transaction.id) ?? currentAdjustedBalance,
+          position: positions.get(transaction.id) ?? -1,
+          accountTransactionCount: ordered.length
+        }));
       },
       professionalAdjustedBalanceAfterTransaction(transaction) {
         if (!transaction) return 0;

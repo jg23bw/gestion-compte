@@ -71,6 +71,76 @@ test('regular balance excludes unpointed operations while adjusted professional 
   assert.equal(queries.professionalAdjustedBalanceAfterTransaction(f.transactions.find(item => item.id === 'pending-today')), -180);
 });
 
+test('professional row balances use the current adjusted balance as the forecast baseline, like Operations', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1040.12;
+  f.accounts[0].netOpening = 1040.12;
+  f.transactions.splice(0, f.transactions.length,
+    { id: 'vat-today', accountId: 'a', date: '2026-11-21', createdAt: 1, amount: 0, professionalAmount: -2640, isPaid: false },
+    { id: 'franchise', accountId: 'a', date: '2026-11-30', createdAt: 2, amount: -500, professionalAmount: -500, isPaid: false },
+    { id: 'margin', accountId: 'a', date: '2026-11-30', createdAt: 3, amount: 0, professionalAmount: -500, isPaid: false },
+    { id: 'expert', accountId: 'a', date: '2026-11-30', createdAt: 4, amount: -118.8, professionalAmount: -118.8, isPaid: false },
+    { id: 'invoice', accountId: 'a', date: '2026-12-01', createdAt: 5, amount: 15840, professionalAmount: 15840, isPaid: false },
+    { id: 'transfer', accountId: 'a', date: '2026-12-01', createdAt: 6, amount: -6000, professionalAmount: -6000, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  assert.equal(queries.professionalAdjustedBalanceAt('a', '2026-11-21'), -1599.88);
+  const rows = queries.professionalAdjustedTransactionDisplayRows({
+    accountId: 'a', asOfDate: '2026-11-21', sort: 'date-desc'
+  });
+  const balance = id => Math.round(rows.find(row => row.transaction.id === id).balance * 100) / 100;
+  assert.equal(balance('vat-today'), -1599.88);
+  assert.equal(balance('franchise'), -2099.88);
+  assert.equal(balance('margin'), -2599.88);
+  assert.equal(balance('expert'), -2718.68);
+  assert.equal(balance('invoice'), 13121.32);
+  assert.equal(balance('transfer'), 7121.32);
+  assert.deepEqual(rows.map(row => row.transaction.id), ['transfer', 'invoice', 'expert', 'margin', 'franchise', 'vat-today']);
+});
+
+
+test('professional row balances are recalculated for each transaction sharing the same date and timestamp', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1000;
+  f.accounts[0].netOpening = 1000;
+  f.transactions.splice(0, f.transactions.length,
+    { id: 'same-1', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 1, amount: -100, professionalAmount: -100, isPaid: false },
+    { id: 'same-2', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 2, amount: -200, professionalAmount: -200, isPaid: false },
+    { id: 'same-3', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 3, amount: 50, professionalAmount: 50, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const rows = queries.professionalAdjustedTransactionDisplayRows({
+    accountId: 'a', asOfDate: '2026-11-30', sort: 'date-desc'
+  });
+  const balances = Object.fromEntries(rows.map(row => [row.transaction.id, row.balance]));
+  assert.equal(balances['same-1'], 900);
+  assert.equal(balances['same-2'], 700);
+  assert.equal(balances['same-3'], 750);
+  assert.deepEqual(rows.map(row => row.transaction.id), ['same-3', 'same-2', 'same-1']);
+});
+
+
+test('regular and professional balances advance once per row when several transactions share a date', () => {
+  const f = fixture();
+  f.accounts[0].opening = 1000;
+  f.accounts[0].netOpening = 1000;
+  f.transactions.splice(0, f.transactions.length,
+    { id: 'same-1', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 1, amount: -100, professionalAmount: -100, isPaid: false },
+    { id: 'same-2', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 2, amount: 0, professionalAmount: -200, isPaid: false },
+    { id: 'same-3', accountId: 'a', date: '2026-11-30', createdAt: 10, sortOrder: 3, amount: -50, professionalAmount: -50, isPaid: false }
+  );
+  const queries = create({ repository: f.repository, domain });
+  const actualRows = queries.accountTransactionDisplayRows({ accountId: 'a', sort: 'date-desc' });
+  const professionalRows = queries.professionalAdjustedTransactionDisplayRows({
+    accountId: 'a', asOfDate: '2026-11-30', sort: 'date-desc'
+  });
+  const actual = Object.fromEntries(actualRows.map(row => [row.transaction.id, row.balance]));
+  const professional = Object.fromEntries(professionalRows.map(row => [row.transaction.id, row.balance]));
+  assert.deepEqual(actual, { 'same-1': 900, 'same-2': 900, 'same-3': 850 });
+  assert.deepEqual(professional, { 'same-1': 900, 'same-2': 700, 'same-3': 650 });
+  assert.deepEqual(actualRows.map(row => row.transaction.id), ['same-3', 'same-2', 'same-1']);
+});
+
 test('balance after transaction follows the account display order and stops at the requested row', () => {
   const f = fixture();
   const queries = create({ repository: f.repository, domain });
