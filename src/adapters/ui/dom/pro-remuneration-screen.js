@@ -40,6 +40,11 @@
   function renderPreview() {
     const target = $('pro-remuneration-preview');
     if (!target) return;
+    if (!$('pro-remuneration-ca')?.value.trim()) {
+      target.innerHTML = '<p class="pro-remuneration-empty">Saisissez le chiffre d’affaires HT pour afficher la simulation.</p>';
+      target.dataset.result = 'invalid';
+      return;
+    }
     try {
       const result = readForm();
       target.innerHTML = '<div class="pro-remuneration-result-grid">'
@@ -138,6 +143,7 @@
       await authMetadataRepository().update({ proRemunerationSimulations: next });
       state.proRemunerationSimulations = next;
       $('pro-remuneration-previous-date').value = result.invoiceDate;
+      $('pro-remuneration-invoice-date').value = result.futurePeriodEndDate;
       $('pro-remuneration-ca').value = '';
       renderProRemunerationScreen();
       showToast('Simulation de rémunération enregistrée.');
