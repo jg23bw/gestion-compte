@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const Rules = require('../../../src/domain/finance/pro-remuneration-rules.js');
 
 const transactions = [
-  { id: 'past-charge', accountId: 'pro', date: '2026-10-20', amount: -1500, isPaid: true, label: 'Comptabilité' },
+  { id: 'past-charge', accountId: 'pro', date: '2026-10-20', amount: -1500, isPaid: true, label: 'Comptabilité' },\n  { id: 'same-day-previous-invoice', accountId: 'pro', date: '2026-10-05', amount: -1020, isPaid: true, label: 'Crédit Mercedes' },
   { id: 'unpaid-past', accountId: 'pro', date: '2026-10-25', amount: -900, isPaid: false, label: 'À pointer' },
   { id: 'internal-transfer', accountId: 'pro', date: '2026-10-22', amount: -500, isPaid: true, transferId: 'transfer-1', label: 'Virement personnel' },
   { id: 'paid-social', accountId: 'pro', date: '2026-10-23', amount: -12657, isPaid: true, professionalCategory: 'social', label: 'Paiement charges sociales' },
@@ -21,15 +21,15 @@ test('calculates remuneration, social provision and transfer with historical and
     transactions, accountId: 'pro', previousInvoiceDate: '2026-10-05',
     invoiceDate: '2026-11-05', caHt: 12000, socialRate: 45, cashBalance: 15000
   });
-  assert.equal(result.pastCharges, 1500);
-  assert.equal(result.availableResult, 10500);
-  assert.equal(result.remuneration, 7241.38);
-  assert.equal(result.socialProvision, 3258.62);
+  assert.equal(result.pastCharges, 2520);
+  assert.equal(result.availableResult, 9480);
+  assert.equal(result.remuneration, 6537.93);
+  assert.equal(result.socialProvision, 2942.07);
   assert.equal(result.futureCharges, 800);
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
-  assert.equal(result.transferAmount, 6441.38);
-  assert.equal(result.cashRemaining, 7758.62);
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge']);
+  assert.equal(result.transferAmount, 5737.93);
+  assert.equal(result.cashRemaining, 8462.07);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-previous-invoice', 'past-charge', 'unpaid-past']);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-charge']);
 });
 
@@ -38,7 +38,7 @@ test('does not propose remuneration when historical charges exceed turnover', ()
     transactions, accountId: 'pro', previousInvoiceDate: '2026-10-05',
     invoiceDate: '2026-11-05', caHt: 1000, socialRate: 45
   });
-  assert.equal(result.availableResult, -500);
+  assert.equal(result.availableResult, -1520);
   assert.equal(result.remuneration, 0);
   assert.equal(result.socialProvision, 0);
   assert.equal(result.transferAmount, 0);
