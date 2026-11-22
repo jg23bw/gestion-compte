@@ -253,7 +253,6 @@
     // Le virement affiché est le cumul des virements déjà saisis sur le cycle
     // et du complément maximal que la trésorerie permet encore de verser.
     transferAmount = roundMoney(existingPersonalTransfers + additionalTransferAmount);
-    }
     const transferBeforeFloor = roundMoney(theoreticalRemuneration - futureCharges);
 
     return {
