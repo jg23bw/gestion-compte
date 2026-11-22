@@ -202,7 +202,7 @@ test('caps an additional transfer against the real adjusted ending balance witho
   assert.equal(result.existingSocialProvision, 900);
   assert.equal(result.existingPersonalTransfers, 500);
   assert.ok(result.cashRemaining >= 0.01);
-  const nextTransfer = roundMoneyForTest(result.transferAmount + 0.01);
+  const nextTransfer = roundMoneyForTest(result.additionalTransferAmount + 0.01);
   const nextSocial = roundMoneyForTest(nextTransfer * 0.45);
   assert.ok(roundMoneyForTest(result.professionalAdjustedBalance - nextTransfer - nextSocial) < 0.01);
   assert.equal(result.remuneration, result.transferAmount + result.socialProvision);
@@ -238,7 +238,8 @@ test('optimises only an additional transfer without neutralising existing transf
   });
   assert.equal(result.existingSocialProvision, 6217.67);
   assert.equal(result.existingPersonalTransfers, 10710.16);
-  assert.equal(result.transferAmount, 198.63);
+  assert.equal(result.additionalTransferAmount, 198.63);
+  assert.equal(result.transferAmount, 10908.79);
   assert.equal(result.socialProvision, 89.38);
   assert.equal(result.totalSocialProvision, 6307.05);
   assert.equal(result.remuneration, 288.01);
