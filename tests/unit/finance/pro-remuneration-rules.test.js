@@ -7,10 +7,10 @@ const transactions = [
   { id: 'past-charge', accountId: 'pro', date: '2026-10-20', amount: -1500, isPaid: true, label: 'Comptabilité' },
   { id: 'same-day-previous-invoice', accountId: 'pro', date: '2026-10-05', amount: -1020, isPaid: true, label: 'Crédit Mercedes' },
   { id: 'unpaid-past', accountId: 'pro', date: '2026-10-25', amount: -900, isPaid: false, label: 'À pointer' },
-  { id: 'internal-transfer', accountId: 'pro', date: '2026-10-22', amount: -500, isPaid: true, transferId: 'transfer-1', label: 'Virement personnel' },
+  { id: 'internal-transfer', accountId: 'pro', date: '2026-10-22', amount: -500, isPaid: true, transferId: 'transfer-1', label: 'Virement personnel' },\n  { id: 'external-personal-transfer', accountId: 'pro', date: '2026-10-26', amount: -1800, isPaid: true, label: 'Vers Fortunéo' },
   { id: 'paid-social', accountId: 'pro', date: '2026-10-23', amount: -12657, isPaid: true, professionalCategory: 'social', label: 'Paiement charges sociales' },
   { id: 'paid-vat', accountId: 'pro', date: '2026-10-24', amount: -2500, isPaid: true, professionalCategory: 'vat', label: 'Paiement TVA' },
-  { id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false, label: 'Assurance' },
+  { id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false, label: 'Assurance' },\n  { id: 'future-external-transfer', accountId: 'pro', date: '2026-11-16', amount: -900, isPaid: false, label: 'Vers compte personnel' },
   { id: 'future-urssaf', accountId: 'pro', date: '2026-11-18', amount: -400, isPaid: false, professionalCategory: 'social', label: 'URSSAF' },
   { id: 'future-vat', accountId: 'pro', date: '2026-11-19', amount: -700, isPaid: false, professionalCategory: 'vat', label: 'TVA à payer' },
   { id: 'too-far-future', accountId: 'pro', date: '2026-12-10', amount: -1200, isPaid: false, label: 'Charge du cycle suivant' },
@@ -30,8 +30,8 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
   assert.equal(result.transferAmount, 5117.24);
   assert.equal(result.cashRemaining, 9082.76);
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-previous-invoice', 'past-charge', 'unpaid-past']);
-  assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-charge']);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-previous-invoice', 'past-charge', 'unpaid-past']);\n  assert.equal(result.pastChargeItems.some(item => item.id === 'external-personal-transfer'), false);
+  assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-charge']);\n  assert.equal(result.futureChargeItems.some(item => item.id === 'future-external-transfer'), false);
 });
 
 test('does not propose remuneration when historical charges exceed turnover', () => {
