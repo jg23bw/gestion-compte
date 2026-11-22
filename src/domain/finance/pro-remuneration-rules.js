@@ -56,6 +56,10 @@
 
   const isInvoice = transaction => transaction.professionalOperationType === 'invoice'
     || (Number(transaction.amount) > 0 && /^\s*facture\s+\d+\s*$/i.test(String(transaction.label || '')));
+  // Les lignes de marge (bilan / AEN) ne sont pas des décaissements
+  // à intégrer dans la simulation, même si leur montant est négatif.
+  const isMargin = transaction => /^\s*marge\b/i.test(String(transaction.label || ''))
+    || transaction.professionalOperationType === 'margin';
 
   // Reproduit exactement le tri de la table Opérations.
   // En date décroissante, les lignes d'un même jour sont affichées dans
@@ -174,7 +178,7 @@
     // Les ajustements professionnels à montant bancaire nul (ex. Marge AEN)
     // ne constituent pas un décaissement et ne sont pas comptabilisés.
     const isEligibleExpense = item => Number(item.amount) < 0
-      && !isInvoice(item) && !isTransfer(item) && !isAlreadyProvisionedCharge(item);
+      && !isInvoice(item) && !isMargin(item) && !isTransfer(item) && !isAlreadyProvisionedCharge(item);
     const toChargeItem = item => ({
       id: String(item.id), date: item.date,
       label: String(item.label || 'Charge'),
@@ -209,5 +213,5 @@
     };
   }
 
-  return Object.freeze({ roundMoney, normalizeSimulations, isInvoice, displayOrder, chronologicalOrder, findLatestInvoicePair, calculate });
+  return Object.freeze({ roundMoney, normalizeSimulations, isInvoice, isMargin, displayOrder, chronologicalOrder, findLatestInvoicePair, calculate });
 });
