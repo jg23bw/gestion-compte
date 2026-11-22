@@ -23,31 +23,44 @@
       .sort((a, b) => b.invoiceDate.localeCompare(a.invoiceDate))[0] || null;
   }
 
+  function latestInvoicePair(accountId) {
+    return ProRemunerationRules.findLatestInvoicePair(
+      state.transactions || [], accountId, $('pro-transaction-sort')?.value || 'date-desc'
+    );
+  }
+
   function readForm() {
     const accountId = $('pro-remuneration-account')?.value || '';
-    const previousInvoiceDate = $('pro-remuneration-previous-date')?.value || '';
-    const invoiceDate = $('pro-remuneration-invoice-date')?.value || '';
-    const caHt = parseFrenchNumber($('pro-remuneration-ca')?.value || '');
+    const pair = latestInvoicePair(accountId);
+    if (!pair?.currentInvoice || !pair?.previousInvoice) {
+      throw new Error('Identifiez au moins deux factures dans les opérations du compte professionnel pour lancer la simulation.');
+    }
+    const previousInvoiceDate = pair.previousInvoice.date;
+    const invoiceDate = pair.currentInvoice.date;
+    const caHt = pair.caHt;
     const socialRate = parseFrenchNumber($('pro-remuneration-rate')?.value || '45');
     const account = accountById(accountId);
     const cashBalance = account ? balanceAt(accountId, invoiceDate) : null;
     return ProRemunerationRules.calculate({
       transactions: state.transactions || [], accountId, previousInvoiceDate, invoiceDate,
-      caHt, socialRate, cashBalance, displaySort: $('pro-transaction-sort')?.value || 'date-desc'
+      caHt, invoiceTtc: pair.invoiceTtc, currentInvoicePaid: pair.currentInvoicePaid,
+      socialRate, cashBalance, displaySort: $('pro-transaction-sort')?.value || 'date-desc'
     });
   }
 
   function renderPreview() {
     const target = $('pro-remuneration-preview');
     if (!target) return;
-    if (!$('pro-remuneration-ca')?.value.trim()) {
-      target.innerHTML = '<p class="pro-remuneration-empty">Saisissez le chiffre d’affaires HT pour afficher la simulation.</p>';
+    const pair = latestInvoicePair($('pro-remuneration-account')?.value || '');
+    if (!pair?.currentInvoice || !pair?.previousInvoice) {
+      target.innerHTML = '<p class="pro-remuneration-empty">Identifiez au moins deux factures dans les opérations du compte professionnel. Le montant saisi doit être TTC ; le CA HT est calculé automatiquement à 20 % de TVA.</p>';
       target.dataset.result = 'invalid';
       return;
     }
     try {
       const result = readForm();
       target.innerHTML = '<div class="pro-remuneration-result-grid">'
+        + '<article><span>Facture ' + (result.currentInvoicePaid ? 'encaissée' : 'à encaisser') + ' · TTC / CA HT</span><strong>' + euro(result.invoiceTtc) + ' / ' + euro(result.caHt) + '</strong></article>'
         + '<article><span>Dépenses de la période (pointées ou non, hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Rémunération estimée</span><strong>' + euro(result.remuneration) + '</strong></article>'
@@ -56,6 +69,7 @@
         + '<article class="highlight"><span>Virement personnel estimé</span><strong>' + euro(result.transferAmount) + '</strong></article>'
         + '</div>'
         + '<details class="pro-remuneration-live-details"><summary>Voir les opérations retenues</summary><h4>Charges débitées sur la période</h4>' + detailList(result.pastChargeItems, 'Aucune charge passée retenue.') + '<h4>Charges à venir hors URSSAF et TVA</h4>' + detailList(result.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
+        + (!result.currentInvoicePaid ? '<p class="pro-remuneration-warning">Cette facture n’est pas encore pointée comme encaissée. La rémunération est estimative ; vérifiez la trésorerie avant tout virement.</p>' : '')
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
         + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">Trésorerie estimée restante après virement et charges futures : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Ce contrôle suppose que l’encaissement de la facture est aussi enregistré comme opération pointée.</small>' : '');
@@ -73,7 +87,7 @@
       .filter(item => item.accountId === accountId)
       .sort((a, b) => b.invoiceDate.localeCompare(a.invoiceDate));
     target.innerHTML = rows.length ? rows.map(item => '<article class="pro-remuneration-history-item">'
-      + '<div><strong>Facture encaissée le ' + dateFormat(item.invoiceDate) + '</strong><small>Période depuis le ' + dateFormat(item.previousInvoiceDate) + '</small></div>'
+      + '<div><strong>Facture du ' + dateFormat(item.invoiceDate) + '</strong><small>Période depuis le ' + dateFormat(item.previousInvoiceDate) + '</small></div>'
       + '<div><span>CA HT</span><strong>' + euro(item.caHt) + '</strong></div>'
       + '<div><span>Rémunération</span><strong>' + euro(item.remuneration) + '</strong></div>'
       + '<div><span>Provision URSSAF</span><strong>' + euro(item.socialProvision) + '</strong></div>'
@@ -94,20 +108,21 @@
     if (!accounts.some(account => account.id === selectedAccountId)) selectedAccountId = accounts[0].id;
     const previous = latestSimulation(selectedAccountId);
     const selected = accounts.find(account => account.id === selectedAccountId);
-    const currentInvoiceDate = $('pro-remuneration-invoice-date')?.value || today();
-    const currentCa = $('pro-remuneration-ca')?.value || '';
+    const pair = latestInvoicePair(selectedAccountId);
+    const currentInvoiceDate = pair?.currentInvoice?.date || '';
+    const currentCa = pair ? moneyInput(pair.caHt) : '';
     const currentRate = $('pro-remuneration-rate')?.value || '45';
-    const currentPreviousDate = $('pro-remuneration-previous-date')?.value || previous?.invoiceDate || '';
+    const currentPreviousDate = pair?.previousInvoice?.date || previous?.invoiceDate || '';
     container.innerHTML = '<section class="panel pro-remuneration-panel">'
-      + '<div class="panel-heading"><div><h2>Calcul de rémunération</h2><p>Estimation mensuelle à partir des dépenses de la période, pointées ou non, et des charges à venir</p></div><span class="pro-remuneration-tag">Simulation</span></div>'
+      + '<div class="panel-heading"><div><h2>Calcul de rémunération</h2><p>Simulation automatique à partir des deux dernières factures et des opérations du compte professionnel</p></div><span class="pro-remuneration-tag">Simulation</span></div>'
       + '<form id="pro-remuneration-form" class="pro-remuneration-form">'
       + '<label>Compte professionnel<select id="pro-remuneration-account">' + accounts.map(account => '<option value="' + escapeHtml(account.id) + '"' + (account.id === selectedAccountId ? ' selected' : '') + '>' + escapeHtml(account.name) + '</option>').join('') + '</select></label>'
       + '<div class="pro-remuneration-input-grid">'
-      + '<label>Nouvelle facture encaissée le<input id="pro-remuneration-invoice-date" type="date" required value="' + escapeHtml(currentInvoiceDate) + '"></label>'
-      + '<label>Facture précédente encaissée le<input id="pro-remuneration-previous-date" type="date" required value="' + escapeHtml(currentPreviousDate) + '"></label>'
-      + '<label>Chiffre d’affaires HT (€)<input id="pro-remuneration-ca" inputmode="decimal" placeholder="Ex. : 12 000,00" required value="' + escapeHtml(currentCa) + '"></label>'
+      + '<label>Dernière facture<input id="pro-remuneration-invoice-date" type="date" readonly value="' + escapeHtml(currentInvoiceDate) + '"></label>'
+      + '<label>Facture précédente<input id="pro-remuneration-previous-date" type="date" readonly value="' + escapeHtml(currentPreviousDate) + '"></label>'
+      + '<label>CA HT calculé automatiquement (€)<input id="pro-remuneration-ca" inputmode="decimal" readonly value="' + escapeHtml(currentCa) + '"></label>'
       + '<label>Taux de cotisations estimé (%)<input id="pro-remuneration-rate" inputmode="decimal" value="' + escapeHtml(currentRate) + '" required></label>'
-      + '</div><p class="pro-remuneration-help">La première simulation nécessite la date d’encaissement de la facture précédente. Ensuite, cette date est préremplie avec la dernière simulation enregistrée. Les opérations de la date de la facture précédente sont incluses. Les dépenses passées sont comptées qu’elles soient pointées ou non. Les virements entre comptes et les virements externes identifiés par leur libellé (par exemple « Vers [bénéficiaire] »), ainsi que les paiements URSSAF et TVA déjà provisionnés, sont exclus.</p>'
+      + '</div><p class="pro-remuneration-help">Saisissez chaque facture TTC dans les opérations du compte professionnel et sélectionnez « Facture (émise) ». La simulation utilise automatiquement les deux dernières factures ; le CA HT est calculé en divisant le TTC par 1,20. Les factures non encaissées restent des repères de période mais ne sont pas intégrées au solde bancaire. Les dépenses passées sont comptées qu’elles soient pointées ou non. Les virements entre comptes, les virements personnels identifiés et les paiements URSSAF / TVA déjà provisionnés sont exclus.</p>'
       + '<div id="pro-remuneration-preview" class="pro-remuneration-preview" aria-live="polite"></div>'
       + '<div class="pro-remuneration-actions"><button type="submit" class="primary-button">Enregistrer cette simulation</button></div>'
       + '</form></section><section class="panel pro-remuneration-history-panel"><div class="panel-heading"><div><h2>Historique des rémunérations</h2><p>Les simulations enregistrées restent consultables ici.</p></div></div><div id="pro-remuneration-history" class="pro-remuneration-history"></div></section>';
@@ -142,9 +157,6 @@
       if (!cloud.user) throw new Error('Connectez-vous pour enregistrer vos simulations.');
       await authMetadataRepository().update({ proRemunerationSimulations: next });
       state.proRemunerationSimulations = next;
-      $('pro-remuneration-previous-date').value = result.invoiceDate;
-      $('pro-remuneration-invoice-date').value = result.futurePeriodEndDate;
-      $('pro-remuneration-ca').value = '';
       renderProRemunerationScreen();
       showToast('Simulation de rémunération enregistrée.');
     } catch (error) {
