@@ -387,6 +387,8 @@ function initializeDomEventHandlers() {
         if(!professionalTreatment){showToast('Précisez si les cotisations URSSAF sont une provision ou un paiement effectif.');return;}
       }
     }
+    const professionalOperationType=isProfessional ? $('transaction-professional-operation-type').value : null;
+    if(professionalOperationType==='invoice' && amount<=0){showToast('Une facture encaissée doit avoir un montant positif.');return;}
     const isProvision=professionalCategory==='provision'||((professionalCategory==='vat'||professionalCategory==='social')&&professionalTreatment==='provision');
     const bankAmount=isProvision?0:amount;
     const adjustedAmount=isProfessional&&professionalCategory&&professionalTreatment==='effective'?0:amount;
@@ -395,7 +397,7 @@ function initializeDomEventHandlers() {
       const template=recurringTemplateCommands.findById(previous.recurringTemplateId);
       if(template)recurringTemplateCommands.update(template.id,{amount,professionalCategory,professionalTreatment});
     }
-    transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount:bankAmount,professionalCategory,professionalTreatment,professionalAmount:adjustedAmount,label,createdAt:Date.now()});
+    transactionCommands.save({id:id||crypto.randomUUID(),accountId,date,amount:bankAmount,professionalCategory,professionalTreatment,professionalAmount:adjustedAmount,professionalOperationType,label,createdAt:Date.now()});
     $('transaction-dialog').close();renderAll();showToast(previous?'Opération modifiée.':'Opération ajoutée.',true);
   });
   $('lombard-form').addEventListener('submit',async event=>{

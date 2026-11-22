@@ -12,7 +12,7 @@ test('maps an ordinary transaction to the existing Supabase schema', () => {
   assert.deepEqual(row, {
     id: 'tx-1', user_id: 'user-1', account_id: 'account-1',
     transaction_date: '2026-10-30', label: 'Loyer', amount: 850.5,
-    professional_category: null, professional_treatment: null, professional_amount: 850.5,
+    professional_category: null, professional_treatment: null, professional_amount: 850.5, professional_operation_type: null,
     is_paid: true, sort_order: 2, source: 'manual',
     recurring_template_id: null, generated_month: null, recurring_key: null,
     created_at: '1970-01-01T00:00:01.000Z',
@@ -46,12 +46,13 @@ test('maps recurring transaction metadata without changing its keys', () => {
   const row = mapper.toCloud({
     id: 'tx-2', accountId: 'account-1', date: '2026-10-12',
     label: 'Abonnement', amount: -12, recurringTemplateId: 'template-1',
-    recurringKey: 'template-1:2026-10'
+    recurringKey: 'template-1:2026-10', professionalOperationType: 'invoice'
   }, 'user-1');
   assert.equal(row.source, 'recurring');
   assert.equal(row.recurring_template_id, 'template-1');
   assert.equal(row.generated_month, '2026-10');
   assert.equal(row.recurring_key, 'template-1:2026-10');
+  assert.equal(row.professional_operation_type, 'invoice');
   assert.equal(row.is_paid, false);
   assert.equal(row.sort_order, null);
 });
@@ -62,11 +63,11 @@ test('maps Supabase rows back to the canonical transaction model', () => {
     id: 'tx-3', account_id: 'account-2', transaction_date: '2026-10-02',
     amount: '-25.75', label: 'Courses', is_paid: true, sort_order: 4,
     created_at: '2026-10-02T08:30:00.000Z', recurring_key: null,
-    recurring_template_id: null
+    recurring_template_id: null, professional_operation_type: null
   });
   assert.deepEqual(transaction, {
     id: 'tx-3', accountId: 'account-2', date: '2026-10-02',
-    amount: -25.75, professionalCategory: null, professionalTreatment: null, professionalAmount: undefined, label: 'Courses', isPaid: true, sortOrder: 4,
+    amount: -25.75, professionalCategory: null, professionalTreatment: null, professionalAmount: undefined, professionalOperationType: null, label: 'Courses', isPaid: true, sortOrder: 4,
     createdAt: Date.parse('2026-10-02T08:30:00.000Z'),
     recurringKey: undefined, recurringTemplateId: undefined
   });

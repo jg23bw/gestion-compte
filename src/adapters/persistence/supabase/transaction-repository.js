@@ -9,7 +9,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  const LEGACY_SCHEMA_ERROR = /recurring.?key|is_paid|sort_order|schema cache|column.*not found/i;
+  const LEGACY_SCHEMA_ERROR = /recurring.?key|is_paid|sort_order|professional_operation_type|schema cache|column.*not found/i;
 
   function create({ client, userId }) {
     if (!client || typeof client.from !== 'function') throw new TypeError('client must expose from(table)');
@@ -30,7 +30,7 @@
           throw new Error('Migration Supabase requise : exécutez supabase/migrations/202611070001_account_transfers.sql dans SQL Editor avant de synchroniser des virements.');
         }
         if (result.error && LEGACY_SCHEMA_ERROR.test(result.error.message || '')) {
-          const compatibleRows = rows.map(({ recurring_key, is_paid, sort_order, ...row }) => row);
+          const compatibleRows = rows.map(({ recurring_key, is_paid, sort_order, professional_operation_type, ...row }) => row);
           result = await client.from('transactions').upsert(compatibleRows, { onConflict: 'id' });
           if (result.error) throw result.error;
           return { compatibilityFallback: true };

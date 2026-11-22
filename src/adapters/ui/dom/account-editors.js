@@ -15,7 +15,9 @@ function updateTransactionFormMode(){
   $('transaction-transfer-fields').hidden=!isTransfer;
   $('transaction-account-caption').textContent=isTransfer?'Compte source':'Compte';
   const account=accountById(sourceId);
-  $('transaction-classification').hidden=isTransfer||effectiveAccountType(account||{kind:'bank'})!=='pro';
+  const isProfessional=effectiveAccountType(account||{kind:'bank'})==='pro';
+  $('transaction-classification').hidden=isTransfer||!isProfessional;
+  $('transaction-professional-type-field').hidden=isTransfer||!isProfessional;
   $('transaction-amount-help').textContent=isTransfer
     ?'Saisissez un montant positif : le compte source sera débité et le compte destinataire crédité.'
     :'Utilisez un montant positif pour une entrée d’argent et négatif pour une sortie.';
@@ -46,6 +48,7 @@ function openTransaction(accountId=null,transaction=null){
   $('transaction-provision').checked=record?.professionalCategory==='provision';
   $('transaction-vat').checked=record?.professionalCategory==='vat';
   $('transaction-social').checked=record?.professionalCategory==='social';
+  $('transaction-professional-operation-type').value=record?.professionalOperationType || (Number(record?.amount)>0 && /^\\s*facture\\s+\\d+\\s*$/i.test(String(record?.label||'')) ? 'invoice' : 'expense');
   const treatment=record?.professionalTreatment||'';
   document.querySelectorAll('input[name="transaction-vat-treatment"],input[name="transaction-social-treatment"]').forEach(input=>{input.checked=input.value===treatment;});
   $('transaction-label').value=record?.label||'';
