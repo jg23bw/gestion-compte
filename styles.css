@@ -2615,3 +2615,12 @@ html[data-theme="dark"] .settings-field select{border-color:#35435a;background:#
 :root[data-theme="dark"] .pro-remuneration-history-item>div small,
 :root[data-theme="dark"] .pro-remuneration-preview>small,
 :root[data-theme="dark"] .pro-remuneration-cash{color:#9ba8bd}
+
+
+.invoice-indicator{display:inline-flex;align-items:center;gap:5px;margin-right:8px;vertical-align:middle;font-size:11px;font-weight:600;white-space:nowrap}
+.invoice-indicator>span:first-child{font-size:14px}
+.invoice-status{padding:2px 7px;border-radius:999px;font-size:10px;font-weight:600}
+.invoice-status.is-paid{background:#e1f5eb;color:#18794e}
+.invoice-status.is-pending{background:#fff3d6;color:#946200}
+:root[data-theme="dark"] .invoice-status.is-paid{background:#173d30;color:#8ce0b8}
+:root[data-theme="dark"] .invoice-status.is-pending{background:#49391b;color:#f2ca72}

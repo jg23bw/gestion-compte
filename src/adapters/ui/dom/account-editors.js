@@ -18,6 +18,7 @@ function updateTransactionFormMode(){
   const isProfessional=effectiveAccountType(account||{kind:'bank'})==='pro';
   $('transaction-classification').hidden=isTransfer||!isProfessional;
   $('transaction-professional-type-field').hidden=isTransfer||!isProfessional;
+  $('transaction-invoice-help').hidden=isTransfer||!isProfessional||$('transaction-professional-operation-type').value!=='invoice';
   $('transaction-amount-help').textContent=isTransfer
     ?'Saisissez un montant positif : le compte source sera débité et le compte destinataire crédité.'
     :'Utilisez un montant positif pour une entrée d’argent et négatif pour une sortie.';

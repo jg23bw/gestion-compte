@@ -8,7 +8,7 @@
   <link rel="mask-icon" href="favicon.svg?v=brand-v3" color="#0d1b2a">
   <meta name="description" content="Gestion Compte : pilotez vos comptes, votre trésorerie et vos investissements dans un espace financier clair et sécurisé.">
   <title>Gestion Compte — Pilotage financier</title>
-  <link rel="stylesheet" href="styles.css?v=pro-remuneration-v1">
+  <link rel="stylesheet" href="styles.css?v=invoice-remuneration-v2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
@@ -79,11 +79,11 @@
     <script src="src/adapters/ui/dom/stocks-screen.js?v=stock-session-note-v1"></script>
     <script src="src/adapters/ui/dom/crypto-screen.js"></script>
     <script src="src/adapters/ui/dom/accounts-operations-screen.js?v=default-account-v1"></script>
-    <script src="src/adapters/ui/dom/pro-remuneration-screen.js?v=pro-remuneration-v1"></script>
+    <script src="src/adapters/ui/dom/pro-remuneration-screen.js?v=invoice-remuneration-v2"></script>
     <script src="src/adapters/ui/dom/wealth-screen.js"></script>
     <script src="src/adapters/ui/dom/account-editors.js?v=account-transfer-v1"></script>
     <script src="src/bootstrap/cloud-session.js?v=pro-remuneration-v1"></script>
-    <script src="src/adapters/ui/dom/event-handlers.js?v=pro-remuneration-v1"></script>
+    <script src="src/adapters/ui/dom/event-handlers.js?v=invoice-remuneration-v2"></script>
     <script src="src/adapters/ui/dom/opportunities-screen.js?v=mm200-portfolio-history-v3"></script>
   <script src="app.js?v=pro-remuneration-v1" defer></script>
 </head>
@@ -361,7 +361,7 @@
       <div id="transaction-transfer-fields" hidden><label>Compte destinataire<select id="transaction-transfer-account"></select></label></div>
       <div class="form-row"><label>Date<input id="transaction-date" type="date" required></label><label>Montant (€)<input id="transaction-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" required placeholder="0,00"></label></div>
       <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
-      <label id="transaction-professional-type-field" hidden>Nature de l’opération professionnelle<select id="transaction-professional-operation-type"><option value="expense">Opération courante</option><option value="invoice">Facture encaissée</option></select></label>
+      <label id="transaction-professional-type-field" hidden>Nature de l’opération professionnelle<select id="transaction-professional-operation-type"><option value="expense">Opération courante</option><option value="invoice">Facture (émise)</option></select></label><p id="transaction-invoice-help" class="form-help" hidden>Saisissez le montant TTC. Une facture non pointée est considérée comme émise mais non encaissée ; cochez « Pointée » lorsqu’elle apparaît sur le relevé bancaire.</p>
       <fieldset id="transaction-classification" class="pledge-field" hidden>
         <legend>Type de dépense professionnelle</legend>
         <label class="pledge-check"><input id="transaction-provision" type="checkbox"> Provision (ex. Marge / AEN)</label>
