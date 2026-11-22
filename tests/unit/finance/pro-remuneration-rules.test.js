@@ -32,7 +32,7 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
   assert.equal(result.transferAmount, 5117.24);
   assert.equal(result.cashRemaining, 9082.76);
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-previous-invoice', 'past-charge', 'unpaid-past']);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['unpaid-past', 'past-charge', 'same-day-previous-invoice']);
   assert.equal(result.pastChargeItems.some(item => item.id === 'external-personal-transfer'), false);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-charge']);
   assert.equal(result.futureChargeItems.some(item => item.id === 'future-external-transfer'), false);
@@ -84,15 +84,15 @@ test('normalizes stored simulations and ignores malformed entries', () => {
 test('uses invoice rows as exclusive bounds and table order for same-date operations', () => {
   const ledger = [
     { id: 'current-invoice', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: true, createdAt: 500 },
-    { id: 'same-day-after-current', accountId: 'pro', date: '2026-11-05', amount: -200, label: 'Frais après facture', isPaid: false, createdAt: 400 },
-    { id: 'same-day-before-previous', accountId: 'pro', date: '2026-10-05', amount: -999, label: 'À exclure avant facture', isPaid: true, createdAt: 100 },
+    { id: 'same-day-after-current', accountId: 'pro', date: '2026-11-05', amount: -200, label: 'Frais après facture', isPaid: true, createdAt: 400 },
+    { id: 'same-day-before-previous', accountId: 'pro', date: '2026-10-05', amount: -999, label: 'Frais date précédente', isPaid: true, createdAt: 75 },
     { id: 'previous-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true, createdAt: 50 },
     { id: 'between-invoices', accountId: 'pro', date: '2026-10-20', amount: -350, label: 'Comptabilité', isPaid: true, createdAt: 200 },
-    { id: 'same-day-after-previous', accountId: 'pro', date: '2026-10-05', amount: -150, label: 'Frais après facture précédente', isPaid: false, createdAt: 25 }
+    { id: 'same-day-after-previous', accountId: 'pro', date: '2026-10-05', amount: -150, label: 'À exclure avant facture précédente', isPaid: true, createdAt: 25 }
   ];
   const result = Rules.calculate({ transactions: ledger, accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05', caHt: 12000, socialRate: 45 });
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-after-current', 'between-invoices', 'same-day-after-previous']);
-  assert.equal(result.pastCharges, 700);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-after-current', 'between-invoices', 'same-day-before-previous']);
+  assert.equal(result.pastCharges, 1549);
 });
 
 test('recognizes legacy invoice labels only when they match Facture XX and are positive', () => {

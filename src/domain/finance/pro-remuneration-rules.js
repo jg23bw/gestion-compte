@@ -62,13 +62,11 @@
       const pendingFirst = Number(a.isPaid === true) - Number(b.isPaid === true);
       if (pendingFirst) return pendingFirst;
       const created = Number(a.createdAt || 0) - Number(b.createdAt || 0);
-      const manual = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
-      const ids = String(a.id || '').localeCompare(String(b.id || ''));
-      if (sort === 'date-asc') return String(a.date || '').localeCompare(String(b.date || '')) || created || manual || ids;
+      if (sort === 'date-asc') return String(a.date || '').localeCompare(String(b.date || '')) || created;
       if (sort === 'label') return String(a.label || '').localeCompare(String(b.label || ''), 'fr');
       if (sort === 'amount-asc') return Number(a.amount) - Number(b.amount);
       if (sort === 'amount-desc') return Number(b.amount) - Number(a.amount);
-      return String(b.date || '').localeCompare(String(a.date || '')) || -created || -manual || -ids;
+      return String(b.date || '').localeCompare(String(a.date || '')) || -created;
     });
   }
 
