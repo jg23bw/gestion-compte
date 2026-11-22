@@ -193,13 +193,44 @@
     const pastCharges = roundMoney(pastChargeItems.reduce((sum, item) => sum + item.amount, 0));
     const futureCharges = roundMoney(futureChargeItems.reduce((sum, item) => sum + item.amount, 0));
     const availableResult = roundMoney(turnover - pastCharges);
-    const remuneration = availableResult > 0 ? roundMoney(availableResult / (1 + rate / 100)) : 0;
-    const socialProvision = roundMoney(remuneration * rate / 100);
-    const transferBeforeFloor = roundMoney(remuneration - futureCharges);
-    const transferAmount = Math.max(0, transferBeforeFloor);
+    const theoreticalRemuneration = availableResult > 0 ? roundMoney(availableResult / (1 + rate / 100)) : 0;
+    const theoreticalSocialProvision = roundMoney(theoreticalRemuneration * rate / 100);
+    const theoreticalTransfer = Math.max(0, roundMoney(theoreticalRemuneration - futureCharges));
     const normalizedCashBalance = cashBalance !== null && cashBalance !== undefined && cashBalance !== '' && Number.isFinite(Number(cashBalance)) ? roundMoney(cashBalance) : null;
-    const cashRemaining = normalizedCashBalance === null
+    const normalizedInvoiceTtc = invoiceTtc !== null && invoiceTtc !== undefined && invoiceTtc !== '' && Number.isFinite(Number(invoiceTtc)) ? roundMoney(invoiceTtc) : null;
+    const canOptimizeCash = normalizedCashBalance !== null && normalizedInvoiceTtc !== null
+      && typeof currentInvoicePaid === 'boolean';
+    const minimumCashBalance = 1;
+    const vatProvision = normalizedInvoiceTtc === null ? 0 : roundMoney(Math.max(0, normalizedInvoiceTtc - roundMoney(normalizedInvoiceTtc / 1.2)));
+    const cashBeforeTransfer = canOptimizeCash
+      ? roundMoney(normalizedCashBalance + (currentInvoicePaid ? 0 : normalizedInvoiceTtc))
+      : null;
+
+    // Maximise le virement en recalculant les cotisations sur chaque euro
+    // supplémentaire. La borne est le solde prévisionnel après charges et
+    // provisions, avec un plancher strict de 1,00 €.
+    let transferAmount = theoreticalTransfer;
+    let remuneration = theoreticalRemuneration;
+    let socialProvision = theoreticalSocialProvision;
+    let cashRemaining = normalizedCashBalance === null
       ? null : roundMoney(normalizedCashBalance - transferAmount - futureCharges);
+    if (canOptimizeCash) {
+      let low = 0;
+      let high = Math.max(0, roundMoney(cashBeforeTransfer - futureCharges - vatProvision - minimumCashBalance));
+      for (let iteration = 0; iteration < 64 && low < high; iteration += 1) {
+        const middle = roundMoney((low + high + 0.01) / 2);
+        const trialRemuneration = roundMoney(middle + futureCharges);
+        const trialSocialProvision = roundMoney(trialRemuneration * rate / 100);
+        const remaining = roundMoney(cashBeforeTransfer - futureCharges - vatProvision - middle - trialSocialProvision);
+        if (remaining >= minimumCashBalance) low = middle;
+        else high = roundMoney(middle - 0.01);
+      }
+      transferAmount = Math.max(0, low);
+      remuneration = roundMoney(transferAmount + futureCharges);
+      socialProvision = roundMoney(remuneration * rate / 100);
+      cashRemaining = roundMoney(cashBeforeTransfer - futureCharges - vatProvision - transferAmount - socialProvision);
+    }
+    const transferBeforeFloor = roundMoney(theoreticalRemuneration - futureCharges);
 
     return {
       accountId, previousInvoiceDate, invoiceDate, futurePeriodEndDate, caHt: roundMoney(turnover),
