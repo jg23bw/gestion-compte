@@ -48,7 +48,7 @@
     try {
       const result = readForm();
       target.innerHTML = '<div class="pro-remuneration-result-grid">'
-        + '<article><span>Charges réellement débitées</span><strong>' + euro(result.pastCharges) + '</strong></article>'
+        + '<article><span>Charges réellement débitées (hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Rémunération estimée</span><strong>' + euro(result.remuneration) + '</strong></article>'
         + '<article><span>Provision URSSAF (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
@@ -78,7 +78,7 @@
       + '<div><span>Rémunération</span><strong>' + euro(item.remuneration) + '</strong></div>'
       + '<div><span>Provision URSSAF</span><strong>' + euro(item.socialProvision) + '</strong></div>'
       + '<div><span>Virement estimé</span><strong class="positive">' + euro(item.transferAmount) + '</strong></div>'
-      + '<details><summary>Détail des charges retenues</summary><h4>Charges passées</h4>' + detailList(item.pastChargeItems, 'Aucune charge passée retenue.')
+      + '<details><summary>Détail des charges retenues</summary><h4>Charges passées (hors URSSAF et TVA)</h4>' + detailList(item.pastChargeItems, 'Aucune charge passée retenue.')
       + '<h4>Charges futures hors URSSAF et TVA</h4>' + detailList(item.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
       + '</article>').join('') : '<div class="pro-remuneration-empty">Aucune simulation enregistrée pour ce compte.</div>';
   }
