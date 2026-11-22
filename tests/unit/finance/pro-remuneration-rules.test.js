@@ -118,7 +118,7 @@ test('future charges include every expense after the current invoice until the n
   const result = Rules.calculate({ transactions: ledger, accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05', caHt: 10000 });
   assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-one']);
   assert.equal(result.futureCharges, 300);
-  assert.equal(result.futurePeriodEndDate, '2026-10-05');
+  assert.equal(result.futurePeriodEndDate, '2026-12-05');
 });
 
 
