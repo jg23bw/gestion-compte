@@ -33,7 +33,7 @@
     const cashBalance = account ? balanceAt(accountId, invoiceDate) : null;
     return ProRemunerationRules.calculate({
       transactions: state.transactions || [], accountId, previousInvoiceDate, invoiceDate,
-      caHt, socialRate, cashBalance
+      caHt, socialRate, cashBalance, displaySort: $('pro-transaction-sort')?.value || 'date-desc'
     });
   }
 
