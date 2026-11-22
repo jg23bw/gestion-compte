@@ -131,3 +131,24 @@ test('detects classification and adjusted-amount changes on an existing professi
  assert.ok(upsert,'classification-only update must be synchronized');
  assert.deepEqual(upsert[1],[updated]);
 });
+
+
+test('synchronizes an invoice type change on an existing transaction',async()=>{
+ const previous={
+  id:'invoice-1',account_id:'pro-1',transaction_date:'2026-11-01',
+  label:'Facture 12',amount:1200,professional_category:null,
+  professional_treatment:null,professional_amount:1200,
+  professional_operation_type:null,is_paid:false,sort_order:1,source:'manual',
+  recurring_template_id:null,generated_month:null,recurring_key:null
+ };
+ const updated={...previous,professional_operation_type:'invoice'};
+ const f=fixture({remoteTransactions:[previous]});
+ await f.service.synchronize({
+  client:{},userId:'u1',
+  state:{...state,transactions:[updated]},
+  pending:f.pending,dirty:f.dirty,cryptoTableReady:false
+ });
+ const upsert=f.calls.find(item=>Array.isArray(item)&&item[0]==='transactions.upsert');
+ assert.ok(upsert,'invoice type change must be synchronized for an existing transaction');
+ assert.deepEqual(upsert[1],[updated]);
+});
