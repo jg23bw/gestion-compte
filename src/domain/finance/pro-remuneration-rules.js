@@ -38,6 +38,15 @@
       }));
   }
 
+  function addOneMonth(date) {
+    const [year, month, day] = date.split('-').map(Number);
+    const nextMonth = new Date(Date.UTC(year, month, 1));
+    const lastDay = new Date(Date.UTC(nextMonth.getUTCFullYear(), nextMonth.getUTCMonth() + 1, 0)).getUTCDate();
+    const targetDay = Math.min(day, lastDay);
+    return nextMonth.getUTCFullYear() + '-' + String(nextMonth.getUTCMonth() + 1).padStart(2, '0')
+      + '-' + String(targetDay).padStart(2, '0');
+  }
+
   function calculate({ transactions = [], accountId, previousInvoiceDate, invoiceDate, caHt, socialRate = 45, cashBalance = null } = {}) {
     if (!accountId) throw new TypeError('Un compte professionnel doit être sélectionné.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(previousInvoiceDate || '') || !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate || '')) {
@@ -49,7 +58,7 @@
     if (!Number.isFinite(turnover) || turnover < 0) throw new TypeError('Le chiffre d’affaires HT doit être un montant positif ou nul.');
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new RangeError('Le taux de cotisations doit être compris entre 0 et 100 %.');
 
-    const accountTransactions = transactions.filter(item => item.accountId === accountId);
+    const accountTransactions = transactions.filter(item => item.accountId === accountId);\n    const futurePeriodEndDate = addOneMonth(invoiceDate);
     const pastChargeItems = accountTransactions.filter(item => item.isPaid === true
       && item.date > previousInvoiceDate && item.date <= invoiceDate
       && Number(item.amount) < 0 && !isTransfer(item))
@@ -62,7 +71,7 @@
     // Only real future cash debits are reserved. Social/URSSAF charges are
     // excluded because the new social provision is calculated separately.
     const futureChargeItems = accountTransactions.filter(item => item.isPaid !== true
-      && item.date > invoiceDate && Number(item.amount) < 0
+      && item.date > invoiceDate && item.date <= futurePeriodEndDate && Number(item.amount) < 0
       && !isTransfer(item) && !isSocialCharge(item))
       .sort((a, b) => a.date.localeCompare(b.date)
         || Number(a.createdAt || 0) - Number(b.createdAt || 0)
@@ -82,7 +91,7 @@
       ? null : roundMoney(normalizedCashBalance - transferAmount - futureCharges);
 
     return {
-      accountId, previousInvoiceDate, invoiceDate, caHt: roundMoney(turnover), socialRate: rate,
+      accountId, previousInvoiceDate, invoiceDate, futurePeriodEndDate, caHt: roundMoney(turnover), socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, socialProvision,
       futureCharges, futureChargeItems, transferAmount, cashBalance: normalizedCashBalance,
       cashRemaining, resultIsNegative: availableResult < 0,
