@@ -88,7 +88,7 @@ test('uses both invoice rows as exclusive chronological bounds and table order f
     { id: 'same-day-before-previous', accountId: 'pro', date: '2026-10-05', amount: -999, label: 'Frais avant facture précédente', isPaid: true, createdAt: 75 },
     { id: 'previous-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true, createdAt: 50 },
     { id: 'between-invoices', accountId: 'pro', date: '2026-10-20', amount: -350, label: 'Comptabilité', isPaid: true, createdAt: 200 },
-    { id: 'same-day-after-previous', accountId: 'pro', date: '2026-10-05', amount: -150, label: 'Frais après facture précédente', isPaid: false, createdAt: 25 }
+    { id: 'same-day-after-previous', accountId: 'pro', date: '2026-10-05', amount: -150, label: 'Frais après facture précédente', isPaid: true, createdAt: 25 }
   ];
   const result = Rules.calculate({
     transactions: ledger, accountId: 'pro',
