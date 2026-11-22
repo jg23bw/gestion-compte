@@ -242,12 +242,14 @@ test('optimises the CA-based transfer with the real remaining adjusted balance',
   });
   assert.equal(result.existingSocialProvision, 6217.67);
   assert.equal(result.existingPersonalTransfers, 10710.16);
-  assert.equal(result.additionalTransferAmount, 198.63);
-  assert.equal(result.transferAmount, 6195.19);
-  assert.equal(result.socialProvision, 89.38);
-  assert.equal(result.totalSocialProvision, roundMoneyForTest(result.theoreticalSocialProvision + 89.38));
-  assert.equal(result.remuneration, 288.01);
-  assert.equal(result.cashRemaining, 0.02);
+  assert.equal(result.additionalTransferAmount, 1092.18);
+  assert.equal(result.transferAmount, 5786.15);
+  assert.equal(result.socialProvision, 491.48);
+  assert.equal(result.totalSocialProvision, roundMoneyForTest(result.theoreticalSocialProvision + 491.48));
+  assert.equal(result.remuneration, 1583.66);
+  assert.equal(result.replaceableFuturePersonalTransfers, 10710.16);
+  assert.equal(result.replaceableFutureSocialProvision, 6217.67);
+  assert.equal(result.cashRemaining, 0.01);
 });
 
 function roundMoneyForTest(value) {
