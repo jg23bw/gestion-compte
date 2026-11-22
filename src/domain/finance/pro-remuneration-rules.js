@@ -24,7 +24,7 @@
       .map(item => ({
         ...item,
         caHt: roundMoney(item.caHt),
-        socialRate: Number.isFinite(Number(item.socialRate)) ? Number(item.socialRate) : 45,
+        socialRate: item.socialRate !== null && item.socialRate !== undefined && Number.isFinite(Number(item.socialRate)) ? Number(item.socialRate) : 45,
         pastCharges: roundMoney(item.pastCharges),
         availableResult: roundMoney(item.availableResult),
         remuneration: roundMoney(item.remuneration),
@@ -32,7 +32,7 @@
         futureCharges: roundMoney(item.futureCharges),
         transferAmount: roundMoney(item.transferAmount),
         cashBalance: item.cashBalance !== null && item.cashBalance !== undefined && item.cashBalance !== '' && Number.isFinite(Number(item.cashBalance)) ? roundMoney(item.cashBalance) : null,
-        cashRemaining: Number.isFinite(Number(item.cashRemaining)) ? roundMoney(item.cashRemaining) : null,
+        cashRemaining: item.cashRemaining !== null && item.cashRemaining !== undefined && item.cashRemaining !== '' && Number.isFinite(Number(item.cashRemaining)) ? roundMoney(item.cashRemaining) : null,
         pastChargeItems: Array.isArray(item.pastChargeItems) ? item.pastChargeItems : [],
         futureChargeItems: Array.isArray(item.futureChargeItems) ? item.futureChargeItems : []
       }));
