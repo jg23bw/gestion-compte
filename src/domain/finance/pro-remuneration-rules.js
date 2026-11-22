@@ -207,10 +207,10 @@
     const canOptimizeCash = normalizedProfessionalAdjustedBalance !== null;
     const minimumCashBalance = 0.01;
     const vatProvision = normalizedInvoiceTtc === null ? 0 : roundMoney(Math.max(0, normalizedInvoiceTtc - roundMoney(normalizedInvoiceTtc / 1.2)));
-    // Base exacte : projection « SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES) ».
-    // Elle comprend déjà les opérations enregistrées, pointées ou non, y compris
-    // les échéances futures. On remplace les provisions URSSAF et virements
-    // personnels déjà saisis sur le cycle au lieu de les compter une seconde fois.
+    // La projection réelle comprend déjà toutes les lignes existantes : charges,
+    // virements personnels et provisions URSSAF/TVA, ainsi que les échéances futures.
+    // La simulation calcule donc uniquement un AJOUT : aucune ligne existante n'est
+    // neutralisée et les charges futures ne sont jamais déduites une seconde fois.
     const cycleRows = pastRows.concat(futureRows);
     const existingSocialProvision = roundMoney(cycleRows
       .filter(item => item.professionalCategory === 'social' && item.professionalTreatment === 'provision')
@@ -218,35 +218,34 @@
     const existingPersonalTransfers = roundMoney(cycleRows
       .filter(item => isPersonalTransfer(item))
       .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
-    const adjustedBalanceBeforeSimulation = canOptimizeCash
-      ? roundMoney(normalizedProfessionalAdjustedBalance + existingSocialProvision + existingPersonalTransfers)
-      : null;
 
-    // Le virement est maximal lorsque le solde projeté réel, après remplacement
-    // de la provision URSSAF du cycle, reste supérieur ou égal à un centime.
     let transferAmount = theoreticalTransfer;
     let remuneration = theoreticalRemuneration;
     let socialProvision = theoreticalSocialProvision;
     let cashRemaining = normalizedProfessionalAdjustedBalance;
     if (canOptimizeCash) {
       let low = 0;
-      let high = Math.max(0, Math.floor(adjustedBalanceBeforeSimulation * 100 + 1e-8));
+      // L'optimisation porte sur le virement supplémentaire et sa provision URSSAF
+      // supplémentaire. Les charges futures sont déjà présentes dans la projection.
+      let high = Math.max(0, Math.min(
+        Math.floor(theoreticalTransfer * 100 + 1e-8),
+        Math.floor(normalizedProfessionalAdjustedBalance * 100 + 1e-8)
+      ));
       const remainingForCents = cents => {
         const trialTransfer = cents / 100;
-        const trialRemuneration = roundMoney(trialTransfer + futureCharges);
-        const trialSocialProvision = roundMoney(trialRemuneration * rate / 100);
-        return roundMoney(adjustedBalanceBeforeSimulation - trialTransfer - trialSocialProvision);
+        const trialSocialProvision = roundMoney(trialTransfer * rate / 100);
+        return roundMoney(normalizedProfessionalAdjustedBalance - trialTransfer - trialSocialProvision);
       };
       while (low < high) {
         const middle = Math.ceil((low + high) / 2);
         if (remainingForCents(middle) >= minimumCashBalance) low = middle;
         else high = middle - 1;
       }
-      while (remainingForCents(low + 1) >= minimumCashBalance) low += 1;
+      while (remainingForCents(low + 1) >= minimumCashBalance && low < Math.floor(theoreticalTransfer * 100 + 1e-8)) low += 1;
       transferAmount = Math.max(0, low / 100);
-      remuneration = roundMoney(transferAmount + futureCharges);
-      socialProvision = roundMoney(remuneration * rate / 100);
-      cashRemaining = roundMoney(adjustedBalanceBeforeSimulation - transferAmount - socialProvision);
+      socialProvision = roundMoney(transferAmount * rate / 100);
+      remuneration = roundMoney(transferAmount + socialProvision);
+      cashRemaining = roundMoney(normalizedProfessionalAdjustedBalance - transferAmount - socialProvision);
     }
     const transferBeforeFloor = roundMoney(theoreticalRemuneration - futureCharges);
 
