@@ -48,7 +48,7 @@
     try {
       const result = readForm();
       target.innerHTML = '<div class="pro-remuneration-result-grid">'
-        + '<article><span>Charges réellement débitées (hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
+        + '<article><span>Dépenses de la période (pointées ou non, hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Rémunération estimée</span><strong>' + euro(result.remuneration) + '</strong></article>'
         + '<article><span>Provision URSSAF (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
@@ -78,7 +78,7 @@
       + '<div><span>Rémunération</span><strong>' + euro(item.remuneration) + '</strong></div>'
       + '<div><span>Provision URSSAF</span><strong>' + euro(item.socialProvision) + '</strong></div>'
       + '<div><span>Virement estimé</span><strong class="positive">' + euro(item.transferAmount) + '</strong></div>'
-      + '<details><summary>Détail des charges retenues</summary><h4>Charges passées (hors URSSAF et TVA)</h4>' + detailList(item.pastChargeItems, 'Aucune charge passée retenue.')
+      + '<details><summary>Détail des charges retenues</summary><h4>Dépenses passées (pointées ou non, hors URSSAF et TVA)</h4>' + detailList(item.pastChargeItems, 'Aucune charge passée retenue.')
       + '<h4>Charges futures hors URSSAF et TVA</h4>' + detailList(item.futureChargeItems, 'Aucune charge future retenue.') + '</details>'
       + '</article>').join('') : '<div class="pro-remuneration-empty">Aucune simulation enregistrée pour ce compte.</div>';
   }
@@ -99,7 +99,7 @@
     const currentRate = $('pro-remuneration-rate')?.value || '45';
     const currentPreviousDate = $('pro-remuneration-previous-date')?.value || previous?.invoiceDate || '';
     container.innerHTML = '<section class="panel pro-remuneration-panel">'
-      + '<div class="panel-heading"><div><h2>Calcul de rémunération</h2><p>Estimation mensuelle à partir des charges réellement débitées et des dépenses à venir</p></div><span class="pro-remuneration-tag">Simulation</span></div>'
+      + '<div class="panel-heading"><div><h2>Calcul de rémunération</h2><p>Estimation mensuelle à partir des dépenses de la période, pointées ou non, et des charges à venir</p></div><span class="pro-remuneration-tag">Simulation</span></div>'
       + '<form id="pro-remuneration-form" class="pro-remuneration-form">'
       + '<label>Compte professionnel<select id="pro-remuneration-account">' + accounts.map(account => '<option value="' + escapeHtml(account.id) + '"' + (account.id === selectedAccountId ? ' selected' : '') + '>' + escapeHtml(account.name) + '</option>').join('') + '</select></label>'
       + '<div class="pro-remuneration-input-grid">'
@@ -107,7 +107,7 @@
       + '<label>Facture précédente encaissée le<input id="pro-remuneration-previous-date" type="date" required value="' + escapeHtml(currentPreviousDate) + '"></label>'
       + '<label>Chiffre d’affaires HT (€)<input id="pro-remuneration-ca" inputmode="decimal" placeholder="Ex. : 12 000,00" required value="' + escapeHtml(currentCa) + '"></label>'
       + '<label>Taux de cotisations estimé (%)<input id="pro-remuneration-rate" inputmode="decimal" value="' + escapeHtml(currentRate) + '" required></label>'
-      + '</div><p class="pro-remuneration-help">La première simulation nécessite la date d’encaissement de la facture précédente. Ensuite, cette date est préremplie avec la dernière simulation enregistrée. Les virements entre comptes, les paiements URSSAF et les paiements de TVA déjà provisionnés sont exclus des charges.</p>'
+      + '</div><p class="pro-remuneration-help">La première simulation nécessite la date d’encaissement de la facture précédente. Ensuite, cette date est préremplie avec la dernière simulation enregistrée. Les opérations de la date de la facture précédente sont incluses. Les dépenses passées sont comptées qu’elles soient pointées ou non. Les virements entre comptes, les paiements URSSAF et les paiements de TVA déjà provisionnés sont exclus.</p>'
       + '<div id="pro-remuneration-preview" class="pro-remuneration-preview" aria-live="polite"></div>'
       + '<div class="pro-remuneration-actions"><button type="submit" class="primary-button">Enregistrer cette simulation</button></div>'
       + '</form></section><section class="panel pro-remuneration-history-panel"><div class="panel-heading"><div><h2>Historique des rémunérations</h2><p>Les simulations enregistrées restent consultables ici.</p></div></div><div id="pro-remuneration-history" class="pro-remuneration-history"></div></section>';
