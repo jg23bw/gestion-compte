@@ -340,6 +340,7 @@ function initializeDomEventHandlers() {
   ['transaction-provision','transaction-vat','transaction-social'].forEach(id=>$(id).addEventListener('change',updateTransactionClassificationFields));
   $('transaction-kind').addEventListener('change',updateTransactionFormMode);
   $('transaction-account').addEventListener('change',updateTransactionFormMode);
+  $('transaction-professional-operation-type').addEventListener('change',updateTransactionFormMode);
   $('transaction-transfer-account').addEventListener('change',updateTransactionFormMode);
   const clearTransactionError=()=>{const error=$('transaction-error');if(error){error.hidden=true;error.textContent='';}};
   $('transaction-amount').addEventListener('input',clearTransactionError);
