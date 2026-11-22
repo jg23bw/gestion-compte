@@ -14,7 +14,7 @@
   // generically (e.g. "Vers [beneficiary]"), without depending on a bank name.
   const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole)
     || transaction.professionalCategory === 'personal-transfer'
-    || /^(?:vers\s+\S|virement\\b|transfert\\b)/i.test(String(transaction.label || '').trim());
+    || /^(?:vers\s+\S|virement\b|transfert\b)/i.test(String(transaction.label || '').trim());
   // VAT and social-contribution payments are cash movements for provisions
   // already accounted for separately; they must not reduce remuneration twice.
   const isAlreadyProvisionedCharge = transaction => ['social', 'vat'].includes(transaction.professionalCategory)
@@ -70,67 +70,110 @@
     });
   }
 
+  // Reconstitue la chronologie à partir des dates, mais conserve l'ordre réel
+  // du tableau pour départager plusieurs opérations d'une même date.
+  function chronologicalOrder(transactions, sort = 'date-desc') {
+    const tableOrder = new Map(displayOrder(transactions, sort).map((item, index) => [String(item.id), index]));
+    return transactions.slice().sort((a, b) =>
+      String(a.date || '').localeCompare(String(b.date || ''))
+      || (tableOrder.get(String(a.id)) ?? 0) - (tableOrder.get(String(b.id)) ?? 0)
+    );
+  }
+
   function findLatestInvoicePair(transactions = [], accountId, displaySort = 'date-desc') {
     if (!accountId) return null;
-    const ordered = displayOrder(transactions.filter(item => item.accountId === accountId), displaySort);
-    const invoices = ordered.map((item, index) => ({ item, index })).filter(row => isInvoice(row.item));
-    if (!invoices.length) return null;
-    const current = invoices[0];
-    const previous = invoices[1] || null;
-    const invoiceTtc = roundMoney(Number(current.item.amount));
+    const accountTransactions = transactions.filter(item => item.accountId === accountId);
+    const ordered = chronologicalOrder(accountTransactions, displaySort);
+    const invoices = ordered.filter(isInvoice);
+    if (invoices.length < 2) return null;
+
+    // Priorité à la facture la plus récente encore à encaisser. La borne précédente
+    // est la dernière facture effectivement encaissée avant celle-ci.
+    let current = invoices.slice().reverse().find(item => item.isPaid !== true);
+    if (!current) current = invoices[invoices.length - 1];
+    const currentIndex = ordered.indexOf(current);
+    let previous = invoices.slice(0, invoices.indexOf(current)).reverse()
+      .find(item => item.isPaid === true);
+    if (!previous) previous = invoices.slice(0, invoices.indexOf(current)).reverse()[0] || null;
+    if (!previous || ordered.indexOf(previous) >= currentIndex) return null;
+
+    const invoiceTtc = roundMoney(Number(current.amount));
     return {
-      currentInvoice: current.item,
-      previousInvoice: previous?.item || null,
+      currentInvoice: current,
+      previousInvoice: previous,
       invoiceTtc,
       caHt: roundMoney(invoiceTtc / 1.2),
-      currentInvoicePaid: current.item.isPaid === true
+      currentInvoicePaid: current.isPaid === true
     };
   }
 
-  function calculate({ transactions = [], accountId, previousInvoiceDate, invoiceDate, caHt, invoiceTtc = null, currentInvoicePaid = null, socialRate = 45, cashBalance = null, displaySort = 'date-desc' } = {}) {
+  function calculate({
+    transactions = [], accountId, previousInvoiceDate, invoiceDate,
+    previousInvoiceId = null, invoiceId = null,
+    caHt, invoiceTtc = null, currentInvoicePaid = null,
+    socialRate = 45, cashBalance = null, displaySort = 'date-desc'
+  } = {}) {
     if (!accountId) throw new TypeError('Un compte professionnel doit être sélectionné.');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(previousInvoiceDate || '') || !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate || '')) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(previousInvoiceDate || '') || !/^\\d{4}-\\d{2}-\\d{2}$/.test(invoiceDate || '')) {
       throw new TypeError('Les deux dates de facture sont obligatoires.');
     }
-    if (invoiceDate <= previousInvoiceDate) throw new RangeError('La nouvelle facture doit être postérieure à la facture précédente.');
+    if (invoiceDate < previousInvoiceDate) throw new RangeError('La nouvelle facture doit être postérieure à la facture précédente.');
     const turnover = Number(caHt);
     const rate = Number(socialRate);
     if (!Number.isFinite(turnover) || turnover < 0) throw new TypeError('Le chiffre d’affaires HT doit être un montant positif ou nul.');
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new RangeError('Le taux de cotisations doit être compris entre 0 et 100 %.');
 
     const accountTransactions = transactions.filter(item => item.accountId === accountId);
-    const ordered = displayOrder(accountTransactions, displaySort);
+    const ordered = chronologicalOrder(accountTransactions, displaySort);
     const invoiceRows = ordered.map((item, index) => ({ item, index })).filter(row => isInvoice(row.item));
-    const currentInvoice = invoiceRows.find(row => row.item.date === invoiceDate);
-    const previousInvoice = invoiceRows.find(row => row.item.date === previousInvoiceDate && (!currentInvoice || row.index > currentInvoice.index));
-    const nextInvoice = currentInvoice ? invoiceRows.find(row => row.index > currentInvoice.index) : null;
+    const currentInvoice = invoiceId
+      ? invoiceRows.find(row => String(row.item.id) === String(invoiceId))
+      : invoiceRows.filter(row => row.item.date === invoiceDate)
+        .sort((a, b) => Number(a.item.isPaid === true) - Number(b.item.isPaid === true))[0];
+    const previousInvoice = previousInvoiceId
+      ? invoiceRows.find(row => String(row.item.id) === String(previousInvoiceId))
+      : invoiceRows.filter(row => row.item.date === previousInvoiceDate && row.item.isPaid === true).slice(-1)[0]
+        || invoiceRows.filter(row => row.item.date === previousInvoiceDate).slice(-1)[0];
+
+    const currentIndex = currentInvoice?.index ?? -1;
+    const previousIndex = previousInvoice?.index ?? -1;
+    if (currentIndex >= 0 && previousIndex >= 0 && previousIndex >= currentIndex) {
+      throw new RangeError('La facture encaissée doit précéder la facture à encaisser.');
+    }
+
     let pastRows;
-    let futureRows;
+    if (currentIndex >= 0 && previousIndex >= 0) {
+      pastRows = ordered.slice(previousIndex + 1, currentIndex);
+    } else {
+      // Compatibilité des simulations manuelles sans lignes de facture identifiables :
+      // les bornes calendaires restent strictement exclusives.
+      pastRows = ordered.filter(item => item.date > previousInvoiceDate && item.date < invoiceDate);
+    }
+
     let futurePeriodEndDate = addOneMonth(invoiceDate);
-
-    if (currentInvoice && previousInvoice) {
-      // In the newest-first table, the current invoice is above the previous one.
-      // The invoice rows are exclusive bounds; position resolves same-day operations.
-      pastRows = ordered.slice(currentInvoice.index + 1, previousInvoice.index);
-    } else {
-      // Backward compatibility until both historical invoice rows are identified.
-      pastRows = ordered.filter(item => item.date >= previousInvoiceDate && item.date <= invoiceDate && !isInvoice(item));
+    const nextInvoice = currentIndex >= 0
+      ? invoiceRows.find(row => row.index > currentIndex)
+      : null;
+    if (nextInvoice && nextInvoice.item.date < futurePeriodEndDate) {
+      futurePeriodEndDate = nextInvoice.item.date;
     }
-    if (currentInvoice) {
-      const endIndex = nextInvoice ? nextInvoice.index : ordered.length;
-      futureRows = ordered.slice(currentInvoice.index + 1, endIndex);
-      if (nextInvoice) futurePeriodEndDate = nextInvoice.item.date;
-    } else {
-      futureRows = ordered.filter(item => item.date > invoiceDate && item.date <= futurePeriodEndDate);
-    }
+    const futureRows = currentIndex >= 0
+      ? ordered.slice(currentIndex + 1).filter(item => item.date <= futurePeriodEndDate
+        && (!nextInvoice || ordered.indexOf(item) < nextInvoice.index))
+      : ordered.filter(item => item.date > invoiceDate && item.date <= futurePeriodEndDate);
 
-    const pastChargeItems = pastRows.filter(item => Number(item.amount) < 0
-      && !isInvoice(item) && !isTransfer(item) && !isAlreadyProvisionedCharge(item))
-      .map(item => ({ id: String(item.id), date: item.date, label: String(item.label || 'Charge'), amount: roundMoney(Math.abs(Number(item.amount))) }));
+    const isEligibleExpense = item => Number(item.amount) < 0
+      && !isInvoice(item) && !isTransfer(item) && !isAlreadyProvisionedCharge(item);
+    const toChargeItem = item => ({
+      id: String(item.id), date: item.date,
+      label: String(item.label || 'Charge'),
+      amount: roundMoney(Math.abs(Number(item.amount)))
+    });
 
-    const futureChargeItems = futureRows.filter(item => item.isPaid !== true && Number(item.amount) < 0
-      && !isInvoice(item) && !isTransfer(item) && !isAlreadyProvisionedCharge(item))
-      .map(item => ({ id: String(item.id), date: item.date, label: String(item.label || 'Charge à venir'), amount: roundMoney(Math.abs(Number(item.amount))) }));
+    // Le pointage ne change pas l'appartenance à la période : toutes les dépenses
+    // saisies sont comptées, qu'elles soient pointées ou non.
+    const pastChargeItems = pastRows.filter(isEligibleExpense).map(toChargeItem);
+    const futureChargeItems = futureRows.filter(isEligibleExpense).map(toChargeItem);
 
     const pastCharges = roundMoney(pastChargeItems.reduce((sum, item) => sum + item.amount, 0));
     const futureCharges = roundMoney(futureChargeItems.reduce((sum, item) => sum + item.amount, 0));
@@ -155,5 +198,5 @@
     };
   }
 
-  return Object.freeze({ roundMoney, normalizeSimulations, isInvoice, displayOrder, findLatestInvoicePair, calculate });
+  return Object.freeze({ roundMoney, normalizeSimulations, isInvoice, displayOrder, chronologicalOrder, findLatestInvoicePair, calculate });
 });
