@@ -221,7 +221,8 @@
       .filter(item => isPersonalTransfer(item))
       .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
 
-    let transferAmount = theoreticalTransfer;
+    let additionalTransferAmount = theoreticalTransfer;
+    let transferAmount = roundMoney(existingPersonalTransfers + additionalTransferAmount);
     let remuneration = theoreticalRemuneration;
     let socialProvision = theoreticalSocialProvision;
     let cashRemaining = normalizedProfessionalAdjustedBalance;
@@ -244,10 +245,14 @@
         else high = middle - 1;
       }
       while (remainingForCents(low + 1) >= minimumCashBalance && low < Math.floor(theoreticalTransfer * 100 + 1e-8)) low += 1;
-      transferAmount = Math.max(0, low / 100);
-      socialProvision = roundMoney(transferAmount * rate / 100);
-      remuneration = roundMoney(transferAmount + socialProvision);
-      cashRemaining = roundMoney(normalizedProfessionalAdjustedBalance - transferAmount - socialProvision);
+      additionalTransferAmount = Math.max(0, low / 100);
+      socialProvision = roundMoney(additionalTransferAmount * rate / 100);
+      remuneration = roundMoney(additionalTransferAmount + socialProvision);
+      cashRemaining = roundMoney(normalizedProfessionalAdjustedBalance - additionalTransferAmount - socialProvision);
+    }
+    // Le virement affiché est le cumul des virements déjà saisis sur le cycle
+    // et du complément maximal que la trésorerie permet encore de verser.
+    transferAmount = roundMoney(existingPersonalTransfers + additionalTransferAmount);
     }
     const transferBeforeFloor = roundMoney(theoreticalRemuneration - futureCharges);
 
@@ -256,7 +261,7 @@
       invoiceTtc: invoiceTtc === null || invoiceTtc === undefined ? null : roundMoney(invoiceTtc),
       currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, theoreticalRemuneration, socialProvision, theoreticalSocialProvision,
-      futureCharges, futureChargeItems, transferAmount, cashBalance: normalizedCashBalance,
+      futureCharges, futureChargeItems, transferAmount, additionalTransferAmount, cashBalance: normalizedCashBalance,
       cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, totalSocialProvision: roundMoney(existingSocialProvision + socialProvision), existingPersonalTransfers, resultIsNegative: availableResult < 0,
       futureChargesExceedRemuneration: transferBeforeFloor < 0,
       futureShortfall: roundMoney(Math.max(0, -transferBeforeFloor))
