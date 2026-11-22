@@ -108,6 +108,8 @@
     $('pro-remuneration-form').addEventListener('input', renderPreview);
     $('pro-remuneration-account').addEventListener('change', event => {
       selectedAccountId = event.currentTarget.value;
+      const nextPreviousDate = latestSimulation(selectedAccountId)?.invoiceDate || '';
+      $('pro-remuneration-previous-date').value = nextPreviousDate;
       renderProRemunerationScreen();
     });
     $('pro-remuneration-form').addEventListener('submit', saveSimulation);
@@ -134,6 +136,8 @@
       if (!cloud.user) throw new Error('Connectez-vous pour enregistrer vos simulations.');
       await authMetadataRepository().update({ proRemunerationSimulations: next });
       state.proRemunerationSimulations = next;
+      $('pro-remuneration-previous-date').value = result.invoiceDate;
+      $('pro-remuneration-ca').value = '';
       renderProRemunerationScreen();
       showToast('Simulation de rémunération enregistrée.');
     } catch (error) {
