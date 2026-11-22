@@ -185,3 +185,37 @@ test('finds an unencashed invoice as a period marker without counting it as cash
   assert.equal(pair.currentInvoicePaid, false);
   assert.equal(pair.caHt, 5000);
 });
+
+
+test('maximises the personal transfer while preserving at least one euro after URSSAF and VAT provisions', () => {
+  const result = Rules.calculate({
+    transactions: [
+      { id: 'invoice', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false },
+      { id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false, label: 'Assurance' }
+    ],
+    accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
+    caHt: 10000, invoiceTtc: 12000, currentInvoicePaid: false,
+    socialRate: 45, cashBalance: 20000
+  });
+  assert.equal(result.cashRemaining, 1);
+  assert.equal(result.minimumCashBalance, 1);
+  assert.equal(result.vatProvision, 2000);
+  assert.equal(result.remuneration, result.transferAmount + result.futureCharges);
+  assert.equal(result.socialProvision, Math.round(result.remuneration * 0.45 * 100) / 100);
+  assert.ok(result.transferAmount > result.theoreticalRemuneration - result.futureCharges);
+});
+
+test('does not add the invoice twice when it is already collected', () => {
+  const common = {
+    transactions: [{ id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false }],
+    accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
+    caHt: 10000, invoiceTtc: 12000, socialRate: 45, cashBalance: 20000
+  };
+  const paid = Rules.calculate({ ...common, currentInvoicePaid: true });
+  const unpaid = Rules.calculate({ ...common, currentInvoicePaid: false });
+  assert.equal(roundMoneyForTest(unpaid.transferAmount - paid.transferAmount), roundMoneyForTest(12000 / 1.45));
+});
+
+function roundMoneyForTest(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
