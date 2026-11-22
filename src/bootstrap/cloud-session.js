@@ -77,6 +77,7 @@ async function loadCloudState(user){
       normalizeAccountTypes,
       normalizeAccountPledges,
       normalizeStockHoldings,
+      normalizeProRemunerationSimulations:ProRemunerationRules.normalizeSimulations,
       isMissingCryptoTable
     }).load({client,user});
     if(!cloud.user||cloud.user.id!==user.id)return;
@@ -90,7 +91,8 @@ async function loadCloudState(user){
       accountTypes:remoteAccountTypes,
       accountPledges:remoteAccountPledges,
       stockHoldings:remoteStockHoldings,
-      defaultTransactionAccountId:remoteDefaultTransactionAccountId
+      defaultTransactionAccountId:remoteDefaultTransactionAccountId,
+      proRemunerationSimulations:remoteProRemunerationSimulations
     }=remoteData;
 
     // L'ancien cache local n'est consulté qu'après authentification, pour permettre une migration volontaire.
@@ -102,17 +104,17 @@ async function loadCloudState(user){
     const existingAccountIds=new Set(remoteAccounts.map(account=>account.id));
     const loadedStockHoldings=remoteStockHoldings.filter(holding=>existingAccountIds.has(holding.accountId));
     const loadedAccountPledges=Object.fromEntries(Object.entries(remoteAccountPledges).filter(([id])=>existingAccountIds.has(id)));
-    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)+loadedStockHoldings.length+Object.keys(loadedAccountPledges).length>0;
+    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)+loadedStockHoldings.length+Object.keys(loadedAccountPledges).length+(remoteProRemunerationSimulations||[]).length>0;
     const hasLegacy=!!legacy&&(legacy.accounts.length+legacy.transactions.length+(legacy.recurringTemplates||[]).length>0);
 
     let importLocal=false;
     if(!remoteHasData){
       importLocal=hasLegacy&&window.confirm('Votre espace en ligne est vide.\n\nImporter les anciennes données présentes dans ce navigateur dans CE compte utilisateur ?\n\nAcceptez uniquement si ces données vous appartiennent. Si ce navigateur a servi à une autre personne, choisissez Annuler.');
       const importedAccounts=legacy?accountTypeCommands.applyOverrides(legacy.accounts||[],remoteAccountTypes):[];
-      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId};
+      state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId,proRemunerationSimulations:remoteProRemunerationSimulations}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId,proRemunerationSimulations:remoteProRemunerationSimulations};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
-      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId,proRemunerationSimulations:remoteProRemunerationSimulations};
     }
 
     cloud.accountTypesDirty=importLocal&&accountTypeCommands.hasOverrides(state.accounts);
@@ -149,7 +151,7 @@ async function loadCloudState(user){
     cloud.accountTypesDirty=false;
     cloud.accountPledgesDirty=false;
     cloud.stockHoldingsDirty=false;
-    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
+    state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null,proRemunerationSimulations:[]};
     $('app-shell').hidden=true;
     $('auth-gate').hidden=false;
     cloudStatus('Cloud indisponible',false);

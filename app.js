@@ -49,7 +49,7 @@ const parseFrenchNumber = value => {if(value===null||value===undefined)return Na
 const formatFrenchNumberInput = value => {if(value===null||value===undefined||value==='')return '';const n=Number(value);return Number.isFinite(n)?String(n).replace('.',','):String(value);};
 const dateInputFormat = value => String(value||'');
 const dateInputParse = value => {const s=String(value||'').trim();let m=s.match(/^(\d{1,2})[/. -](\d{1,2})[/. -](\d{4})$/);if(m){const day=Number(m[1]),month=Number(m[2]),year=Number(m[3]),d=new Date(Date.UTC(year,month-1,day));return d.getUTCFullYear()===year&&d.getUTCMonth()===month-1&&d.getUTCDate()===day?year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';}m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);return m?dateInputParse(m[3]+'/'+m[2]+'/'+m[1]):'';};
-let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null,defaultTransactionAccountId:null};
+let state = {accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null,defaultTransactionAccountId:null,proRemunerationSimulations:[]};
 const transactionRepository = StateTransactionRepository.create(() => state);
 const recurringTemplateRepository = StateRecurringTemplateRepository.create(() => state);
 const stockHoldingRepository = StateStockHoldingRepository.create(() => state);
@@ -251,7 +251,7 @@ function lockApp(message=''){
   cloud.accountPledgesDirty=false;
   cloud.stockHoldingsDirty=false;
   cloud.isApplyingCloud=true;
-  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null};
+  state={accounts:[],transactions:[],recurringTemplates:[],cryptoHoldings:[],stockHoldings:[],accountPledges:{},lombardCredit:null,proRemunerationSimulations:[]};
   cloud.isApplyingCloud=false;
   $('app-shell').hidden=true;
   $('auth-gate').hidden=false;
@@ -438,7 +438,7 @@ function kindLabel(a){
   return type==='pro'?'Professionnel':type==='pea'?'PEA':type==='av'?'Assurance vie':type==='cto'?'CTO':type==='savings'?'Épargne':'Compte courant';
 }
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();if($('opportunities-view'))renderOpportunities();saveState();}
+function renderAll(){fillAccountSelects();renderDashboard();renderAccounts();renderTransactions();renderRecurring();renderMonthlyHistory();renderCrypto();renderStocks();if($('opportunities-view'))renderOpportunities();if(typeof renderProRemunerationScreen==='function')renderProRemunerationScreen();saveState();}
 function showToast(message,withUndo=false){const el=$('toast');if(!el)return;el.replaceChildren(document.createTextNode(message));if(withUndo&&undoPoint){const button=document.createElement('button');button.type='button';button.className='toast-undo';button.textContent='Annuler';button.setAttribute('aria-label','Annuler la dernière action');button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();try{undoLastAction();}catch(error){console.error('Undo failed',error);showToast('Impossible d’annuler cette action : '+(error.message||'erreur inconnue.'));}},{once:true});el.append(document.createTextNode(' '),button);}el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.classList.remove('show');if(withUndo)undoPoint=null;},10000);}
 
 function wealthSnapshot(){return wealthSnapshotQueries.snapshot();}

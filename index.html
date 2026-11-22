@@ -8,13 +8,14 @@
   <link rel="mask-icon" href="favicon.svg?v=brand-v3" color="#0d1b2a">
   <meta name="description" content="Gestion Compte : pilotez vos comptes, votre trésorerie et vos investissements dans un espace financier clair et sécurisé.">
   <title>Gestion Compte — Pilotage financier</title>
-  <link rel="stylesheet" href="styles.css?v=transfer-validation-v1">
+  <link rel="stylesheet" href="styles.css?v=pro-remuneration-v1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
 <script src="src/domain/transactions/transaction-rules.js"></script>
   <script src="src/domain/accounts/account-list-rules.js"></script>
   <script src="src/domain/finance/lombard-credit-rules.js"></script>
+  <script src="src/domain/finance/pro-remuneration-rules.js"></script>
   <script src="src/application/finance/lombard-credit-commands.js"></script>
   <script src="src/domain/accounts/account-type-rules.js"></script>
   <script src="src/application/accounts/account-type-commands.js"></script>
@@ -78,12 +79,13 @@
     <script src="src/adapters/ui/dom/stocks-screen.js?v=stock-session-note-v1"></script>
     <script src="src/adapters/ui/dom/crypto-screen.js"></script>
     <script src="src/adapters/ui/dom/accounts-operations-screen.js?v=default-account-v1"></script>
+    <script src="src/adapters/ui/dom/pro-remuneration-screen.js?v=pro-remuneration-v1"></script>
     <script src="src/adapters/ui/dom/wealth-screen.js"></script>
     <script src="src/adapters/ui/dom/account-editors.js?v=account-transfer-v1"></script>
-    <script src="src/bootstrap/cloud-session.js?v=default-account-v1"></script>
-    <script src="src/adapters/ui/dom/event-handlers.js?v=default-account-v1"></script>
+    <script src="src/bootstrap/cloud-session.js?v=pro-remuneration-v1"></script>
+    <script src="src/adapters/ui/dom/event-handlers.js?v=pro-remuneration-v1"></script>
     <script src="src/adapters/ui/dom/opportunities-screen.js?v=mm200-portfolio-history-v3"></script>
-  <script src="app.js?v=default-account-v1" defer></script>
+  <script src="app.js?v=pro-remuneration-v1" defer></script>
 </head>
 <body>
   <section id="auth-gate" class="auth-gate" aria-live="polite">
@@ -188,6 +190,7 @@
 
       <section class="view" id="pro-view">
         <div class="page-heading"><div><p class="eyebrow">GESTION PROFESSIONNELLE</p><h1>Compte professionnel</h1><p class="subtitle">Suivez le solde bancaire réel et le solde disponible après provisions de TVA, cotisations et marge de sécurité.</p></div><button class="primary-button" id="pro-transactions-add"><span>＋</span> Ajouter une opération</button></div>
+        <section id="pro-remuneration" class="pro-remuneration"></section>
         <section class="transaction-projection" id="pro-transaction-projection" aria-live="polite"></section>
         <div class="toolbar transaction-toolbar"><div class="search-box"><span>⌕</span><input id="pro-transaction-search" placeholder="Rechercher une opération…" aria-label="Rechercher une opération professionnelle"></div><select id="pro-transaction-type-filter" aria-label="Filtrer par type"><option value="all">Tous les mouvements</option><option value="income">Entrées</option><option value="expense">Sorties</option><option value="transfer">Virements</option></select><select id="pro-transaction-sort" aria-label="Trier les opérations"><option value="date-desc" selected>Date décroissante (plus récente en premier)</option><option value="date-asc">Date croissante</option><option value="label">Libellé A → Z</option><option value="amount-desc">Montant décroissant</option><option value="amount-asc">Montant croissant</option></select></div>
         <section class="panel table-panel"><div class="table-scroll"><table><thead id="pro-transaction-head"></thead><tbody id="pro-transaction-rows"></tbody></table></div><div class="table-footer" id="pro-transaction-footer"></div></section>

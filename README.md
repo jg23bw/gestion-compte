@@ -128,3 +128,16 @@ La banque choisie est enregistrée dans la colonne texte existante `accounts.sho
 La suppression d’un compte demande une confirmation explicite et indique le nombre d’opérations, de récurrences, de positions actions et de nantissements liés. Les opérations et récurrences sont supprimées localement puis le compte est supprimé dans Supabase ; les clés étrangères `on delete cascade` suppriment les lignes liées côté serveur. Les positions actions et le nantissement sont retirés des métadonnées Auth à la synchronisation suivante. Le dernier compte ne peut pas être supprimé. Un jeton MCP qui utiliserait ce compte comme compte par défaut n’est pas modifié automatiquement : vérifiez ou recréez ce jeton si nécessaire.
 
 Le serveur MCP personnel et l’ajout rapide sont décrits dans [docs/mcp-transactions.md](./docs/mcp-transactions.md). Le système utilise des jetons Bearer personnels révocables ; il ne s’agit pas encore d’une implémentation OAuth 2.1 universelle. Les secrets privilégiés restent côté serveur.
+
+- Simulateur de rémunération mensuelle de l’EURL dans « Compte pro » : CA HT saisi à chaque encaissement, charges effectivement débitées depuis la facture précédente, provision URSSAF estimée et charges futures hors URSSAF, avec historique privé des simulations.
+
+### Simulateur de rémunération de l’EURL
+
+Le simulateur est un outil indicatif de pilotage de trésorerie, pas un calcul de résultat fiscal ou de cotisations définitives. Pour chaque facture encaissée, il calcule :
+- charges passées : débits professionnels pointés entre la date de la facture précédente (exclue) et la date de la facture actuelle (incluse), hors virements entre comptes ;
+- résultat disponible : CA HT saisi − charges passées ;
+- rémunération estimée : résultat disponible positif ÷ (1 + taux de cotisations / 100), taux initial de 45 % ;
+- provision URSSAF : rémunération estimée × taux ;
+- virement estimé : rémunération estimée − charges futures non pointées dans le cycle mensuel suivant (jusqu’à la même date le mois suivant, ou le dernier jour du mois si nécessaire), hors opérations classées URSSAF/sociales.
+
+La première simulation demande la date de la facture précédente ; les suivantes la reprennent de la dernière simulation enregistrée pour le compte. Les détails des charges retenues sont conservés dans chaque simulation. L’historique est stocké dans les métadonnées privées Supabase Auth sous `user_metadata.proRemunerationSimulations`, sans migration SQL. Le contrôle de trésorerie restante suppose que l’encaissement HT correspondant est également saisi comme opération pointée dans le compte professionnel.

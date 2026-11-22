@@ -22,6 +22,7 @@
     normalizeAccountTypes,
     normalizeAccountPledges,
     normalizeStockHoldings,
+    normalizeProRemunerationSimulations = value => Array.isArray(value) ? value : [],
     isMissingCryptoTable
   }) {
     const dependencies = {
@@ -76,7 +77,8 @@
           accountTypes,
           accountPledges,
           stockHoldings: normalizeStockHoldings(metadata.stockHoldings),
-          defaultTransactionAccountId: typeof metadata.defaultTransactionAccountId === 'string' ? metadata.defaultTransactionAccountId : null
+          defaultTransactionAccountId: typeof metadata.defaultTransactionAccountId === 'string' ? metadata.defaultTransactionAccountId : null,
+          proRemunerationSimulations: normalizeProRemunerationSimulations(metadata.proRemunerationSimulations)
         };
       }
     });
