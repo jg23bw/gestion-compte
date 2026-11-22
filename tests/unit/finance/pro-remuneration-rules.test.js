@@ -30,7 +30,7 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.socialProvision, 2979.31);
   assert.equal(result.futureCharges, 800);
   assert.equal(result.futurePeriodEndDate, '2026-12-05');
-  assert.equal(result.transferAmount, 8520.69);
+  assert.equal(result.transferAmount, 5820.69);
   assert.equal(result.additionalTransferAmount, 5820.69);
   assert.equal(result.cashRemaining, null);
   assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge', 'unpaid-past']);
@@ -47,7 +47,7 @@ test('does not propose remuneration when historical charges exceed turnover', ()
   assert.equal(result.availableResult, -1400);
   assert.equal(result.remuneration, 0);
   assert.equal(result.socialProvision, 0);
-  assert.equal(result.transferAmount, 2700);
+  assert.equal(result.transferAmount, 0);
   assert.equal(result.additionalTransferAmount, 0);
   assert.equal(result.resultIsNegative, true);
 });
@@ -190,7 +190,7 @@ test('finds an unencashed invoice as a period marker without counting it as cash
 });
 
 
-test('caps an additional transfer against the real adjusted ending balance without replacing existing rows', () => {
+test('adds the cash-optimised complement to the CA-based transfer without using historical transfers', () => {
   const result = Rules.calculate({
     transactions: [
       { id: 'invoice', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false },
@@ -208,7 +208,7 @@ test('caps an additional transfer against the real adjusted ending balance witho
   const nextTransfer = roundMoneyForTest(result.additionalTransferAmount + 0.01);
   const nextSocial = roundMoneyForTest(nextTransfer * 0.45);
   assert.ok(roundMoneyForTest(result.professionalAdjustedBalance - nextTransfer - nextSocial) < 0.01);
-  assert.equal(result.transferAmount, result.existingPersonalTransfers + result.additionalTransferAmount);
+  assert.equal(result.transferAmount, result.theoreticalTransfer + result.additionalTransferAmount);
   assert.equal(result.remuneration, result.additionalTransferAmount + result.socialProvision);
   assert.equal(result.socialProvision, roundMoneyForTest(result.additionalTransferAmount * 0.45));
 });
@@ -226,7 +226,7 @@ test('ignores bank balance and invoice status when the real adjusted projection 
   assert.equal(paid.cashRemaining, unpaid.cashRemaining);
 });
 
-test('optimises only an additional transfer without neutralising existing transfers or URSSAF provisions', () => {
+test('optimises the CA-based transfer with the real remaining adjusted balance', () => {
   const result = Rules.calculate({
     transactions: [
       { id: 'previous-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true },
@@ -243,9 +243,9 @@ test('optimises only an additional transfer without neutralising existing transf
   assert.equal(result.existingSocialProvision, 6217.67);
   assert.equal(result.existingPersonalTransfers, 10710.16);
   assert.equal(result.additionalTransferAmount, 198.63);
-  assert.equal(result.transferAmount, 10908.79);
+  assert.equal(result.transferAmount, 6393.82);
   assert.equal(result.socialProvision, 89.38);
-  assert.equal(result.totalSocialProvision, 6307.05);
+  assert.equal(result.totalSocialProvision, 6218.84);
   assert.equal(result.remuneration, 288.01);
   assert.equal(result.cashRemaining, 0.02);
 });
