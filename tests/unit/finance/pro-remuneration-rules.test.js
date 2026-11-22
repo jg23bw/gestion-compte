@@ -107,7 +107,7 @@ test('future charges use rows below the current invoice until the next invoice',
     { id: 'current', accountId: 'pro', date: '2026-11-05', amount: 10000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false, createdAt: 500 },
     { id: 'future-one', accountId: 'pro', date: '2026-11-05', amount: -300, label: 'Assurance', isPaid: false, createdAt: 400 },
     { id: 'next-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true, createdAt: 300 },
-    { id: 'after-next-invoice', accountId: 'pro', date: '2026-10-04', amount: -500, label: 'Cycle précédent', isPaid: false, createdAt: 200 }
+    { id: 'after-next-invoice', accountId: 'pro', date: '2026-10-04', amount: -500, label: 'Cycle précédent', isPaid: true, createdAt: 200 }
   ];
   const result = Rules.calculate({ transactions: ledger, accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05', caHt: 10000 });
   assert.deepEqual(result.futureChargeItems.map(item => item.id), ['future-one']);
