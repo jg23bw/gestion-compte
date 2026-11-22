@@ -208,8 +208,9 @@ test('caps an additional transfer against the real adjusted ending balance witho
   const nextTransfer = roundMoneyForTest(result.additionalTransferAmount + 0.01);
   const nextSocial = roundMoneyForTest(nextTransfer * 0.45);
   assert.ok(roundMoneyForTest(result.professionalAdjustedBalance - nextTransfer - nextSocial) < 0.01);
-  assert.equal(result.remuneration, result.transferAmount + result.socialProvision);
-  assert.equal(result.socialProvision, roundMoneyForTest(result.transferAmount * 0.45));
+  assert.equal(result.transferAmount, result.existingPersonalTransfers + result.additionalTransferAmount);
+  assert.equal(result.remuneration, result.additionalTransferAmount + result.socialProvision);
+  assert.equal(result.socialProvision, roundMoneyForTest(result.additionalTransferAmount * 0.45));
 });
 
 test('ignores bank balance and invoice status when the real adjusted projection is supplied', () => {
