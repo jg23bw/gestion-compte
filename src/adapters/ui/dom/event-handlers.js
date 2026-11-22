@@ -388,7 +388,7 @@ function initializeDomEventHandlers() {
       }
     }
     const professionalOperationType=isProfessional ? $('transaction-professional-operation-type').value : null;
-    if(professionalOperationType==='invoice' && amount<=0){showToast('Une facture encaissée doit avoir un montant positif.');return;}
+    if(professionalOperationType==='invoice' && amount<=0){showToast('Une facture doit avoir un montant TTC positif.');return;}
     const isProvision=professionalCategory==='provision'||((professionalCategory==='vat'||professionalCategory==='social')&&professionalTreatment==='provision');
     const bankAmount=isProvision?0:amount;
     const adjustedAmount=isProfessional&&professionalCategory&&professionalTreatment==='effective'?0:amount;
