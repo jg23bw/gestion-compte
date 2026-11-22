@@ -77,6 +77,7 @@ async function loadCloudState(user){
       normalizeAccountTypes,
       normalizeAccountPledges,
       normalizeStockHoldings,
+      normalizeProRemunerationSimulations:ProRemunerationRules.normalizeSimulations,
       isMissingCryptoTable
     }).load({client,user});
     if(!cloud.user||cloud.user.id!==user.id)return;
@@ -103,7 +104,7 @@ async function loadCloudState(user){
     const existingAccountIds=new Set(remoteAccounts.map(account=>account.id));
     const loadedStockHoldings=remoteStockHoldings.filter(holding=>existingAccountIds.has(holding.accountId));
     const loadedAccountPledges=Object.fromEntries(Object.entries(remoteAccountPledges).filter(([id])=>existingAccountIds.has(id)));
-    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)+loadedStockHoldings.length+Object.keys(loadedAccountPledges).length>0;
+    const remoteHasData=remoteAccounts.length+remoteTransactions.length+remoteTemplates.length+(remoteLombard?1:0)+loadedStockHoldings.length+Object.keys(loadedAccountPledges).length+(remoteProRemunerationSimulations||[]).length>0;
     const hasLegacy=!!legacy&&(legacy.accounts.length+legacy.transactions.length+(legacy.recurringTemplates||[]).length>0);
 
     let importLocal=false;
