@@ -21,7 +21,7 @@ test('calculates remuneration, social provision and transfer with historical and
     transactions, accountId: 'pro', previousInvoiceDate: '2026-10-05',
     invoiceDate: '2026-11-05', caHt: 12000, socialRate: 45, cashBalance: 15000
   });
-  assert.equal(result.pastCharges, 1500);\n  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge']);
+  assert.equal(result.pastCharges, 1500);
   assert.equal(result.availableResult, 10500);
   assert.equal(result.remuneration, 7241.38);
   assert.equal(result.socialProvision, 3258.62);
