@@ -71,6 +71,44 @@ test('retries legacy schema errors without pointage and order columns', async ()
   assert.deepEqual(client.calls[1].options, { onConflict: 'id' });
 });
 
+test('preserves professional invoice type when retrying legacy schema errors', async () => {
+  const client = fakeClient({ upsertResults: [
+    { error: { message: 'column recurring_key does not exist' } },
+    { error: null }
+  ] });
+  const repository = create({ client, userId: 'user-1' });
+  await repository.upsertMany([{
+    id: 'invoice-1', recurring_key: null, is_paid: false, sort_order: 4,
+    professional_operation_type: 'invoice', label: 'Facture 24'
+  }]);
+  assert.deepEqual(client.calls[1].payload, [{
+    id: 'invoice-1', professional_operation_type: 'invoice', label: 'Facture 24'
+  }]);
+});
+
+test('does not silently drop professional invoice type when its database column is missing', async () => {
+  const client = fakeClient({ upsertResults: [
+    { error: { message: 'column professional_operation_type does not exist' } }
+  ] });
+  const repository = create({ client, userId: 'user-1' });
+  await assert.rejects(
+    repository.upsertMany([{ id: 'invoice-1', professional_operation_type: 'invoice' }]),
+    error => error.message === 'column professional_operation_type does not exist'
+  );
+  assert.equal(client.calls.length, 1);
+});
+
+test('does not retry ambiguous schema cache errors by dropping business fields', async () => {
+  const client = fakeClient({ upsertResults: [
+    { error: { message: 'Could not find the professional_operation_type column in the schema cache' } }
+  ] });
+  const repository = create({ client, userId: 'user-1' });
+  await assert.rejects(repository.upsertMany([{
+    id: 'invoice-1', professional_operation_type: 'invoice'
+  }]), /schema cache/);
+  assert.equal(client.calls.length, 1);
+});
+
 test('does not retry unrelated upsert errors and propagates fallback errors', async () => {
   const unrelated = create({ client: fakeClient({ upsertResults: [{ error: { message: 'permission denied' } }] }), userId: 'user-1' });
   await assert.rejects(unrelated.upsertMany([{ id: 'tx-1' }]), error => error.message === 'permission denied');
