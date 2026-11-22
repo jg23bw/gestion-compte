@@ -2563,3 +2563,40 @@ html[data-theme="dark"] .settings-field select{border-color:#35435a;background:#
 .transaction-validation-error{margin:0 0 18px;padding:11px 13px;border:1px solid #e6aaa6;border-radius:9px;background:#fff3f2;color:#a32620;font-size:12px;font-weight:650;line-height:1.5;}
 .transaction-validation-error[hidden]{display:none!important;}
 :root[data-theme="dark"] .transaction-validation-error{border-color:#75434a;background:#3a2029;color:#ffb7b5;}
+
+/* Simulateur de rémunération du compte professionnel */
+.pro-remuneration{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:16px;margin:0 0 18px}
+.pro-remuneration-panel,.pro-remuneration-history-panel{min-width:0;overflow:hidden}
+.pro-remuneration-tag{border-radius:20px;padding:5px 9px;background:#edf3ff;color:#5277c9;font-size:9px;font-weight:700;white-space:nowrap}
+.pro-remuneration-form{padding:0 20px 19px}
+.pro-remuneration-form>label,.pro-remuneration-input-grid label{display:flex;flex-direction:column;gap:7px;color:#667187;font-size:10px;font-weight:600}
+.pro-remuneration-form select,.pro-remuneration-form input{height:37px;width:100%;border:1px solid #e3e8f0;border-radius:7px;padding:0 10px;background:#fff;color:#303b50;font:11px 'DM Sans',sans-serif;min-width:0}
+.pro-remuneration-form input:focus,.pro-remuneration-form select:focus{outline:0;border-color:#7896ec;box-shadow:0 0 0 3px #4779ed16}
+.pro-remuneration-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:13px}
+.pro-remuneration-help{font-size:9px;line-height:1.6;color:#929bad;margin:12px 0}
+.pro-remuneration-preview{border-top:1px solid #edf0f5;padding-top:13px}
+.pro-remuneration-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pro-remuneration-result-grid article{min-width:0;padding:10px 11px;background:#f8f9fc;border:1px solid #edf0f5;border-radius:8px}
+.pro-remuneration-result-grid article span,.pro-remuneration-history-item>div span{display:block;color:#8993a5;font-size:9px;line-height:1.4}
+.pro-remuneration-result-grid article strong{display:block;margin-top:5px;color:#303b50;font:700 14px Manrope,sans-serif;overflow-wrap:anywhere}
+.pro-remuneration-result-grid article.highlight{background:#edf8f3;border-color:#dcefe6}
+.pro-remuneration-result-grid article.highlight strong{color:#16805e;font-size:18px}
+.pro-remuneration-warning{padding:9px 11px;border-radius:7px;background:#fff5ed;color:#a65b25;font-size:10px;line-height:1.5}
+.pro-remuneration-cash{font-size:10px;color:#69758a;margin:12px 0 4px}
+.pro-remuneration-preview>small{font-size:9px;color:#9aa3b2}
+.pro-remuneration-actions{display:flex;justify-content:flex-end;margin-top:13px}
+.pro-remuneration-actions button:disabled{opacity:.6;cursor:wait}
+.pro-remuneration-history{padding:0 16px 14px;max-height:470px;overflow:auto}
+.pro-remuneration-history-item{padding:12px 4px;border-top:1px solid #edf0f5;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px;align-items:center}
+.pro-remuneration-history-item>div strong{display:block;margin-top:4px;font-size:11px;color:#303b50}
+.pro-remuneration-history-item>div small{display:block;margin-top:4px;color:#9aa3b2;font-size:9px}
+.pro-remuneration-history-item details{grid-column:1/-1;font-size:10px;color:#6f7b90}
+.pro-remuneration-history-item summary{cursor:pointer;color:#5279dd;font-weight:600}
+.pro-remuneration-history-item h4{margin:10px 0 5px;color:#59667d;font-size:9px}
+.pro-remuneration-details{list-style:none;padding:0;margin:0}
+.pro-remuneration-details li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #f1f3f7}
+.pro-remuneration-details li span{overflow:hidden;text-overflow:ellipsis}
+.pro-remuneration-details li strong{white-space:nowrap;color:#39445a}
+.pro-remuneration-empty{padding:18px;color:#929bad;font-size:10px;line-height:1.6}
+@media(max-width:1100px){.pro-remuneration{grid-template-columns:1fr}}
+@media(max-width:580px){.pro-remuneration-input-grid{grid-template-columns:1fr}.pro-remuneration-form{padding:0 14px 15px}.pro-remuneration-result-grid{grid-template-columns:1fr 1fr}.pro-remuneration-history-item{grid-template-columns:1fr 1fr}.pro-remuneration-history-item>div:first-child{grid-column:1/-1}.pro-remuneration-history{padding:0 12px 12px}}
