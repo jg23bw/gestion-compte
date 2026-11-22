@@ -114,7 +114,7 @@ async function loadCloudState(user){
       state=importLocal?{...legacy,accounts:importedAccounts,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId,proRemunerationSimulations:remoteProRemunerationSimulations}:{accounts:DEFAULT_ACCOUNTS.map(a=>({...a})),transactions:[],recurringTemplates:[],cryptoHoldings,stockHoldings:[],accountPledges:{},lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId,proRemunerationSimulations:remoteProRemunerationSimulations};
     }else{
       // Le compte Supabase connecté est la source de vérité : aucune fusion avec le cache local.
-      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId};
+      state={accounts:remoteAccounts,transactions:remoteTransactions,recurringTemplates:remoteTemplates,cryptoHoldings,stockHoldings:loadedStockHoldings,accountPledges:loadedAccountPledges,lombardCredit:remoteLombard,defaultTransactionAccountId:remoteDefaultTransactionAccountId,proRemunerationSimulations:remoteProRemunerationSimulations};
     }
 
     cloud.accountTypesDirty=importLocal&&accountTypeCommands.hasOverrides(state.accounts);
