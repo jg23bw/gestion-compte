@@ -224,6 +224,28 @@ test('ignores bank balance and invoice status when the real adjusted projection 
   assert.equal(paid.cashRemaining, unpaid.cashRemaining);
 });
 
+test('optimises only an additional transfer without neutralising existing transfers or URSSAF provisions', () => {
+  const result = Rules.calculate({
+    transactions: [
+      { id: 'previous-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true },
+      { id: 'invoice', accountId: 'pro', date: '2026-11-05', amount: 15840, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false },
+      { id: 'future-charge', accountId: 'pro', date: '2026-11-30', amount: -3106.89, isPaid: false, label: 'Charges déjà saisies' },
+      { id: 'old-social-provision', accountId: 'pro', date: '2026-11-20', amount: 0, professionalAmount: -6217.67, professionalCategory: 'social', professionalTreatment: 'provision', isPaid: false, label: 'Provision URSSAF existante' },
+      { id: 'old-personal-transfer', accountId: 'pro', date: '2026-11-21', amount: -10710.16, professionalAmount: -10710.16, isPaid: false, label: 'Vers compte personnel' }
+    ],
+    accountId: 'pro', previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
+    previousInvoiceId: 'previous-invoice', invoiceId: 'invoice',
+    caHt: 13200, invoiceTtc: 15840, socialRate: 45,
+    professionalAdjustedBalance: 288.03
+  });
+  assert.equal(result.existingSocialProvision, 6217.67);
+  assert.equal(result.existingPersonalTransfers, 10710.16);
+  assert.equal(result.transferAmount, 198.63);
+  assert.equal(result.socialProvision, 89.38);
+  assert.equal(result.remuneration, 288.01);
+  assert.equal(result.cashRemaining, 0.02);
+});
+
 function roundMoneyForTest(value) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
