@@ -126,10 +126,12 @@ test('reproduces invoice 10 to invoice 11: mixed pointage never moves a charge a
   const ledger = [
     { id: 'invoice-11', accountId: 'pro', date: '2026-12-01', amount: 15840, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: false, createdAt: 900 },
     { id: 'future-dec-02-unpaid', accountId: 'pro', date: '2026-12-02', amount: -40, label: 'Electra+', isPaid: false, createdAt: 800 },
+    { id: 'future-margin-11', accountId: 'pro', date: '2026-12-03', amount: 0, professionalAmount: -500, label: 'Marge 11 (bilan + AEN...)', isPaid: false, createdAt: 750 },
     { id: 'future-dec-02-paid', accountId: 'pro', date: '2026-12-02', amount: -1020, label: 'Crédit Mercedes', isPaid: true, createdAt: 700 },
     { id: 'future-dec-30', accountId: 'pro', date: '2026-12-30', amount: -118.8, label: 'Frais I-expert', isPaid: false, createdAt: 600 },
     { id: 'past-nov-30-paid', accountId: 'pro', date: '2026-11-30', amount: -25, label: 'Charge pointée', isPaid: true, createdAt: 500 },
     { id: 'past-nov-30-unpaid', accountId: 'pro', date: '2026-11-30', amount: -118.8, label: 'Frais I-expert', isPaid: false, createdAt: 400 },
+    { id: 'past-margin-10', accountId: 'pro', date: '2026-11-30', amount: 0, professionalAmount: -500, label: 'Marge 10 (bilan + AEN...)', isPaid: false, createdAt: 450 },
     { id: 'past-nov-21', accountId: 'pro', date: '2026-11-21', amount: -226.4, label: 'Déplacements', isPaid: false, createdAt: 300 },
     { id: 'past-social', accountId: 'pro', date: '2026-11-20', amount: -12657, label: 'Paiement charges sociales', isPaid: true, professionalCategory: 'social', createdAt: 250 },
     { id: 'credit-mercedes-same-day-invoice10', accountId: 'pro', date: '2026-10-30', amount: -1020, label: 'Crédit Mercedes', isPaid: true, createdAt: 300 },
@@ -149,10 +151,12 @@ test('reproduces invoice 10 to invoice 11: mixed pointage never moves a charge a
   assert.deepEqual(result.pastChargeItems.map(item => item.id), [
     'credit-mercedes-same-day-invoice10', 'past-nov-21', 'past-nov-30-paid', 'past-nov-30-unpaid'
   ]);
+  assert.equal(result.pastChargeItems.some(item => item.id === 'past-margin-10'), false);
   assert.equal(result.pastCharges, 1390.2);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), [
     'future-dec-02-paid', 'future-dec-02-unpaid', 'future-dec-30'
   ]);
+  assert.equal(result.futureChargeItems.some(item => item.id === 'future-margin-11'), false);
   assert.equal(result.futureCharges, 1178.8);
   const pastIds = new Set(result.pastChargeItems.map(item => item.id));
   assert.equal(result.futureChargeItems.some(item => pastIds.has(item.id)), false);
