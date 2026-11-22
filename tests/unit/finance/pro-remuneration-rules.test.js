@@ -240,6 +240,7 @@ test('optimises only an additional transfer without neutralising existing transf
   assert.equal(result.existingPersonalTransfers, 10710.16);
   assert.equal(result.transferAmount, 198.63);
   assert.equal(result.socialProvision, 89.38);
+  assert.equal(result.totalSocialProvision, 6307.05);
   assert.equal(result.remuneration, 288.01);
   assert.equal(result.cashRemaining, 0.02);
 });
