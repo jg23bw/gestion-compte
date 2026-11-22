@@ -8,7 +8,8 @@ const transactions = [
   { id: 'unpaid-past', accountId: 'pro', date: '2026-10-25', amount: -900, isPaid: false, label: 'À pointer' },
   { id: 'internal-transfer', accountId: 'pro', date: '2026-10-22', amount: -500, isPaid: true, transferId: 'transfer-1', label: 'Virement personnel' },
   { id: 'future-charge', accountId: 'pro', date: '2026-11-15', amount: -800, isPaid: false, label: 'Assurance' },
-  { id: 'future-urssaf', accountId: 'pro', date: '2026-11-18', amount: -400, isPaid: false, professionalCategory: 'social', label: 'URSSAF' },\n  { id: 'too-far-future', accountId: 'pro', date: '2026-12-10', amount: -1200, isPaid: false, label: 'Charge du cycle suivant' },
+  { id: 'future-urssaf', accountId: 'pro', date: '2026-11-18', amount: -400, isPaid: false, professionalCategory: 'social', label: 'URSSAF' },
+  { id: 'too-far-future', accountId: 'pro', date: '2026-12-10', amount: -1200, isPaid: false, label: 'Charge du cycle suivant' },
   { id: 'other-account', accountId: 'personal', date: '2026-10-21', amount: -3000, isPaid: true, label: 'Autre compte' }
 ];
 
@@ -21,7 +22,8 @@ test('calculates remuneration, social provision and transfer with historical and
   assert.equal(result.availableResult, 10500);
   assert.equal(result.remuneration, 7241.38);
   assert.equal(result.socialProvision, 3258.62);
-  assert.equal(result.futureCharges, 800);\n  assert.equal(result.futurePeriodEndDate, '2026-12-05');
+  assert.equal(result.futureCharges, 800);
+  assert.equal(result.futurePeriodEndDate, '2026-12-05');
   assert.equal(result.transferAmount, 6441.38);
   assert.equal(result.cashRemaining, 7758.62);
   assert.deepEqual(result.pastChargeItems.map(item => item.id), ['past-charge']);
