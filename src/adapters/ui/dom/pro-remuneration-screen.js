@@ -66,7 +66,7 @@
         + '<article><span>Facture ' + (result.currentInvoicePaid ? 'encaissée' : 'à encaisser') + ' · TTC / CA HT</span><strong>' + euro(result.invoiceTtc) + ' / ' + euro(result.caHt) + '</strong></article>'
         + '<article><span>Dépenses de la période (pointées ou non, hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
-        + '<article><span>Rémunération optimisée (virement + charges à venir)</span><strong>' + euro(result.remuneration) + '</strong></article>'
+        + '<article><span>Coût supplémentaire (virement + URSSAF)</span><strong>' + euro(result.remuneration) + '</strong></article>'
         + '<article><span>Provision URSSAF recalculée (' + moneyInput(result.socialRate) + ' %)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
         + '<article><span>Provision TVA estimée</span><strong>' + euro(result.vatProvision) + '</strong></article>'
         + '<article><span>Charges à venir hors URSSAF, TVA et marge (jusqu’au ' + dateFormat(result.futurePeriodEndDate) + ')</span><strong>' + euro(result.futureCharges) + '</strong></article>'
@@ -76,8 +76,8 @@
         + (!result.currentInvoicePaid ? '<p class="pro-remuneration-warning">Cette facture n’est pas encore pointée comme encaissée. La rémunération est estimative ; vérifiez la trésorerie avant tout virement.</p>' : '')
         + (result.resultIsNegative ? '<p class="pro-remuneration-warning">Les charges passées dépassent le chiffre d’affaires HT : aucune rémunération n’est proposée.</p>' : '')
         + (result.futureChargesExceedRemuneration ? '<p class="pro-remuneration-warning">Les charges futures dépassent la rémunération estimée de ' + euro(result.futureShortfall) + '. Le virement est ramené à zéro.</p>' : '')
-        + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES) après virement et recalcul URSSAF : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Le calcul part de la projection réelle du compte professionnel et remplace les virements personnels et provisions URSSAF déjà saisis sur le cycle. Il ne rajoute pas la facture ni les charges une seconde fois.</small>' : '')
-        + (result.cashRemaining !== null && result.cashRemaining < 0 ? '<p class="pro-remuneration-warning">La trésorerie disponible ne permet pas de conserver un solde positif après les charges et provisions, même sans virement.</p>' : '');
+        + (result.cashRemaining !== null ? '<p class="pro-remuneration-cash">SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES) après virement et recalcul URSSAF : <strong>' + euro(result.cashRemaining) + '</strong></p><small>Le calcul part de la projection réelle, conserve toutes les opérations déjà saisies et calcule uniquement un virement et une provision URSSAF supplémentaires. Les charges futures sont déjà déduites dans cette projection.</small>' : '')
+        + (result.cashRemaining !== null && result.cashRemaining < 0 ? '<p class="pro-remuneration-warning">La projection actuelle est déjà négative : aucun virement supplémentaire n'est possible.</p>' : '');
       target.dataset.result = 'valid';
     } catch (error) {
       target.innerHTML = '<p class="pro-remuneration-empty">' + escapeHtml(error.message || 'Renseignez les paramètres pour afficher la simulation.') + '</p>';
