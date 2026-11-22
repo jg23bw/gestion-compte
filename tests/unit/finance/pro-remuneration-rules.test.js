@@ -84,7 +84,7 @@ test('normalizes stored simulations and ignores malformed entries', () => {
 test('uses both invoice rows as exclusive chronological bounds and table order for same-day operations', () => {
   const ledger = [
     { id: 'current-invoice', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false, createdAt: 500 },
-    { id: 'same-day-after-current', accountId: 'pro', date: '2026-11-05', amount: -200, label: 'Frais après facture', isPaid: true, createdAt: 400 },
+    { id: 'same-day-before-current', accountId: 'pro', date: '2026-11-05', amount: -200, label: 'Frais avant facture', isPaid: true, createdAt: 400 },
     { id: 'same-day-before-previous', accountId: 'pro', date: '2026-10-05', amount: -999, label: 'Frais avant facture précédente', isPaid: true, createdAt: 75 },
     { id: 'previous-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true, createdAt: 50 },
     { id: 'between-invoices', accountId: 'pro', date: '2026-10-20', amount: -350, label: 'Comptabilité', isPaid: true, createdAt: 200 },
@@ -95,10 +95,10 @@ test('uses both invoice rows as exclusive chronological bounds and table order f
     previousInvoiceDate: '2026-10-05', invoiceDate: '2026-11-05',
     caHt: 12000, socialRate: 45
   });
-  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-after-previous', 'between-invoices']);
-  assert.equal(result.pastCharges, 500);
-  assert.deepEqual(result.futureChargeItems.map(item => item.id), ['same-day-after-current']);
-  assert.equal(result.futureCharges, 200);
+  assert.deepEqual(result.pastChargeItems.map(item => item.id), ['same-day-before-current', 'between-invoices', 'same-day-after-previous']);
+  assert.equal(result.pastCharges, 700);
+  assert.deepEqual(result.futureChargeItems.map(item => item.id), []);
+  assert.equal(result.futureCharges, 0);
 });
 
 test('recognizes legacy invoice labels only when they match Facture XX and are positive', () => {
@@ -111,7 +111,7 @@ test('recognizes legacy invoice labels only when they match Facture XX and are p
 test('future charges include every expense after the current invoice until the next invoice, regardless of pointage', () => {
   const ledger = [
     { id: 'current', accountId: 'pro', date: '2026-11-05', amount: 10000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false, createdAt: 500 },
-    { id: 'future-one', accountId: 'pro', date: '2026-11-05', amount: -300, label: 'Assurance', isPaid: false, createdAt: 400 },
+    { id: 'future-one', accountId: 'pro', date: '2026-11-05', amount: -300, label: 'Assurance', isPaid: false, createdAt: 600 },
     { id: 'next-invoice', accountId: 'pro', date: '2026-10-05', amount: 9000, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: true, createdAt: 300 },
     { id: 'after-next-invoice', accountId: 'pro', date: '2026-10-04', amount: -500, label: 'Cycle précédent', isPaid: true, createdAt: 200 }
   ];
@@ -126,14 +126,16 @@ test('reproduces invoice 10 to invoice 11: mixed pointage never moves a charge a
   const ledger = [
     { id: 'invoice-11', accountId: 'pro', date: '2026-12-01', amount: 15840, label: 'Facture 11', professionalOperationType: 'invoice', isPaid: false, createdAt: 900 },
     { id: 'future-dec-02-unpaid', accountId: 'pro', date: '2026-12-02', amount: -40, label: 'Electra+', isPaid: false, createdAt: 800 },
-    { id: 'future-dec-02-paid', accountId: 'pro', date: '2026-12-02', amount: -10, label: 'Autre charge déjà pointée', isPaid: true, createdAt: 700 },
+    { id: 'future-dec-02-paid', accountId: 'pro', date: '2026-12-02', amount: -1020, label: 'Crédit Mercedes', isPaid: true, createdAt: 700 },
     { id: 'future-dec-30', accountId: 'pro', date: '2026-12-30', amount: -118.8, label: 'Frais I-expert', isPaid: false, createdAt: 600 },
     { id: 'past-nov-30-paid', accountId: 'pro', date: '2026-11-30', amount: -25, label: 'Charge pointée', isPaid: true, createdAt: 500 },
     { id: 'past-nov-30-unpaid', accountId: 'pro', date: '2026-11-30', amount: -118.8, label: 'Frais I-expert', isPaid: false, createdAt: 400 },
     { id: 'past-nov-21', accountId: 'pro', date: '2026-11-21', amount: -226.4, label: 'Déplacements', isPaid: false, createdAt: 300 },
     { id: 'past-social', accountId: 'pro', date: '2026-11-20', amount: -12657, label: 'Paiement charges sociales', isPaid: true, professionalCategory: 'social', createdAt: 250 },
+    { id: 'credit-mercedes-same-day-invoice10', accountId: 'pro', date: '2026-10-30', amount: -1020, label: 'Crédit Mercedes', isPaid: true, createdAt: 300 },
+    { id: 'transfer-fortuneo-same-day-invoice10', accountId: 'pro', date: '2026-10-30', amount: -4510.36, label: 'Vers Fortuneo', isPaid: true, createdAt: 250 },
     { id: 'invoice-10', accountId: 'pro', date: '2026-10-30', amount: 11520, label: 'Facture 10', professionalOperationType: 'invoice', isPaid: true, createdAt: 200 },
-    { id: 'before-invoice-10', accountId: 'pro', date: '2026-10-30', amount: -999, label: 'Avant facture 10', isPaid: true, createdAt: 300 }
+    { id: 'before-invoice-10', accountId: 'pro', date: '2026-10-30', amount: -999, label: 'Avant facture 10', isPaid: true, createdAt: 100 }
   ];
   const pair = Rules.findLatestInvoicePair(ledger, 'pro');
   assert.equal(pair.currentInvoice.id, 'invoice-11');
@@ -145,13 +147,13 @@ test('reproduces invoice 10 to invoice 11: mixed pointage never moves a charge a
     caHt: pair.caHt, invoiceTtc: pair.invoiceTtc, currentInvoicePaid: pair.currentInvoicePaid
   });
   assert.deepEqual(result.pastChargeItems.map(item => item.id), [
-    'past-nov-21', 'past-nov-30-unpaid', 'past-nov-30-paid'
+    'past-nov-21', 'past-nov-30-unpaid', 'past-nov-30-paid', 'credit-mercedes-same-day-invoice10'
   ]);
-  assert.equal(result.pastCharges, 370.2);
+  assert.equal(result.pastCharges, 1390.2);
   assert.deepEqual(result.futureChargeItems.map(item => item.id), [
     'future-dec-02-unpaid', 'future-dec-02-paid', 'future-dec-30'
   ]);
-  assert.equal(result.futureCharges, 168.8);
+  assert.equal(result.futureCharges, 1178.8);
   const pastIds = new Set(result.pastChargeItems.map(item => item.id));
   assert.equal(result.futureChargeItems.some(item => pastIds.has(item.id)), false);
 });
