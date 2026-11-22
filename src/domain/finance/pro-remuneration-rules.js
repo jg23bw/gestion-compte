@@ -114,7 +114,7 @@
     socialRate = 45, cashBalance = null, displaySort = 'date-desc'
   } = {}) {
     if (!accountId) throw new TypeError('Un compte professionnel doit être sélectionné.');
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(previousInvoiceDate || '') || !/^\\d{4}-\\d{2}-\\d{2}$/.test(invoiceDate || '')) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(previousInvoiceDate || '') || !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate || '')) {
       throw new TypeError('Les deux dates de facture sont obligatoires.');
     }
     if (invoiceDate < previousInvoiceDate) throw new RangeError('La nouvelle facture doit être postérieure à la facture précédente.');
