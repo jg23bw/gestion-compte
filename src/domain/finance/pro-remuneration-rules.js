@@ -57,26 +57,34 @@
   const isInvoice = transaction => transaction.professionalOperationType === 'invoice'
     || (Number(transaction.amount) > 0 && /^\s*facture\s+\d+\s*$/i.test(String(transaction.label || '')));
 
+  // Reproduit exactement le tri de la table Opérations.
+  // En date décroissante, les lignes d'un même jour sont affichées dans
+  // l'ordre inverse de leur chronologie (createdAt, sortOrder, id).
   function displayOrder(transactions, sort = 'date-desc') {
     return transactions.slice().sort((a, b) => {
       const pendingFirst = Number(a.isPaid === true) - Number(b.isPaid === true);
       if (pendingFirst) return pendingFirst;
       const created = Number(a.createdAt || 0) - Number(b.createdAt || 0);
-      if (sort === 'date-asc') return String(a.date || '').localeCompare(String(b.date || '')) || created;
+      const manual = Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+      const id = String(a.id || '').localeCompare(String(b.id || ''));
+      if (sort === 'date-asc') return String(a.date || '').localeCompare(String(b.date || '')) || created || manual || id;
       if (sort === 'label') return String(a.label || '').localeCompare(String(b.label || ''), 'fr');
       if (sort === 'amount-asc') return Number(a.amount) - Number(b.amount);
       if (sort === 'amount-desc') return Number(b.amount) - Number(a.amount);
-      return String(b.date || '').localeCompare(String(a.date || '')) || -created;
+      return String(b.date || '').localeCompare(String(a.date || '')) || -created || -manual || -id;
     });
   }
 
-  // Reconstitue la chronologie à partir des dates, mais conserve l'ordre réel
-  // du tableau pour départager plusieurs opérations d'une même date.
+  // Reconstitue la chronologie. Pour le tri date-desc de la table, on inverse
+  // l'ordre visuel à date égale : la dernière ligne affichée est l'événement
+  // le plus ancien de cette journée. Les bornes facture sont ainsi exactes.
   function chronologicalOrder(transactions, sort = 'date-desc') {
     const tableOrder = new Map(displayOrder(transactions, sort).map((item, index) => [String(item.id), index]));
     return transactions.slice().sort((a, b) =>
       String(a.date || '').localeCompare(String(b.date || ''))
-      || (tableOrder.get(String(a.id)) ?? 0) - (tableOrder.get(String(b.id)) ?? 0)
+      || (sort === 'date-desc'
+        ? (tableOrder.get(String(b.id)) ?? 0) - (tableOrder.get(String(a.id)) ?? 0)
+        : (tableOrder.get(String(a.id)) ?? 0) - (tableOrder.get(String(b.id)) ?? 0))
     );
   }
 
