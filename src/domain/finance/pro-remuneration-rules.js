@@ -58,7 +58,8 @@
     if (!Number.isFinite(turnover) || turnover < 0) throw new TypeError('Le chiffre d’affaires HT doit être un montant positif ou nul.');
     if (!Number.isFinite(rate) || rate < 0 || rate > 100) throw new RangeError('Le taux de cotisations doit être compris entre 0 et 100 %.');
 
-    const accountTransactions = transactions.filter(item => item.accountId === accountId);\n    const futurePeriodEndDate = addOneMonth(invoiceDate);
+    const accountTransactions = transactions.filter(item => item.accountId === accountId);
+    const futurePeriodEndDate = addOneMonth(invoiceDate);
     const pastChargeItems = accountTransactions.filter(item => item.isPaid === true
       && item.date > previousInvoiceDate && item.date <= invoiceDate
       && Number(item.amount) < 0 && !isTransfer(item))
