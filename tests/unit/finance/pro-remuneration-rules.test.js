@@ -187,7 +187,7 @@ test('finds an unencashed invoice as a period marker without counting it as cash
 });
 
 
-test('optimises the transfer against the real adjusted ending balance and replaces cycle URSSAF provision', () => {
+test('caps an additional transfer against the real adjusted ending balance without replacing existing rows', () => {
   const result = Rules.calculate({
     transactions: [
       { id: 'invoice', accountId: 'pro', date: '2026-11-05', amount: 12000, label: 'Facture 12', professionalOperationType: 'invoice', isPaid: false },
@@ -203,12 +203,10 @@ test('optimises the transfer against the real adjusted ending balance and replac
   assert.equal(result.existingPersonalTransfers, 500);
   assert.ok(result.cashRemaining >= 0.01);
   const nextTransfer = roundMoneyForTest(result.transferAmount + 0.01);
-  const nextRemuneration = roundMoneyForTest(nextTransfer + result.futureCharges);
-  const nextSocial = roundMoneyForTest(nextRemuneration * 0.45);
-  assert.ok(roundMoneyForTest(result.professionalAdjustedBalance + result.existingSocialProvision
-    + result.existingPersonalTransfers - nextTransfer - nextSocial) < 0.01);
-  assert.equal(result.remuneration, result.transferAmount + result.futureCharges);
-  assert.equal(result.socialProvision, roundMoneyForTest(result.remuneration * 0.45));
+  const nextSocial = roundMoneyForTest(nextTransfer * 0.45);
+  assert.ok(roundMoneyForTest(result.professionalAdjustedBalance - nextTransfer - nextSocial) < 0.01);
+  assert.equal(result.remuneration, result.transferAmount + result.socialProvision);
+  assert.equal(result.socialProvision, roundMoneyForTest(result.transferAmount * 0.45));
 });
 
 test('ignores bank balance and invoice status when the real adjusted projection is supplied', () => {
