@@ -67,6 +67,7 @@
         + '<article><span>Dépenses de la période (pointées ou non, hors URSSAF et TVA)</span><strong>' + euro(result.pastCharges) + '</strong></article>'
         + '<article><span>Résultat disponible</span><strong class="' + (result.availableResult < 0 ? 'negative' : '') + '">' + euro(result.availableResult) + '</strong></article>'
         + '<article><span>Coût supplémentaire (virement + URSSAF)</span><strong>' + euro(result.remuneration) + '</strong></article>'
+        + '<article><span>Virement supplémentaire encore possible</span><strong>' + euro(result.additionalTransferAmount) + '</strong></article>'
         + '<article><span>Provision URSSAF déjà enregistrée</span><strong>' + euro(result.existingSocialProvision) + '</strong></article>'
         + '<article><span>Provision URSSAF supplémentaire (' + moneyInput(result.socialRate) + ' % du virement)</span><strong>' + euro(result.socialProvision) + '</strong></article>'
         + '<article><span>Total URSSAF après simulation</span><strong>' + euro(result.totalSocialProvision) + '</strong></article>'
