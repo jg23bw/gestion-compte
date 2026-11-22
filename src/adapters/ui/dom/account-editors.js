@@ -49,7 +49,7 @@ function openTransaction(accountId=null,transaction=null){
   $('transaction-provision').checked=record?.professionalCategory==='provision';
   $('transaction-vat').checked=record?.professionalCategory==='vat';
   $('transaction-social').checked=record?.professionalCategory==='social';
-  $('transaction-professional-operation-type').value=record?.professionalOperationType || (Number(record?.amount)>0 && /^\\s*facture\\s+\\d+\\s*$/i.test(String(record?.label||'')) ? 'invoice' : 'expense');
+  $('transaction-professional-operation-type').value=record?.professionalOperationType === 'invoice' || (Number(record?.amount)>0 && /^\\s*facture\\s+\\d+\\s*$/i.test(String(record?.label||''))) ? 'invoice' : '';
   const treatment=record?.professionalTreatment||'';
   document.querySelectorAll('input[name="transaction-vat-treatment"],input[name="transaction-social-treatment"]').forEach(input=>{input.checked=input.value===treatment;});
   $('transaction-label').value=record?.label||'';
