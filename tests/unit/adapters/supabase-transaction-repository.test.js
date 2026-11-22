@@ -105,7 +105,7 @@ test('does not retry ambiguous schema cache errors by dropping business fields',
   const repository = create({ client, userId: 'user-1' });
   await assert.rejects(repository.upsertMany([{
     id: 'invoice-1', professional_operation_type: 'invoice'
-  }]), /schema cache/);
+  }]), error => error.message.includes('schema cache'));
   assert.equal(client.calls.length, 1);
 });
 
