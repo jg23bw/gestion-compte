@@ -31,7 +31,7 @@
         socialProvision: roundMoney(item.socialProvision),
         futureCharges: roundMoney(item.futureCharges),
         transferAmount: roundMoney(item.transferAmount),
-        cashBalance: Number.isFinite(Number(item.cashBalance)) ? roundMoney(item.cashBalance) : null,
+        cashBalance: item.cashBalance !== null && item.cashBalance !== undefined && item.cashBalance !== '' && Number.isFinite(Number(item.cashBalance)) ? roundMoney(item.cashBalance) : null,
         cashRemaining: Number.isFinite(Number(item.cashRemaining)) ? roundMoney(item.cashRemaining) : null,
         pastChargeItems: Array.isArray(item.pastChargeItems) ? item.pastChargeItems : [],
         futureChargeItems: Array.isArray(item.futureChargeItems) ? item.futureChargeItems : []
@@ -77,7 +77,7 @@
     const socialProvision = roundMoney(remuneration * rate / 100);
     const transferBeforeFloor = roundMoney(remuneration - futureCharges);
     const transferAmount = Math.max(0, transferBeforeFloor);
-    const normalizedCashBalance = Number.isFinite(Number(cashBalance)) ? roundMoney(cashBalance) : null;
+    const normalizedCashBalance = cashBalance !== null && cashBalance !== undefined && cashBalance !== '' && Number.isFinite(Number(cashBalance)) ? roundMoney(cashBalance) : null;
     const cashRemaining = normalizedCashBalance === null
       ? null : roundMoney(normalizedCashBalance - transferAmount - futureCharges);
 
