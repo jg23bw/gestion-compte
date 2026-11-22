@@ -28,7 +28,9 @@
           professional_category: transaction.professionalCategory || null,
           professional_treatment: transaction.professionalTreatment || null,
           professional_amount: Number(transaction.professionalAmount ?? transaction.amount),
-          professional_operation_type: transaction.professionalOperationType || null,
+          // The database constraint allows only NULL or 'invoice'. Older local
+          // records may still contain the UI-only value 'expense'.
+          professional_operation_type: transaction.professionalOperationType === 'invoice' ? 'invoice' : null,
           is_paid: transaction.isPaid === true,
           sort_order: Number.isFinite(Number(transaction.sortOrder)) ? Number(transaction.sortOrder) : null,
           source: transaction.recurringTemplateId ? 'recurring' : 'manual',
