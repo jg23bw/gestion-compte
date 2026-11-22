@@ -138,6 +138,6 @@ Le simulateur est un outil indicatif de pilotage de trésorerie, pas un calcul d
 - résultat disponible : CA HT saisi − charges passées ;
 - rémunération estimée : résultat disponible positif ÷ (1 + taux de cotisations / 100), taux initial de 45 % ;
 - provision URSSAF : rémunération estimée × taux ;
-- virement estimé : rémunération estimée − charges futures non pointées, hors opérations classées URSSAF/sociales.
+- virement estimé : rémunération estimée − charges futures non pointées dans le cycle mensuel suivant (jusqu’à la même date le mois suivant, ou le dernier jour du mois si nécessaire), hors opérations classées URSSAF/sociales.
 
 La première simulation demande la date de la facture précédente ; les suivantes la reprennent de la dernière simulation enregistrée pour le compte. Les détails des charges retenues sont conservés dans chaque simulation. L’historique est stocké dans les métadonnées privées Supabase Auth sous `user_metadata.proRemunerationSimulations`, sans migration SQL. Le contrôle de trésorerie restante suppose que l’encaissement HT correspondant est également saisi comme opération pointée dans le compte professionnel.
