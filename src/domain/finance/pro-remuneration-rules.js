@@ -55,7 +55,7 @@
   }
 
   const isInvoice = transaction => transaction.professionalOperationType === 'invoice'
-    || (Number(transaction.amount) > 0 && /^\\s*facture\\s+\\d+\\s*$/i.test(String(transaction.label || '')));
+    || (Number(transaction.amount) > 0 && /^\s*facture\s+\d+\s*$/i.test(String(transaction.label || '')));
 
   function displayOrder(transactions, sort = 'date-desc') {
     return transactions.slice().sort((a, b) => {
