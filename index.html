@@ -361,7 +361,7 @@
       <div id="transaction-transfer-fields" hidden><label>Compte destinataire<select id="transaction-transfer-account"></select></label></div>
       <div class="form-row"><label>Date<input id="transaction-date" type="date" required></label><label>Montant (€)<input id="transaction-amount" type="text" inputmode="decimal" autocomplete="off" step="0.01" required placeholder="0,00"></label></div>
       <label>Libellé de l’opération<input id="transaction-label" maxlength="120" required placeholder="Ex. Virement, loyer, courses…"></label>
-      <label id="transaction-professional-type-field" hidden>Nature de l’opération professionnelle<select id="transaction-professional-operation-type"><option value="expense">Opération courante</option><option value="invoice">Facture encaissée</option></select></label>
+      <label id="transaction-professional-type-field" hidden>Nature de l’opération professionnelle<select id="transaction-professional-operation-type"><option value="expense">Opération courante</option><option value="invoice">Facture (émise)</option></select></label><p class="form-help">Saisissez le montant TTC. Une facture non pointée est considérée comme émise mais non encaissée ; cochez « Pointée » lorsqu’elle apparaît sur le relevé bancaire.</p>
       <fieldset id="transaction-classification" class="pledge-field" hidden>
         <legend>Type de dépense professionnelle</legend>
         <label class="pledge-check"><input id="transaction-provision" type="checkbox"> Provision (ex. Marge / AEN)</label>
