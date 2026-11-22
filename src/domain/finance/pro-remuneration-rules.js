@@ -126,7 +126,7 @@
     transactions = [], accountId, previousInvoiceDate, invoiceDate,
     previousInvoiceId = null, invoiceId = null,
     caHt, invoiceTtc = null, currentInvoicePaid = null,
-    socialRate = 45, cashBalance = null, displaySort = 'date-desc'
+    socialRate = 45, cashBalance = null, professionalAdjustedBalance = null, displaySort = 'date-desc'
   } = {}) {
     if (!accountId) throw new TypeError('Un compte professionnel doit être sélectionné.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(previousInvoiceDate || '') || !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate || '')) {
@@ -200,51 +200,53 @@
     const theoreticalSocialProvision = roundMoney(theoreticalRemuneration * rate / 100);
     const theoreticalTransfer = Math.max(0, roundMoney(theoreticalRemuneration - futureCharges));
     const normalizedCashBalance = cashBalance !== null && cashBalance !== undefined && cashBalance !== '' && Number.isFinite(Number(cashBalance)) ? roundMoney(cashBalance) : null;
+    const normalizedProfessionalAdjustedBalance = professionalAdjustedBalance !== null && professionalAdjustedBalance !== undefined
+      && professionalAdjustedBalance !== '' && Number.isFinite(Number(professionalAdjustedBalance))
+      ? roundMoney(professionalAdjustedBalance) : null;
     const normalizedInvoiceTtc = invoiceTtc !== null && invoiceTtc !== undefined && invoiceTtc !== '' && Number.isFinite(Number(invoiceTtc)) ? roundMoney(invoiceTtc) : null;
-    const canOptimizeCash = normalizedCashBalance !== null && normalizedInvoiceTtc !== null
-      && typeof currentInvoicePaid === 'boolean';
-    const minimumCashBalance = 1;
+    const canOptimizeCash = normalizedProfessionalAdjustedBalance !== null;
+    const minimumCashBalance = 0.01;
     const vatProvision = normalizedInvoiceTtc === null ? 0 : roundMoney(Math.max(0, normalizedInvoiceTtc - roundMoney(normalizedInvoiceTtc / 1.2)));
-    const unpaidPastCharges = roundMoney(pastRows.filter(item => isEligibleExpense(item) && item.isPaid !== true)
-      .reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0));
-    // Réintègre les virements personnels déjà pointés de ce cycle pour calculer
-    // le montant total autorisé, et non un complément au virement déjà saisi.
-    const alreadyPaidPersonalTransfers = roundMoney(pastRows.concat(futureRows)
-      .filter(item => isPersonalTransfer(item) && item.isPaid === true && item.date <= invoiceDate)
-      .reduce((sum, item) => sum + Math.max(0, -Number(item.amount)), 0));
-    const cashBeforeTransfer = canOptimizeCash
-      ? roundMoney(normalizedCashBalance + (currentInvoicePaid ? 0 : normalizedInvoiceTtc)
-        + alreadyPaidPersonalTransfers - unpaidPastCharges)
+    // Base exacte : projection « SOLDE À DATE (AVEC TVA ET CHARGES SOCIALES) ».
+    // Elle comprend déjà les opérations enregistrées, pointées ou non, y compris
+    // les échéances futures. On remplace les provisions URSSAF et virements
+    // personnels déjà saisis sur le cycle au lieu de les compter une seconde fois.
+    const cycleRows = pastRows.concat(futureRows);
+    const existingSocialProvision = roundMoney(cycleRows
+      .filter(item => item.professionalCategory === 'social' && item.professionalTreatment === 'provision')
+      .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
+    const existingPersonalTransfers = roundMoney(cycleRows
+      .filter(item => isPersonalTransfer(item))
+      .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
+    const adjustedBalanceBeforeSimulation = canOptimizeCash
+      ? roundMoney(normalizedProfessionalAdjustedBalance + existingSocialProvision + existingPersonalTransfers)
       : null;
 
-    // Maximise le virement en recalculant les cotisations sur chaque euro
-    // supplémentaire. La borne est le solde prévisionnel après charges et
-    // provisions, avec un plancher strict de 1,00 €.
+    // Le virement est maximal lorsque le solde projeté réel, après remplacement
+    // de la provision URSSAF du cycle, reste supérieur ou égal à un centime.
     let transferAmount = theoreticalTransfer;
     let remuneration = theoreticalRemuneration;
     let socialProvision = theoreticalSocialProvision;
-    let cashRemaining = normalizedCashBalance === null
-      ? null : roundMoney(normalizedCashBalance - transferAmount - futureCharges);
+    let cashRemaining = normalizedProfessionalAdjustedBalance;
     if (canOptimizeCash) {
       let low = 0;
-      let high = Math.max(0, Math.floor((cashBeforeTransfer - futureCharges - vatProvision - minimumCashBalance) * 100 + 1e-8));
+      let high = Math.max(0, Math.floor(adjustedBalanceBeforeSimulation * 100 + 1e-8));
       const remainingForCents = cents => {
         const trialTransfer = cents / 100;
         const trialRemuneration = roundMoney(trialTransfer + futureCharges);
         const trialSocialProvision = roundMoney(trialRemuneration * rate / 100);
-        return roundMoney(cashBeforeTransfer - futureCharges - vatProvision - trialTransfer - trialSocialProvision);
+        return roundMoney(adjustedBalanceBeforeSimulation - trialTransfer - trialSocialProvision);
       };
       while (low < high) {
         const middle = Math.ceil((low + high) / 2);
         if (remainingForCents(middle) >= minimumCashBalance) low = middle;
         else high = middle - 1;
       }
-      // Ajustement final au centime : garantit le plus grand virement possible.
       while (remainingForCents(low + 1) >= minimumCashBalance) low += 1;
       transferAmount = Math.max(0, low / 100);
       remuneration = roundMoney(transferAmount + futureCharges);
       socialProvision = roundMoney(remuneration * rate / 100);
-      cashRemaining = roundMoney(cashBeforeTransfer - futureCharges - vatProvision - transferAmount - socialProvision);
+      cashRemaining = roundMoney(adjustedBalanceBeforeSimulation - transferAmount - socialProvision);
     }
     const transferBeforeFloor = roundMoney(theoreticalRemuneration - futureCharges);
 
@@ -254,7 +256,7 @@
       currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, theoreticalRemuneration, socialProvision, theoreticalSocialProvision,
       futureCharges, futureChargeItems, transferAmount, cashBalance: normalizedCashBalance,
-      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, resultIsNegative: availableResult < 0,
+      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, existingPersonalTransfers, resultIsNegative: availableResult < 0,
       futureChargesExceedRemuneration: transferBeforeFloor < 0,
       futureShortfall: roundMoney(Math.max(0, -transferBeforeFloor))
     };
