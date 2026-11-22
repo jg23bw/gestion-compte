@@ -10,9 +10,11 @@
 
   const roundMoney = value => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
   const isTransfer = transaction => Boolean(transaction.transferId || transaction.transferRole);
-  const isSocialCharge = transaction => transaction.professionalCategory === 'social'
-    || transaction.professionalKind === 'social'
-    || transaction.category === 'social';
+  // VAT and social-contribution payments are cash movements for provisions
+  // already accounted for separately; they must not reduce remuneration twice.
+  const isAlreadyProvisionedCharge = transaction => ['social', 'vat'].includes(transaction.professionalCategory)
+    || ['social', 'vat'].includes(transaction.professionalKind)
+    || ['social', 'vat'].includes(transaction.category);
 
   function normalizeSimulations(value) {
     if (!Array.isArray(value)) return [];
@@ -62,18 +64,18 @@
     const futurePeriodEndDate = addOneMonth(invoiceDate);
     const pastChargeItems = accountTransactions.filter(item => item.isPaid === true
       && item.date > previousInvoiceDate && item.date <= invoiceDate
-      && Number(item.amount) < 0 && !isTransfer(item))
+      && Number(item.amount) < 0 && !isTransfer(item) && !isAlreadyProvisionedCharge(item))
       .sort((a, b) => a.date.localeCompare(b.date)
         || Number(a.createdAt || 0) - Number(b.createdAt || 0)
         || Number(a.sortOrder || 0) - Number(b.sortOrder || 0)
         || String(a.id || '').localeCompare(String(b.id || '')))
       .map(item => ({ id: String(item.id), date: item.date, label: String(item.label || 'Charge'), amount: roundMoney(Math.abs(Number(item.amount))) }));
 
-    // Only real future cash debits are reserved. Social/URSSAF charges are
-    // excluded because the new social provision is calculated separately.
+    // Only real future cash debits are reserved. VAT and social payments are
+    // excluded because those amounts have already been provisioned separately.
     const futureChargeItems = accountTransactions.filter(item => item.isPaid !== true
       && item.date > invoiceDate && item.date <= futurePeriodEndDate && Number(item.amount) < 0
-      && !isTransfer(item) && !isSocialCharge(item))
+      && !isTransfer(item) && !isAlreadyProvisionedCharge(item))
       .sort((a, b) => a.date.localeCompare(b.date)
         || Number(a.createdAt || 0) - Number(b.createdAt || 0)
         || Number(a.sortOrder || 0) - Number(b.sortOrder || 0)
