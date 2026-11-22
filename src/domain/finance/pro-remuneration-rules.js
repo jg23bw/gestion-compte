@@ -221,8 +221,8 @@
       .filter(item => isPersonalTransfer(item))
       .reduce((sum, item) => sum + Math.max(0, -Number(item.professionalAmount ?? item.amount)), 0));
 
-    let additionalTransferAmount = theoreticalTransfer;
-    let transferAmount = roundMoney(existingPersonalTransfers + additionalTransferAmount);
+    let additionalTransferAmount = 0;
+    let transferAmount = theoreticalTransfer;
     let remuneration = theoreticalRemuneration;
     let socialProvision = theoreticalSocialProvision;
     let cashRemaining = normalizedProfessionalAdjustedBalance;
@@ -250,9 +250,11 @@
       remuneration = roundMoney(additionalTransferAmount + socialProvision);
       cashRemaining = roundMoney(normalizedProfessionalAdjustedBalance - additionalTransferAmount - socialProvision);
     }
-    // Le virement affiché est le cumul des virements déjà saisis sur le cycle
-    // et du complément maximal que la trésorerie permet encore de verser.
-    transferAmount = roundMoney(existingPersonalTransfers + additionalTransferAmount);
+    // Le virement maximal part du calcul économique basé sur le CA HT,
+    // puis ajoute le complément autorisé par le solde réel après provisions.
+    // Les virements déjà saisis sont des mouvements historiques : ils ne
+    // constituent jamais la base du virement recommandé.
+    transferAmount = roundMoney(theoreticalTransfer + additionalTransferAmount);
     const transferBeforeFloor = roundMoney(theoreticalRemuneration - futureCharges);
 
     return {
