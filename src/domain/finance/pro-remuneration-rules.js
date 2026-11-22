@@ -70,7 +70,24 @@
     });
   }
 
-  function calculate({ transactions = [], accountId, previousInvoiceDate, invoiceDate, caHt, socialRate = 45, cashBalance = null, displaySort = 'date-desc' } = {}) {
+  function findLatestInvoicePair(transactions = [], accountId, displaySort = 'date-desc') {
+    if (!accountId) return null;
+    const ordered = displayOrder(transactions.filter(item => item.accountId === accountId), displaySort);
+    const invoices = ordered.map((item, index) => ({ item, index })).filter(row => isInvoice(row.item));
+    if (!invoices.length) return null;
+    const current = invoices[0];
+    const previous = invoices[1] || null;
+    const invoiceTtc = roundMoney(Number(current.item.amount));
+    return {
+      currentInvoice: current.item,
+      previousInvoice: previous?.item || null,
+      invoiceTtc,
+      caHt: roundMoney(invoiceTtc / 1.2),
+      currentInvoicePaid: current.item.isPaid === true
+    };
+  }
+
+  function calculate({ transactions = [], accountId, previousInvoiceDate, invoiceDate, caHt, invoiceTtc = null, currentInvoicePaid = null, socialRate = 45, cashBalance = null, displaySort = 'date-desc' } = {}) {
     if (!accountId) throw new TypeError('Un compte professionnel doit être sélectionné.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(previousInvoiceDate || '') || !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate || '')) {
       throw new TypeError('Les deux dates de facture sont obligatoires.');
@@ -127,7 +144,9 @@
       ? null : roundMoney(normalizedCashBalance - transferAmount - futureCharges);
 
     return {
-      accountId, previousInvoiceDate, invoiceDate, futurePeriodEndDate, caHt: roundMoney(turnover), socialRate: rate,
+      accountId, previousInvoiceDate, invoiceDate, futurePeriodEndDate, caHt: roundMoney(turnover),
+      invoiceTtc: invoiceTtc === null || invoiceTtc === undefined ? null : roundMoney(invoiceTtc),
+      currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, socialProvision,
       futureCharges, futureChargeItems, transferAmount, cashBalance: normalizedCashBalance,
       cashRemaining, resultIsNegative: availableResult < 0,
@@ -136,5 +155,5 @@
     };
   }
 
-  return Object.freeze({ roundMoney, normalizeSimulations, isInvoice, displayOrder, calculate });
+  return Object.freeze({ roundMoney, normalizeSimulations, isInvoice, displayOrder, findLatestInvoicePair, calculate });
 });
