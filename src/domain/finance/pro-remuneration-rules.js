@@ -202,8 +202,16 @@
       && typeof currentInvoicePaid === 'boolean';
     const minimumCashBalance = 1;
     const vatProvision = normalizedInvoiceTtc === null ? 0 : roundMoney(Math.max(0, normalizedInvoiceTtc - roundMoney(normalizedInvoiceTtc / 1.2)));
+    const unpaidPastCharges = roundMoney(pastRows.filter(item => isEligibleExpense(item) && item.isPaid !== true)
+      .reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0));
+    // Réintègre les virements personnels déjà pointés de ce cycle pour calculer
+    // le montant total autorisé, et non un complément au virement déjà saisi.
+    const alreadyPaidPersonalTransfers = roundMoney(pastRows.concat(futureRows)
+      .filter(item => isPersonalTransfer(item) && item.isPaid === true && item.date <= invoiceDate)
+      .reduce((sum, item) => sum + Math.max(0, -Number(item.amount)), 0));
     const cashBeforeTransfer = canOptimizeCash
-      ? roundMoney(normalizedCashBalance + (currentInvoicePaid ? 0 : normalizedInvoiceTtc))
+      ? roundMoney(normalizedCashBalance + (currentInvoicePaid ? 0 : normalizedInvoiceTtc)
+        + alreadyPaidPersonalTransfers - unpaidPastCharges)
       : null;
 
     // Maximise le virement en recalculant les cotisations sur chaque euro
@@ -236,9 +244,9 @@
       accountId, previousInvoiceDate, invoiceDate, futurePeriodEndDate, caHt: roundMoney(turnover),
       invoiceTtc: invoiceTtc === null || invoiceTtc === undefined ? null : roundMoney(invoiceTtc),
       currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
-      pastCharges, pastChargeItems, availableResult, remuneration, socialProvision,
+      pastCharges, pastChargeItems, availableResult, remuneration, theoreticalRemuneration, socialProvision, theoreticalSocialProvision,
       futureCharges, futureChargeItems, transferAmount, cashBalance: normalizedCashBalance,
-      cashRemaining, resultIsNegative: availableResult < 0,
+      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, resultIsNegative: availableResult < 0,
       futureChargesExceedRemuneration: transferBeforeFloor < 0,
       futureShortfall: roundMoney(Math.max(0, -transferBeforeFloor))
     };
