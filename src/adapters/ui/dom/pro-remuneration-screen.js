@@ -137,7 +137,6 @@
       + '<label>Taux de cotisations estimé (%)<input id="pro-remuneration-rate" inputmode="decimal" value="' + escapeHtml(currentRate) + '" required></label>'
       + '</div><p class="pro-remuneration-help">Saisissez chaque facture TTC dans les opérations du compte professionnel et sélectionnez « Facture (émise) ». La simulation utilise automatiquement les deux dernières factures ; le CA HT est calculé en divisant le TTC par 1,20. Les factures non encaissées restent des repères de période mais ne sont pas intégrées au solde bancaire. Les dépenses passées sont comptées qu’elles soient pointées ou non. Les virements entre comptes, les virements personnels identifiés et les paiements URSSAF / TVA déjà provisionnés sont exclus.</p>'
       + '<div id="pro-remuneration-preview" class="pro-remuneration-preview" aria-live="polite"></div>'
-      + '<div class="pro-remuneration-actions"><button type="submit" class="primary-button">Enregistrer cette simulation</button></div>'
       + '</form></section><section class="panel pro-remuneration-history-panel"><div class="panel-heading"><div><h2>Historique des rémunérations</h2><p>Les simulations enregistrées restent consultables ici.</p></div></div><div id="pro-remuneration-history" class="pro-remuneration-history"></div></section>';
     $('pro-remuneration-form').addEventListener('input', renderPreview);
     $('pro-remuneration-account').addEventListener('change', event => {
@@ -146,7 +145,6 @@
       $('pro-remuneration-previous-date').value = nextPreviousDate;
       renderProRemunerationScreen();
     });
-    $('pro-remuneration-form').addEventListener('submit', saveSimulation);
     renderPreview();
     renderHistory(selected.id);
   }
