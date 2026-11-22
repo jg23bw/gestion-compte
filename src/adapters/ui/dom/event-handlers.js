@@ -388,7 +388,7 @@ function initializeDomEventHandlers() {
         if(!professionalTreatment){showToast('Précisez si les cotisations URSSAF sont une provision ou un paiement effectif.');return;}
       }
     }
-    const professionalOperationType=isProfessional ? $('transaction-professional-operation-type').value : null;
+    const professionalOperationType=isProfessional && $('transaction-professional-operation-type').value==='invoice' ? 'invoice' : null;
     if(professionalOperationType==='invoice' && amount<=0){showToast('Une facture doit avoir un montant TTC positif.');return;}
     const isProvision=professionalCategory==='provision'||((professionalCategory==='vat'||professionalCategory==='social')&&professionalTreatment==='provision');
     const bankAmount=isProvision?0:amount;
