@@ -20,6 +20,17 @@ test('maps an ordinary transaction to the existing Supabase schema', () => {
   });
 });
 
+test('normalizes UI-only operation types to null while preserving invoice type', () => {
+  const mapper = create({ now: () => new Date('2026-10-31T10:00:00.000Z') });
+  const base = {
+    id: 'tx-professional', accountId: 'account-pro', date: '2026-10-30',
+    label: 'Abonnement', amount: -120, isPaid: false, createdAt: 1000
+  };
+  assert.equal(mapper.toCloud({ ...base, professionalOperationType: 'expense' }, 'user-1').professional_operation_type, null);
+  assert.equal(mapper.toCloud({ ...base, professionalOperationType: '' }, 'user-1').professional_operation_type, null);
+  assert.equal(mapper.toCloud({ ...base, professionalOperationType: 'invoice' }, 'user-1').professional_operation_type, 'invoice');
+});
+
 test('maps both transfer legs and their linked account metadata', () => {
   const mapper = create({ now: () => new Date('2026-10-31T10:00:00.000Z') });
   const row = mapper.toCloud({
