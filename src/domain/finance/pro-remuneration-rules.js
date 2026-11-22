@@ -263,7 +263,7 @@
       currentInvoicePaid: currentInvoicePaid === null ? null : currentInvoicePaid === true, socialRate: rate,
       pastCharges, pastChargeItems, availableResult, remuneration, theoreticalRemuneration, theoreticalTransfer, socialProvision, theoreticalSocialProvision,
       futureCharges, futureChargeItems, transferAmount, additionalTransferAmount, cashBalance: normalizedCashBalance,
-      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, totalSocialProvision: roundMoney(existingSocialProvision + socialProvision), existingPersonalTransfers, resultIsNegative: availableResult < 0,
+      cashRemaining, minimumCashBalance: canOptimizeCash ? minimumCashBalance : null, vatProvision, professionalAdjustedBalance: normalizedProfessionalAdjustedBalance, existingSocialProvision, totalSocialProvision: roundMoney(theoreticalSocialProvision + socialProvision), existingPersonalTransfers, resultIsNegative: availableResult < 0,
       futureChargesExceedRemuneration: transferBeforeFloor < 0,
       futureShortfall: roundMoney(Math.max(0, -transferBeforeFloor))
     };
